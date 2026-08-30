@@ -1,0 +1,16 @@
+{
+  "name": "@kh-sqr/core",
+  "version": "1.0.0",
+  "description": "KH-SQR reference core: EMVCo Profile A payment signatures and Profile B credentials. Web Crypto only, isomorphic.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./profileA": { "types": "./dist/profileA.d.ts", "default": "./dist/profileA.js" }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "src"],
+  "scripts": { "build": "tsc -b", "clean": "rm -rf dist" }
+}

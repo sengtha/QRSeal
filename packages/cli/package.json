@@ -1,0 +1,10 @@
+{
+  "name": "@kh-sqr/cli",
+  "version": "1.0.0",
+  "description": "Command line tools for KH-SQR: sign, verify, build-trustlist.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "kh-sqr": "./dist/index.js" },
+  "scripts": { "build": "tsc -b", "clean": "rm -rf dist" },
+  "dependencies": { "@kh-sqr/core": "workspace:*" }
+}

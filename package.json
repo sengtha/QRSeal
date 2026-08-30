@@ -1,0 +1,32 @@
+{
+  "name": "kh-sqr",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/** run build",
+    "typecheck": "tsc -b --force",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:workers": "pnpm -r --filter ./workers/** run test",
+    "vectors:generate": "node --experimental-strip-types tools/generate-vectors.ts",
+    "vectors:check": "vitest run packages/core/test/vectors.test.ts",
+    "measure:qr": "node --experimental-strip-types tools/measure-qr.ts",
+    "check:profile-a-isolation": "node --experimental-strip-types tools/check-profile-a-isolation.ts",
+    "check:no-signing-keys": "node --experimental-strip-types tools/check-no-signing-keys.ts",
+    "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:profile-a-isolation && pnpm check:no-signing-keys"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^3.2.4",
+    "qrcode": "^1.5.4",
+    "cbor2": "^2.0.1"
+  }
+}

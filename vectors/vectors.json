@@ -1,0 +1,843 @@
+{
+  "schema": "kh-sqr/vectors/1",
+  "version": 1,
+  "description": "Conformance vectors for KH-SQR. A conforming implementation must produce the stated outcome for every case, and for a rejection must report the stated machine-readable reason. Where \"reason\" is null on a rejection, any rejection reason is acceptable.",
+  "generator": "tools/generate-vectors.ts",
+  "reproducibility": "Every key is derived from a published scalar or a published label; regenerate with `pnpm vectors:generate`. These keys protect nothing and must never be used outside testing.",
+  "time": {
+    "issuedAt": 1756512000,
+    "expiresAt": 1756512060,
+    "nowValid": 1756512030
+  },
+  "keys": {
+    "issuer": {
+      "scalar": "1F2E3D4C5B6A79889796A5B4C3D2E1F00F1E2D3C4B5A69788897A6B5C4D3E2F1",
+      "x": "7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886",
+      "y": "1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67",
+      "kid": "27403764C95F4F5B",
+      "pem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfrNEkCi5+eal9ToGgBjsbaDKHxs+\nLgjFj8/n3D9RuIYVcZEuiGY3j/M160ugpn3aHZiXUfZIPrrCr+wJ+y+OZw==\n-----END PUBLIC KEY-----"
+    },
+    "root": {
+      "label": "kh-sqr/test/root/1",
+      "scalar": "ADC74E39C7C735CAD97442C25CBC2B5A84C3ADD7C62E5ED8314F2E3885414F8E",
+      "x": "32D60CBC6552DD400BCF26B28191F5327E8A5991869AEF170510DEDB469D3437",
+      "y": "A397362F0EAC6455E9BEBA13F28790EA3508AE82DCFEC3270EF9C683F86B469A",
+      "kid": "ED305634665F665A"
+    },
+    "timestamp": {
+      "label": "kh-sqr/test/timestamp/1",
+      "scalar": "C2CB882686C437FDF395B8F793747340DED5D239FF3398FFFDF353AA293541DD",
+      "x": "78551EA44F99C58204AD9DD7175CA3B4194B167E97A7A018D08A1D61FF8D4DA8",
+      "y": "D8AEA40EFB021523D0603241667D274416DC7C4691187CFBF74C8C668890B1FF",
+      "kid": "64D797C34895E71C"
+    },
+    "revokedIssuer": {
+      "label": "kh-sqr/test/revoked-issuer/1",
+      "scalar": "C577A8C9FCBC823B22AC84664620BB3B7D64C9FAA249BA8FACF7E46997EB3ED2",
+      "x": "1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49",
+      "y": "600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2",
+      "kid": "17835A87B9D2FDEF"
+    },
+    "untrustedIssuer": {
+      "label": "kh-sqr/test/untrusted-issuer/1",
+      "scalar": "75A2254FB2632C0EF73C9F905D4331341AF2DC3C5494EACE95D348E73CBC87A3",
+      "x": "2622D35168C98DC4A4243631D7E264BCEF9D1267FE6D82F5826EA53D794285FE",
+      "y": "CB92F66898BF8F551014EC6DADB9B72B6926335BB3223D9AEE87E055DB55859B",
+      "kid": "09DCC2530568B7E7"
+    }
+  },
+  "pinned": {
+    "rootKeys": [
+      {
+        "kid": "ED305634665F665A",
+        "x": "32D60CBC6552DD400BCF26B28191F5327E8A5991869AEF170510DEDB469D3437",
+        "y": "A397362F0EAC6455E9BEBA13F28790EA3508AE82DCFEC3270EF9C683F86B469A"
+      }
+    ],
+    "timestampKeys": [
+      {
+        "kid": "64D797C34895E71C",
+        "x": "78551EA44F99C58204AD9DD7175CA3B4194B167E97A7A018D08A1D61FF8D4DA8",
+        "y": "D8AEA40EFB021523D0603241667D274416DC7C4691187CFBF74C8C668890B1FF"
+      }
+    ]
+  },
+  "trustLists": {
+    "current": {
+      "statement": "{\"type\":\"kh-sqr/trustlist/1\",\"version\":7,\"issuedAt\":1756511000,\"expires\":1788048000,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "ED305634665F665A",
+        "value": "D0D5EE51769FA799A2D0E59F88E3611F68755872B92C7FD09C7E0F109FD4C3DAE616DD0446B45EE6934311900A80B6CDE202ED8D3C8D47DBE336CD543DDB69B5"
+      }
+    },
+    "rolledBack": {
+      "statement": "{\"type\":\"kh-sqr/trustlist/1\",\"version\":6,\"issuedAt\":1756511000,\"expires\":1788048000,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "ED305634665F665A",
+        "value": "91E34BF7DC3EDFD8895274B195CD0F80862CE52BF08B5C2967A586F1DDFEBA22BC4F50B84F5432DF227106789012C6C21F2515CD012648F3B195078AADA35F94"
+      }
+    },
+    "expired": {
+      "statement": "{\"type\":\"kh-sqr/trustlist/1\",\"version\":7,\"issuedAt\":1756511000,\"expires\":1756511999,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "ED305634665F665A",
+        "value": "540E77A08F0DD592CEBF3FF16F60BAAE95EEFFC8B22A73D45A6F77B974C7F40775730FCCA453E2ABABD38D6322B4E77B028F4F5366A9404D3153FA11C340390D"
+      }
+    },
+    "forgedRootSignature": {
+      "statement": "{\"type\":\"kh-sqr/trustlist/1\",\"version\":7,\"issuedAt\":1756511000,\"expires\":1788048000,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "09DCC2530568B7E7",
+        "value": "B4C77D5806342EB435878AC2F76061E9953051ADB1F3D639FFAB819134C6CB8FE109250A838F284CC7019A9C55FA230AD5B2CE30C551C359456049204EDAB7AB"
+      }
+    }
+  },
+  "timestamps": {
+    "current": {
+      "statement": "{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"B0003FF84A32B311CC2F714067FE9171F5F3FB2923664162643C66A73A40910B\",\"issuedAt\":1756511900,\"expires\":1757116800}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "64D797C34895E71C",
+        "value": "B310F7EAAA72B7CB6C54CF130AB773F4A33A6807EF7EE53958ACFBCA292DAEB68F8D5D7A170CF24D215881C53F50AAF761DBD82EC657812FCA5060FD455CCEBA"
+      }
+    },
+    "expired": {
+      "statement": "{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"B0003FF84A32B311CC2F714067FE9171F5F3FB2923664162643C66A73A40910B\",\"issuedAt\":1756511900,\"expires\":1756511999}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "64D797C34895E71C",
+        "value": "7F2A559E468827753C061FA7408F775FFFBA54E4D2AE82270F08B63BBB9FE5EF7760210308B5D1F6EEFCC219C2F3D359C7C54AE4D388234993EA00B014545185"
+      }
+    },
+    "rolledBack": {
+      "statement": "{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":6,\"trustListDigest\":\"145F48341E4F4E8049D8AE0F5F9FF27A19712380718E06D21F46028B195B7053\",\"issuedAt\":1756511900,\"expires\":1757116800}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "64D797C34895E71C",
+        "value": "49A834B179ED55BEC7B6658F0DD506E6CE517F51E8A7894F3E65154EC141C6E940060DC06D245EF821E0D12E03B494DAB414DFC2BAAEDEDCD73602BC394DB654"
+      }
+    },
+    "expiredList": {
+      "statement": "{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"DC18500DA00687D8A94CCD3A72262DC05E59724BC8C0CC1EEBC45EB37CDDAEB3\",\"issuedAt\":1756511900,\"expires\":1757116800}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "64D797C34895E71C",
+        "value": "0B229405030A53C861E9ED9D6D9A4784A4C19264FE8EA5D6747543E92A57E2EEDD703B7153CF89507784563DE6CFE66FBF71B0E9FBFAB64DC14C09C49142CACD"
+      }
+    },
+    "farFuture": {
+      "statement": "{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"B0003FF84A32B311CC2F714067FE9171F5F3FB2923664162643C66A73A40910B\",\"issuedAt\":1756511900,\"expires\":1791072000}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "64D797C34895E71C",
+        "value": "D51750D946063F033F2263D653879A121920167F66A7B53022D7B500DBA0186F132BE09F8AD35CA78343530C8A56C238778B8405897A25B0DA7673F7CB3597BD"
+      }
+    },
+    "mismatchedDigest": {
+      "statement": "{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"issuedAt\":1756511900,\"expires\":1757116800}",
+      "signature": {
+        "alg": "ES256",
+        "kid": "64D797C34895E71C",
+        "value": "8CCA57851B3270A760EF71D10DF0DD7EDAF56D50206A5A7D132DDA006FD21FBD8310950543D11C99B6CFDD0E1C0598EB9A6AB4E1B41495A75BCB39BF39885112"
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "A-accept-published-reference",
+      "profile": "A",
+      "type": "verify",
+      "description": "The published 317-character reference payload. Its template 85 declares length 200 while its content is 201 characters; a conforming verifier does not consult that field, because the fixed-offset rule locates the signature by position. See SPEC.md, \"Length encoding\".",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85200000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991288D060DF7D9848BAA7169DF7946242B491306E1EEBD17AC8367F0D5DA1693990D1CEB7A018D96CBAFEC1744F8A4A2B9B83374297CAF8F8C68E5DDAEC3BB8F08DC6304CB0C"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null,
+      "accepted": {
+        "kid": "27403764C95F4F5B",
+        "codeKind": "dynamic",
+        "payeeClass": "M",
+        "declaredLengthConsistent": false
+      }
+    },
+    {
+      "id": "A-accept-canonical-dynamic",
+      "profile": "A",
+      "type": "verify",
+      "description": "A dynamic code produced by this implementation, with a self-consistent template length.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null,
+      "accepted": {
+        "kid": "27403764C95F4F5B",
+        "codeKind": "dynamic",
+        "payeeClass": "M",
+        "declaredLengthConsistent": true
+      }
+    },
+    {
+      "id": "A-accept-canonical-static",
+      "profile": "A",
+      "type": "verify",
+      "description": "A static code: no amount, no expiry, individual payee.",
+      "input": {
+        "payload": "00020101021130310011abaakhppxxx01128550123456785204581253031165802KH5908SOK DARA6010PHNOM PENH85187000201011627403764C95F4F5B0205ES256031017565120000501I991280373DFA8D638DFA92D882A75D0A7E4EC0A8013E96D9F521A7A4FA3B426B52F29F87BB72E81B474FB09B82820FF91435CB559E36DA9D12E70FCFA4E72A251EFBC6304E3BD"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null,
+      "accepted": {
+        "kid": "27403764C95F4F5B",
+        "codeKind": "static",
+        "payeeClass": "I",
+        "declaredLengthConsistent": true
+      }
+    },
+    {
+      "id": "A-accept-at-expiry-boundary",
+      "profile": "A",
+      "type": "verify",
+      "description": "A dynamic code verified at exactly its expiry second is still valid; expiry is exclusive.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512060
+      },
+      "expect": "accept",
+      "reason": null
+    },
+    {
+      "id": "A-reject-bad-signature",
+      "profile": "A",
+      "type": "verify",
+      "description": "One hex character of the signature altered, CRC repaired.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BADDB63044581"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "SIGNATURE_INVALID"
+    },
+    {
+      "id": "A-reject-der-signature",
+      "profile": "A",
+      "type": "verify",
+      "description": "A DER SEQUENCE offered where raw r||s is required. DER MUST NOT be used.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85213000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M9914030440220AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0220BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB63048723"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "SIGNATURE_ENCODING_INVALID"
+    },
+    {
+      "id": "A-reject-template-not-last",
+      "profile": "A",
+      "type": "verify",
+      "description": "A data object appended after template 85, outside the signed prefix.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB62080304ABCD63048601"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "SIGNATURE_TEMPLATE_NOT_LAST"
+    },
+    {
+      "id": "A-reject-subtag-not-last",
+      "profile": "A",
+      "type": "verify",
+      "description": "A sub-tag appended after sub-tag 99 inside template 85.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85206000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M9912832702656982A207A85017C3F63EB8E8EB6017E6CF9914AE8D36FDB573ABD0C67F7FB6C5668017D0358A4ADB53C7EE856E1E69F0C7219A7F2F60748DB08228E4A0601X6304E836"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "SIGNATURE_SUBTAG_NOT_LAST"
+    },
+    {
+      "id": "A-reject-bad-crc",
+      "profile": "A",
+      "type": "verify",
+      "description": "The CRC does not match the payload.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB63040000"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "CRC_MISMATCH"
+    },
+    {
+      "id": "A-reject-mutation-inside-signed-region",
+      "profile": "A",
+      "type": "verify",
+      "description": "The merchant city altered and the CRC repaired: only the signature detects this.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENG85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304159B"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "SIGNATURE_INVALID"
+    },
+    {
+      "id": "A-reject-mutation-outside-signed-region",
+      "profile": "A",
+      "type": "verify",
+      "description": "A character altered after the signed prefix, CRC left alone. It must still fail, because the CRC covers the whole payload including the signature.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDAB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "CRC_MISMATCH"
+    },
+    {
+      "id": "A-reject-expired-dynamic",
+      "profile": "A",
+      "type": "verify",
+      "description": "A dynamic code presented one second after expiry.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512061
+      },
+      "expect": "reject",
+      "reason": "CODE_EXPIRED"
+    },
+    {
+      "id": "A-reject-unknown-kid",
+      "profile": "A",
+      "type": "verify",
+      "description": "Signed by a key that is not in the trust list.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011609DCC2530568B7E70205ES25603101756512000041017565120600501M99128007CEF46B229BB33AEB17ABDEEED54CEAAFB031FF7218527A7C7DC888A90E9101DAE6DB0A1EF6A38CE39EC0B7FFDB8179BE4E82095E63F102B0926CEDC246B336304EA16"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "UNKNOWN_KID"
+    },
+    {
+      "id": "A-reject-revoked-key",
+      "profile": "A",
+      "type": "verify",
+      "description": "Signed by a key the trust list marks revoked. Distinct from an unknown key.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011617835A87B9D2FDEF0205ES25603101756512000041017565120600501M99128776D7385B23B8E82EE9D2B74B620280E1EB79FA6FB3259179B7D5818FAB227266E007FB29D1C7196323A6C253C5E29AC844B508179A87740972CFC6C1513232D63046321"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "KEY_REVOKED"
+    },
+    {
+      "id": "A-reject-static-with-amount",
+      "profile": "A",
+      "type": "verify",
+      "description": "A static code carrying tag 54. Static codes MUST NOT carry an amount.",
+      "input": {
+        "payload": "00020101021130310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85187000201011627403764C95F4F5B0205ES256031017565120000501I991286130467ED4440B19DE67E0F6A17AA01674C458DFBACA12339C964D4E425900535DF07C0193282A751AB1FE23AAC0B41F9FB58C5E6B26A2D38CA5DAE3FF2E1FDB63049AE4"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "STATIC_CODE_WITH_AMOUNT"
+    },
+    {
+      "id": "A-reject-expiry-window-too-long",
+      "profile": "A",
+      "type": "verify",
+      "description": "A dynamic code valid for 600 seconds, above the 300-second maximum.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565126000501M99128638EAEEB75C11842DA329950619B4862E48F0D533C695AE0233BBA2A38E9B72503C92B370BA9E54C271B7FAB9FB2526417AADDA97F3349F1C857DC4B7C461E75630404C5"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "EXPIRY_WINDOW_TOO_LONG"
+    },
+    {
+      "id": "A-reject-dynamic-without-expiry",
+      "profile": "A",
+      "type": "verify",
+      "description": "A dynamic code omitting sub-tag 04.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85187000201011627403764C95F4F5B0205ES256031017565120000501M99128BC167E7F33073D612C156FCF3561270D73BD58D86E73195D8A9F3376E3F330763E87CEDBECDA5C3A16024705D1AB119A0709676B327B44E7B9413C1C3FA31B336304815A"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "DYNAMIC_CODE_MISSING_EXPIRY"
+    },
+    {
+      "id": "A-reject-bad-payee-class",
+      "profile": "A",
+      "type": "verify",
+      "description": "Sub-tag 05 carries a value other than 'M' or 'I'.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501X9912826BB3BCCED8286CB6C6A6A99DC57764656ED5DC9B89D53B886F7E60EED71A294626946CA60D86EE694447F38EC6521DA12168121278060EA4B913FA4362C52C363048F78"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "MALFORMED_PAYEE_CLASS"
+    },
+    {
+      "id": "A-reject-unsupported-algorithm",
+      "profile": "A",
+      "type": "verify",
+      "description": "Sub-tag 02 names an algorithm other than ES256.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES38403101756512000041017565120600501M99128ACAAEE3B3E8F9CA3548CF85C420E8A17435EC4A132F0604DC91A167B10AF207E8D1C6F21675CD117D7C3EEE999A564F2A9525331FC75BDE8344F78073CB5426B63045CE7"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "UNSUPPORTED_ALGORITHM"
+    },
+    {
+      "id": "A-reject-unsupported-format-version",
+      "profile": "A",
+      "type": "verify",
+      "description": "Sub-tag 00 names a format version this specification does not define.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000202011627403764C95F4F5B0205ES25603101756512000041017565120600501M99128C49EBE1F05569550BABFC202DE01A8C93B6AE2A2847C63B5C454D1D80EFA65F17037BE37F677465BC938F706CFEDDC68D384A3326AECC8FE869335E3CCA83AB4630493F9"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "UNSUPPORTED_FORMAT_VERSION"
+    },
+    {
+      "id": "A-reject-issued-in-future",
+      "profile": "A",
+      "type": "verify",
+      "description": "Issued-at is beyond the permitted clock skew ahead of the verifier.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756508400
+      },
+      "expect": "reject",
+      "reason": "ISSUED_IN_FUTURE"
+    },
+    {
+      "id": "A-reject-trustlist-rollback",
+      "profile": "A",
+      "type": "verify",
+      "description": "A trust list numbered below the version the verifier already holds.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "rolledBack",
+        "timestamp": "rolledBack",
+        "now": 1756512030,
+        "heldVersion": 7
+      },
+      "expect": "reject",
+      "reason": "TRUSTLIST_ROLLBACK"
+    },
+    {
+      "id": "A-reject-trustlist-stale",
+      "profile": "A",
+      "type": "verify",
+      "description": "A trust list cached for more than 30 days. The verifier stops verifying rather than trusting what it holds.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "farFuture",
+        "now": 1759190400,
+        "fetchedAt": 1756425600
+      },
+      "expect": "reject",
+      "reason": "TRUSTLIST_STALE"
+    },
+    {
+      "id": "A-reject-trustlist-expired",
+      "profile": "A",
+      "type": "verify",
+      "description": "The trust list is past its own expiry.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "expired",
+        "timestamp": "expiredList",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "TRUSTLIST_EXPIRED"
+    },
+    {
+      "id": "A-reject-trustlist-forged-signature",
+      "profile": "A",
+      "type": "verify",
+      "description": "A trust list signed by a key that is not the pinned Root.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "forgedRootSignature",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "TRUSTLIST_SIGNATURE_INVALID"
+    },
+    {
+      "id": "A-reject-timestamp-expired",
+      "profile": "A",
+      "type": "verify",
+      "description": "The freshest timestamp statement is past its seven-day validity. Freeze protection: an attacker who withholds updates must not be able to pin a verifier to a stale but unexpired trust list.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "expired",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "TIMESTAMP_EXPIRED"
+    },
+    {
+      "id": "A-reject-timestamp-missing",
+      "profile": "A",
+      "type": "verify",
+      "description": "No timestamp statement was supplied and the verifier has not opted out of freeze protection.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": null,
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "TIMESTAMP_MISSING"
+    },
+    {
+      "id": "A-reject-timestamp-digest-mismatch",
+      "profile": "A",
+      "type": "verify",
+      "description": "The timestamp statement attests a trust list digest other than the one held.",
+      "input": {
+        "payload": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991287768F295926901C4FA8C751C620B261BA887A0DE69D1E53386A5C4C114DA3F7532F9C051FF3FA46B10D2A9305B01918DF9416A70E838CD167EF126EB1F6BCDDB6304CA27"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "mismatchedDigest",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "TIMESTAMP_TARGET_MISMATCH"
+    },
+    {
+      "id": "B-accept-published-reference",
+      "profile": "B",
+      "type": "verify",
+      "description": "The published 381-character reference payload, produced by a different deflate implementation. Deflate is not canonical, so conformance requires that this decodes and verifies, not that an encoder reproduces it byte for byte.",
+      "input": {
+        "payload": "KH1:NCFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0I9BEX D3/1566DSCK3RN$DY/AQQBV-HH.CMX25ONQQRQMUGX2L*BWU7B/464P926/JTNVGRJJLRNDEV7/7O1H7GS++E9:L.+T6.ENKT300U0V61"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null,
+      "accepted": {
+        "kid": "27403764C95F4F5B",
+        "subjectName": "CHAY SOPHEA",
+        "documentId": "RUPP-2026-004821",
+        "issuingOrganisation": "Royal University of Phnom Penh",
+        "issueDate": "2026-07-15"
+      }
+    },
+    {
+      "id": "B-accept-canonical",
+      "profile": "B",
+      "type": "verify",
+      "description": "A credential produced by this implementation over the same claims.",
+      "input": {
+        "payload": "KH1:6BFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0I.8C4MRWUH2 F9G8HYU%1O+BOH+RK8PUFCECG$XV6:L6:3W.CVZQ*3MS%FN+96FSO8J GF6 8K%HH%T30K96E+LI:KPAIL8H6LA8+UOC10K6KJ2"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null,
+      "accepted": {
+        "kid": "27403764C95F4F5B",
+        "subjectName": "CHAY SOPHEA",
+        "documentId": "RUPP-2026-004821"
+      }
+    },
+    {
+      "id": "B-reject-deflate-raw",
+      "profile": "B",
+      "type": "verify",
+      "description": "Compressed with deflate-raw rather than zlib-wrapped deflate. The byte stream differs and must not inflate.",
+      "input": {
+        "payload": "KH1: 70P30FFWTWGSLKC 4L59E58GXC92CBQB7O9PVDKPC59DSVD5$C27BO7RFTTFIFQJN-3S+4V8E559LR2486OC*4PEH%*D%:O%GVZ53 3708Q8SKNWHW03Y*CB4O9QOWPM+HK4PP NDZI9M6R -M7ZA"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "INFLATE_FAILED"
+    },
+    {
+      "id": "B-reject-https-payload",
+      "profile": "B",
+      "type": "verify",
+      "description": "An https URL where a credential belongs. This profile never carries a URL: doing so would move the trust decision into a browser and ask the user to judge a domain name.",
+      "input": {
+        "payload": "https://verify.example.gov.kh/c/RUPP-2026-004821"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "URL_PAYLOAD_REJECTED"
+    },
+    {
+      "id": "B-reject-bad-prefix",
+      "profile": "B",
+      "type": "verify",
+      "description": "A payload without the KH1: prefix.",
+      "input": {
+        "payload": "HC1:6BFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0I.8C4MRWUH2 F9G8HYU%1O+BOH+RK8PUFCECG$XV6:L6:3W.CVZQ*3MS%FN+96FSO8J GF6 8K%HH%T30K96E+LI:KPAIL8H6LA8+UOC10K6KJ2"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "PREFIX_INVALID"
+    },
+    {
+      "id": "B-reject-base45-alphabet",
+      "profile": "B",
+      "type": "verify",
+      "description": "A character outside the RFC 9285 alphabet.",
+      "input": {
+        "payload": "KH1:NCFOXN%TSMAHN-H3Q8DJO;;"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "BASE45_INVALID"
+    },
+    {
+      "id": "B-reject-tampered",
+      "profile": "B",
+      "type": "verify",
+      "description": "A character altered inside the compressed COSE structure.",
+      "input": {
+        "payload": "KH1:6BFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0I.8C4MRWUH2 F9G8HYU%1O+BOH+RK8PUFCECG$XV6:L6:3W.CVZQ*3MS%FN+96FSO8J GF6 8K%HH%T30K96E+LI:KPAIL8H6LAA+UOC10K6KJ2"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": null
+    },
+    {
+      "id": "B-reject-unknown-kid",
+      "profile": "B",
+      "type": "verify",
+      "description": "Signed by a key that is not in the trust list.",
+      "input": {
+        "payload": "KH1:6BFOXN%TSMAHN-HTUGM5Q+ACW H58QHV8:QB09BX-JO7J64C26JG8A% LEUJ:IBH PQ-I:LPT84L*KR0Q4/QNHPJW6LY4.24OQ6*882HPLEPHCRSGO4SO$66S47VZRJUOAHA9FRRGO$.QH9528OQ$5V7OFA6+84G16FT5:BL/VMAHA508K847K4F08K84PW6HK4 N62P4IKCELNBIK6IA8-8MNGZIKWY8DOK5NHD+GKJM*PL3FC.GJ/LER.KHHJXJAEHFXIMLLEVXOLLTEXKBW5IZLP%ERYSHD9RBQ*I04-8/026+F$3OPE7TKRB%VH+LCZT5-HKZHWE7KVC-QSS211UV04A6PS2QAFU2ZM47UMVYETTV3H0UJGRCB"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "UNKNOWN_KID"
+    },
+    {
+      "id": "B-reject-revoked-key",
+      "profile": "B",
+      "type": "verify",
+      "description": "Signed by a revoked key.",
+      "input": {
+        "payload": "KH1:6BFOXN%TSMAHN-HFP82D7B-F-.K7AUHV8:QB09BX-JO7J64C26JG8A% LEUJ:IBH PQ-I:LPT84L*KR0Q4/QNHPJW6LY4.24OQ6*882HPLEPHCRSGO4SO$66S47VZRJUOAHA9FRRGO$.QH9528OQ$5V7OFA6+84G16FT5:BL/VMAHA508K847K4F08K84PW6HK4 N62P4IKCELNBIK6IA8-8MNGZIKWY8DOK5NHD+GKJM*PL3FC.GJ/LER.KHHJXJAEHFXIMLLE5Q8+ 3JSMTQUFN55UJ74S0929Q5.Y9MU5W8D.G3L8NS3J.UT-Z7XYP.I8MS1LT49U6SX5%S3UMNU%B.OV9Y9H2O:3NT8T DTTN2R6OQ3V%7B"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "reject",
+      "reason": "KEY_REVOKED"
+    },
+    {
+      "id": "A-roundtrip-dynamic",
+      "profile": "A",
+      "type": "roundtrip",
+      "description": "Sign, then verify the implementation's own output. ECDSA is randomised, so a fresh signature differs from any fixed vector and must still verify.",
+      "input": {
+        "base": "00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH",
+        "issuerScalar": "1F2E3D4C5B6A79889796A5B4C3D2E1F00F1E2D3C4B5A69788897A6B5C4D3E2F1",
+        "kid": "27403764C95F4F5B",
+        "issuedAt": 1756512000,
+        "expiresAt": 1756512060,
+        "payeeClass": "M"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null
+    },
+    {
+      "id": "A-roundtrip-static",
+      "profile": "A",
+      "type": "roundtrip",
+      "description": "Sign and verify a static code.",
+      "input": {
+        "base": "00020101021130310011abaakhppxxx01128550123456785204581253031165802KH5908SOK DARA6010PHNOM PENH",
+        "issuerScalar": "1F2E3D4C5B6A79889796A5B4C3D2E1F00F1E2D3C4B5A69788897A6B5C4D3E2F1",
+        "kid": "27403764C95F4F5B",
+        "issuedAt": 1756512000,
+        "payeeClass": "I"
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null
+    },
+    {
+      "id": "B-roundtrip-credential",
+      "profile": "B",
+      "type": "roundtrip",
+      "description": "Encode, sign, then decode and verify a credential.",
+      "input": {
+        "issuerScalar": "1F2E3D4C5B6A79889796A5B4C3D2E1F00F1E2D3C4B5A69788897A6B5C4D3E2F1",
+        "kid": "27403764C95F4F5B",
+        "claims": {
+          "issuer": "kh.gov.mptc.moeys",
+          "issuedAt": 1756512000,
+          "documentType": "DEGREE",
+          "documentId": "RUPP-2026-004821",
+          "subjectName": "CHAY SOPHEA",
+          "issuingOrganisation": "Royal University of Phnom Penh",
+          "issueDate": "2026-07-15",
+          "documentHash": "3108aa7d48933e51b68cf9366bb7c32c"
+        }
+      },
+      "state": {
+        "trustList": "current",
+        "timestamp": "current",
+        "now": 1756512030
+      },
+      "expect": "accept",
+      "reason": null
+    }
+  ]
+}
