@@ -1,0 +1,149 @@
+@techreport{emvco2017mpm,
+  author      = {{EMVCo}},
+  title       = {{EMV QR Code Specification for Payment Systems: Merchant-Presented Mode}},
+  institution = {EMVCo, LLC},
+  number      = {Version 1.1},
+  year        = {2017},
+  note        = {Specifies the ID/Length/Value payload structure, two-digit length fields with values ``01'' to ``99'', the unreserved template range 80--99, and the requirement that a Globally Unique Identifier appear at ID ``00'' within an unreserved template}
+}
+
+@techreport{rfc9285,
+  author      = {Faltstrom, P. and Ljunggren, F. and van Gulik, D. W.},
+  title       = {{The Base45 Data Encoding}},
+  institution = {RFC Editor},
+  number      = {RFC 9285},
+  year        = {2022},
+  doi         = {10.17487/RFC9285}
+}
+
+@techreport{rfc1950,
+  author      = {Deutsch, P. and Gailly, J.-L.},
+  title       = {{ZLIB Compressed Data Format Specification version 3.3}},
+  institution = {RFC Editor},
+  number      = {RFC 1950},
+  year        = {1996},
+  doi         = {10.17487/RFC1950}
+}
+
+@techreport{rfc1951,
+  author      = {Deutsch, P.},
+  title       = {{DEFLATE Compressed Data Format Specification version 1.3}},
+  institution = {RFC Editor},
+  number      = {RFC 1951},
+  year        = {1996},
+  doi         = {10.17487/RFC1951}
+}
+
+@techreport{rfc9052,
+  author      = {Schaad, J.},
+  title       = {{CBOR Object Signing and Encryption (COSE): Structures and Process}},
+  institution = {RFC Editor},
+  number      = {RFC 9052},
+  year        = {2022},
+  doi         = {10.17487/RFC9052}
+}
+
+@techreport{rfc9053,
+  author      = {Schaad, J.},
+  title       = {{CBOR Object Signing and Encryption (COSE): Initial Algorithms}},
+  institution = {RFC Editor},
+  number      = {RFC 9053},
+  year        = {2022},
+  doi         = {10.17487/RFC9053}
+}
+
+@techreport{rfc8949,
+  author      = {Bormann, C. and Hoffman, P.},
+  title       = {{Concise Binary Object Representation (CBOR)}},
+  institution = {RFC Editor},
+  number      = {STD 94, RFC 8949},
+  year        = {2020},
+  doi         = {10.17487/RFC8949}
+}
+
+@techreport{webcrypto,
+  author      = {Watson, M.},
+  title       = {{Web Cryptography API}},
+  institution = {W3C},
+  type        = {W3C Recommendation},
+  year        = {2017},
+  url         = {https://www.w3.org/TR/WebCryptoAPI/},
+  note        = {ECDSA signature values are the P1363 concatenation of $r$ and $s$, not a DER structure}
+}
+
+@techreport{fips1865,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {{Digital Signature Standard (DSS)}},
+  institution = {NIST},
+  number      = {FIPS PUB 186-5},
+  year        = {2023},
+  doi         = {10.6028/NIST.FIPS.186-5}
+}
+
+@techreport{iso18004,
+  author      = {{International Organization for Standardization}},
+  title       = {{Information technology --- Automatic identification and data capture techniques --- QR Code bar code symbology specification}},
+  institution = {ISO/IEC},
+  number      = {ISO/IEC 18004:2015},
+  year        = {2015}
+}
+
+@techreport{eudcc2021,
+  author      = {{European Commission}},
+  title       = {{Commission Implementing Decision (EU) 2021/1073 laying down technical specifications and rules for the implementation of the trust framework for the EU Digital COVID Certificate}},
+  institution = {Official Journal of the European Union},
+  number      = {L 230/32},
+  year        = {2021},
+  url         = {https://eur-lex.europa.eu/eli/dec_impl/2021/1073/oj},
+  note        = {Specifies the CBOR/COSE payload, zlib compression per RFC 1950, base45 encoding and the ``HC1:'' context identifier}
+}
+
+@misc{tufspec,
+  author       = {{The Update Framework}},
+  title        = {{The Update Framework Specification}},
+  howpublished = {\url{https://theupdateframework.github.io/specification/latest/}},
+  year         = {2024},
+  note         = {Defines the root, targets, snapshot and timestamp roles; the timestamp role's short validity is the defence against indefinite freeze attacks, and version monotonicity the defence against rollback}
+}
+
+@inproceedings{schechter2007emperor,
+  author    = {Schechter, Stuart E. and Dhamija, Rachna and Ozment, Andy and Fischhoff, Baruch},
+  title     = {{The Emperor's New Security Indicators: An evaluation of website authentication and the effect of role playing on usability studies}},
+  booktitle = {Proceedings of the 2007 IEEE Symposium on Security and Privacy},
+  pages     = {51--65},
+  year      = {2007},
+  doi       = {10.1109/SP.2007.35}
+}
+
+@techreport{psr2024app,
+  author      = {{Payment Systems Regulator}},
+  title       = {{Faster Payments APP Scams: Reimbursement Requirement and Maximum Level of Reimbursement}},
+  institution = {Payment Systems Regulator (UK)},
+  year        = {2024},
+  note        = {Mandatory reimbursement in force from 7 October 2024 for in-scope Faster Payments and CHAPS payments; maximum reimbursement GBP 85{,}000; cost shared equally between sending and receiving payment service providers}
+}
+
+@techreport{nbc2024annual,
+  author      = {{National Bank of Cambodia}},
+  title       = {{Annual Report 2024}},
+  institution = {National Bank of Cambodia},
+  year        = {2025},
+  address     = {Phnom Penh}
+}
+
+@misc{sengtha2026csb,
+  author       = {Chay, Sengtha},
+  title        = {{Sovereign Hybrid Blockchains for Regulated DeFi: A Cambodia Design Case}},
+  year         = {2026},
+  month        = {July},
+  doi          = {10.5281/zenodo.21699053},
+  howpublished = {Zenodo preprint; code at \url{https://github.com/sengtha/CSB}}
+}
+
+@misc{khsqr2026repo,
+  author       = {Chay, Sengtha},
+  title        = {{KH-SQR: reference implementation and conformance vectors}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/sengtha/qrseal}},
+  note         = {Cited at tag v1.0.0. MIT licence}
+}

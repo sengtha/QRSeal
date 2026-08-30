@@ -1,0 +1,977 @@
+% !TEX program = pdflatex
+%
+% Signing the Instrument, Not the Transaction
+% Preprint. Comments welcome.
+%
+% Build:  latexmk -pdf main.tex
+%
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage[hidelinks,breaklinks]{hyperref}
+
+\hypersetup{
+  pdftitle={Signing the Instrument, Not the Transaction},
+  pdfauthor={Chay Sengtha},
+  pdfsubject={Layered trust failure in national QR payment systems},
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\title{\textbf{Signing the Instrument, Not the Transaction}\\[0.4em]
+  \large Layered trust failure in national QR payment systems,\\
+  with a reference implementation for Cambodia}
+
+\author{Chay Sengtha\thanks{National University of Management, Phnom Penh.
+Correspondence: \texttt{sengtha@gmail.com}.}}
+
+\date{August 2026\\[0.5em]\normalsize\emph{Preprint. Comments welcome.}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Cambodia's KHQR, the national EMVCo-based payment QR operated on the National
+Bank of Cambodia's Bakong system, has been adopted widely enough that the public
+now treats \emph{any} QR code as a payment instrument and extends to it the
+trust it holds in the central bank. Attackers exploit this in two ways that are
+routinely conflated: forgery, where a code is not what it claims to be, and
+deception, where a genuine code, correctly signed and payable to a correctly
+registered account, is presented under a false pretext.
+
+We specify and implement KH-SQR, a signature scheme for both payment codes and
+document credentials, and we use it as evidence for a claim about where its own
+assurance stops. Cryptography closes forgery completely and does not touch
+deception at all, because a control enforced at one layer does not govern
+meaning created at the layer above it. Signing the code secures the instrument;
+it cannot secure the transaction, because the deception occurs one layer up, in
+the person. This is the same shape as the central finding of our earlier work on
+sovereign hybrid blockchains, where base-layer identity secured custody of an
+asset but not exposure to it, because the derivative claim was minted above the
+enforcement point.
+
+The contribution is threefold: a four-layer decomposition of QR payment trust
+that locates precisely where cryptographic assurance ends; a working,
+MIT-licensed reference implementation with a language-neutral conformance suite
+of forty cases, thirty-one of them negative; and an explicit account of what the
+design does not achieve and why each residual risk is unreachable from the code
+layer. We report two respects in which our own deployment and container fail to
+meet the specification's stated requirements, and we treat the absence of
+Cambodia-specific incident data as a finding rather than a gap to be filled with
+vendor figures.
+\end{abstract}
+
+\medskip
+\noindent\textbf{Keywords:} QR payments, authorised push payment fraud, digital
+signatures, trust boundaries, EMVCo, Cambodia, layered security.
+
+\section{Introduction}
+
+A QR code is a picture of some bytes. Nothing about the picture indicates who
+produced it, and nothing about the act of scanning it indicates why. Both facts
+are obvious when stated and neither is available to a person holding a phone in
+front of a printed square in a market.
+
+Cambodia is an unusually clear case of what follows. KHQR, the national
+merchant-presented payment standard operated on the National Bank of Cambodia's
+Bakong system, has succeeded on a scale that is easy to understate: the NBC
+reports 608.32 million Bakong transactions in 2024, and roughly 4.5 million
+accounts registered for KHQR payments by the end of that year, a 36.4 per cent
+increase over 2023 \citep{nbc2024annual}. Payment by QR is not a niche
+behaviour in Cambodia; for a large part of the population it is simply what
+paying is.
+
+That success has a second-order effect which is the subject of this paper. When
+a single visual form becomes synonymous with a single action, the form stops
+carrying information. ``QR'' and ``payment'' have collapsed into one another in
+public understanding, and with them ``QR'' and ``sanctioned by the central
+bank''. The result is a divergence between two boundaries that a designer would
+like to coincide:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item the \textbf{trust boundary}: the set of artefacts whose provenance the
+    NBC and its participants actually control and can vouch for;
+  \item the \textbf{credulity boundary}: the set of artefacts to which the
+    public extends the trust it holds in the NBC.
+\end{itemize}
+
+\noindent The second is much larger than the first, and it is the difference
+between them that attackers operate in. A sticker over a merchant's code is
+inside the gap. So is a printed code on a leaflet claiming to verify a document.
+So, crucially, is a completely genuine KHQR presented with a false story
+attached.
+
+Signing the codes closes part of this gap and, we will argue, exactly the part
+that is easiest to close and least often exploited. The rest is not a
+cryptographic problem, and the central claim of this paper is that it cannot be
+made into one:
+
+\begin{quote}
+\emph{A control enforced at one layer does not govern meaning created at the
+layer above it.}
+\end{quote}
+
+\noindent Instantiated here: a signature proves who issued a code and cannot
+address why the payer scanned it. We regard this as a general result about
+layered systems rather than a local observation about Cambodia, and
+Section~\ref{sec:general} argues the generalisation, including its relationship
+to the custody/exposure finding in our earlier work on regulated DeFi
+\citep{sengtha2026csb} and its applicability to other real-time push-payment
+markets.
+
+We are deliberate about what this paper is not. It is not a claim to have solved
+QR phishing. A reviewer who finishes it believing that has been given the wrong
+paper, and we have written Section~\ref{sec:notachieved} --- the longest
+substantive section --- to make that reading difficult.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.6em]
+  \item A four-layer decomposition of QR payment trust (Section~\ref{sec:layers})
+    in which each layer's residual risk motivates the next, and in which the
+    boundary between layers two and three is identified as the point where
+    cryptography stops.
+  \item KH-SQR: a specification and a working, MIT-licensed reference
+    implementation covering a payment profile bound to EMVCo payloads and a
+    standalone credential profile, with a language-neutral conformance suite of
+    forty cases, thirty-one negative \citep{khsqr2026repo}.
+  \item An explicit account of the residual risk (Section~\ref{sec:notachieved}),
+    explaining for each item \emph{why} it is unreachable from the code layer
+    rather than merely noting that it is, and an institutional-layer design
+    (Section~\ref{sec:institutional}) that addresses part of it by
+    non-cryptographic means.
+  \item Two honest negative results about our own work: the reference deployment
+    does not satisfy the mirror-independence requirement the specification
+    itself states, and the signature container is not transparent to a strict
+    EMVCo parser as the design's premise assumed.
+\end{enumerate}
+
+\paragraph{On evidence.}
+There is no reliable Cambodia-specific data on QR-code fraud. We searched for
+it and did not find it, and we regard that absence as a finding worth stating
+(Section~\ref{sec:data}) rather than a gap to be papered over with the vendor
+figures currently in circulation. Where we make a technical claim, it is
+supported either by a citation to a primary specification or by an artefact in
+the repository that a reader can execute.
+
+\section{Background}
+\label{sec:background}
+
+\subsection{KHQR and Bakong}
+
+KHQR follows the EMVCo merchant-presented QR specification
+\citep{emvco2017mpm}, which defines a payload as a flat sequence of
+ID/Length/Value data objects. Both the ID and the Length are two decimal
+digits; a Length ranges from ``01'' to ``99'', so no single data object may
+carry more than 99 characters of value. The payload ends with a CRC-16 in tag
+\code{63}. IDs \code{80} to \code{99} are ``unreserved templates'', available
+for payment systems and value-added service providers to place their own data,
+each required to carry a Globally Unique Identifier at sub-tag \code{00} that
+establishes the template's namespace. These details matter to
+Section~\ref{sec:design} and, uncomfortably for us, to
+Section~\ref{sec:container}.
+
+Bakong is the settlement layer beneath it. Its scale is documented in the NBC's
+annual reporting \citep{nbc2024annual}; the property that matters for this
+paper is not scale but \emph{finality}. A KHQR payment is a push payment: the
+payer initiates and authorises a transfer to a payee, and once made it is
+final. There is no chargeback rail comparable to card networks'.
+
+\subsection{Irrevocability and the shape of the fraud economy}
+
+Irrevocability is a design virtue with consequences on both sides of the ledger.
+For merchants it removes chargeback risk and settlement delay, which is a
+substantial part of why acceptance costs are low enough for a market stall. For
+fraud it removes the recovery mechanism that card networks use to make deception
+partially reversible.
+
+The consequence is structural: in a push-payment system, an attacker who can
+persuade a victim to authorise a payment has already won, and no property of the
+payment instrument can undo it. Effort therefore migrates away from compromising
+the instrument and towards compromising the persuasion. This is not a
+prediction; it is the observed trajectory in every real-time push-payment market
+with published statistics, and it is why the United Kingdom eventually addressed
+its equivalent problem through liability allocation rather than instrument
+security \citep{psr2024app}.
+
+\subsection{The QR trust model, such as it is}
+
+The trust model a user actually operates with, when scanning a code, is roughly:
+\emph{this square was placed here by someone entitled to place it, and doing
+what it says is what I intended to do}. Neither clause is verifiable by
+inspection. A QR code is not human-readable; there is no equivalent of noticing
+that a URL is misspelled, because there is no visible URL.
+
+Existing mitigations largely attempt to move the decision into a channel the
+user can inspect --- displaying the destination domain before opening it, showing
+the payee name before confirming. These help, and Section~\ref{sec:notachieved}
+gives the empirical reason to expect them to help less than designers hope.
+
+\section{Threat decomposition}
+\label{sec:layers}
+
+We decompose the trust question into four layers. The decomposition is not
+merely descriptive: each layer's residual risk is what motivates the next, and
+the boundary between the second and third is the subject of the paper.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}p{0.13\linewidth}p{0.24\linewidth}p{0.26\linewidth}p{0.28\linewidth}@{}}
+\toprule
+\textbf{Layer} & \textbf{Question} & \textbf{Mechanism} & \textbf{Residual risk} \\
+\midrule
+1. Code authenticity &
+  Was this code produced by a registered issuer, unaltered? &
+  Digital signature over the payload; trust list; revocation &
+  The verifier itself may be counterfeit \\[0.4em]
+2. Verifier authenticity &
+  Is the application making the claim genuine? &
+  Application trust list; platform distribution; attestation &
+  A genuine verifier faithfully reports a genuine code paid to a criminal \\[0.4em]
+3. Payee legitimacy &
+  \emph{Should} this money go to this account? &
+  Registration controls; account risk lists; behavioural analytics &
+  Legitimacy is a fact about intent and history, not about bytes \\[0.4em]
+4. Recovery &
+  What happens after a loss? &
+  Liability allocation; reimbursement; freeze and recall procedures &
+  Recovery is partial, slow, and after the fact \\
+\bottomrule
+\end{tabular}
+\caption{Four layers of QR payment trust. Cryptography is decisive at layers~1
+and~2 and silent at layers~3 and~4.}
+\label{tab:layers}
+\end{table}
+
+\paragraph{Layer 1 --- code authenticity.}
+Solvable, and solved by the design in Section~\ref{sec:design}. A signature over
+the payload, verified against a trust list rooted in an offline key, establishes
+that a registered issuer produced exactly these bytes. Within the standard
+cryptographic threat model this is complete: an attacker cannot forge a
+signature, and any modification invalidates one.
+
+\paragraph{Layer 2 --- verifier authenticity.}
+Partially solvable. A signature is only as useful as the software reporting it,
+and a counterfeit wallet that draws a green tick for every code defeats layer~1
+entirely without breaking any cryptography. Mitigations exist --- an application
+trust list, platform distribution channels, device attestation --- and all of them
+are weaker than layer~1's, because they depend on the user having obtained the
+verifier through a trustworthy path.
+
+\paragraph{The boundary.}
+Between layers~2 and~3 the question changes kind. Layers~1 and~2 ask whether an
+artefact is what it claims to be: a question about bytes, with a decidable
+answer, computable offline from the artefact and a public key. Layer~3 asks
+whether a payment \emph{ought} to be made: a question about intent, history and
+context, whose answer is not a function of the artefact at all.
+
+No amount of additional signing crosses this boundary, because there is nothing
+on the far side to sign. A genuine merchant's code, correctly signed, remains
+correctly signed when a criminal photographs it and pastes it onto a fake
+utility-bill notice. Every byte is authentic. The fraud is entirely in the
+sentence printed above the square.
+
+\paragraph{Layer 3 --- payee legitimacy.}
+Not solvable at the code layer, addressable in part at the institutional layer
+by mechanisms that are emphatically not cryptography: registration controls,
+account risk lists, behavioural detection. Section~\ref{sec:institutional}
+specifies our contribution here.
+
+\paragraph{Layer 4 --- recovery.}
+Not a security control at all but an allocation of loss. Its design determines
+who bears the cost of the residue the first three layers leave, and therefore
+who has the incentive to reduce it.
+
+\section{Design}
+\label{sec:design}
+
+KH-SQR defines two profiles. The full normative text is in the repository's
+\code{SPEC.md} \citep{khsqr2026repo}; we describe here the decisions that carry
+argumentative weight.
+
+\subsection{Profile A: payment}
+
+Profile A adds a signature to an existing EMVCo merchant-presented payload using
+template \code{85} from the unreserved range, carrying a format version, a key
+identifier, an algorithm identifier, an issuance time, an optional expiry, a
+payee class, and a 128-character signature at sub-tag \code{99}.
+
+\paragraph{The signing input is a prefix.}
+The signed region is defined as the ASCII octets of the payload from position
+zero up to \emph{and including} the five characters \code{99128} --- sub-tag
+\code{99}'s tag and its length declaration --- excluding the signature itself and
+the trailing CRC. Two ordering rules make this well defined: template \code{85}
+must be the last data object before the CRC, and sub-tag \code{99} must be last
+within it.
+
+The consequence is that a verifier recovers the signed region with a substring
+operation and never by re-serialising parsed fields. There is no canonical form
+for two implementations to disagree about, and therefore no canonicalisation
+step in which to have a bug. This is the single most important structural
+decision in the design, and it is a deliberate rejection of the pattern --- parse,
+normalise, re-serialise, verify --- that has produced a long history of signature
+bypasses in XML, JSON and JWT processing.
+
+\paragraph{Raw signatures, not DER.}
+Signatures are the P1363 concatenation $r \Vert s$, 64 bytes, rendered as 128
+uppercase hexadecimal characters. DER is prohibited. DER's length is variable,
+which would defeat the fixed-offset property above, and DER length parsing is
+itself a recurring source of defects. The choice also happens to eliminate a
+conversion step entirely on the Web Crypto platform, whose ECDSA operations
+consume and produce exactly this representation \citep{webcrypto,fips1865}.
+
+\paragraph{Uppercase hexadecimal, not base64.}
+QR alphanumeric mode encodes two characters in 11 bits and admits only digits,
+uppercase letters, space and eight further punctuation marks
+\citep{iso18004}. A single lowercase character forces a byte-mode segment at 8
+bits per character. Base64's mixed case would therefore enlarge every signed
+symbol.
+
+\paragraph{Static and dynamic codes.}
+A dynamic code carries an expiry no more than 300 seconds after issuance. A
+static code carries no amount, so that a printed sticker cannot be given a
+figure the merchant did not choose.
+
+\subsection{Profile B: credential}
+
+Profile B signs a document attestation as a standalone payload:
+\[
+\text{claims (CBOR)} \rightarrow \text{COSE\_Sign1 (ES256)} \rightarrow
+\text{deflate (zlib)} \rightarrow \text{base45} \rightarrow \text{prefix
+\code{KH1:}}
+\]
+
+The pipeline is the EU Digital COVID Certificate's, with a different prefix and
+claim set \citep{eudcc2021,rfc9052,rfc9053,rfc8949,rfc1950,rfc1951,rfc9285}. We
+say this plainly because the originality of this work is not in the primitives
+or the pipeline; it is in the composition and in the analysis of what the
+composition cannot do. Base45 rather than base64 for the same alphanumeric-mode
+reason as above --- the choice the DCC made, for the same reason.
+
+\paragraph{Excluding URL carriers.}
+A Profile B payload must not be an \code{http} or \code{https} URL, and a
+verifier must reject one. This is a design constraint, not an omission. A
+URL-bearing QR relocates the trust decision into a browser and asks the user to
+judge a domain name, which is the judgement that Section~\ref{sec:notachieved}
+gives empirical reason to believe people do not reliably make. Our
+implementation exposes this check as a function intended to be applied to
+\emph{every} scanned code, not only to KH-SQR ones.
+
+\paragraph{The transplant attack, enforced in the API shape.}
+A valid signature proves a credential was issued. It does not prove the
+credential belongs to the paper it is printed on. A genuine QR code photographed
+from a real degree certificate and printed onto a forged one verifies perfectly,
+because nothing about the paper is signed.
+
+The only defence is comparison of the signed fields against the visible
+document, and a defence that depends on a caller remembering to perform it will
+not be performed. The specification therefore constrains the API rather than
+merely advising: verification must return a structure carrying the subject name,
+document identifier, issuing organisation and issue date in a form the caller
+must handle; it must not return a boolean; and it must not expose an
+\code{isValid} accessor by which a caller could reach a verdict without them. In
+the reference implementation the field is named \code{mustMatchPrintedDocument},
+and a test asserts that no boolean member exists on the result type --- so that a
+later refactor adding a convenience accessor fails the build rather than
+silently removing the only defence.
+
+\subsection{Trust hierarchy and the fail-closed verifier}
+
+Keys are identified by the first eight bytes of SHA-256 over the uncompressed
+public point. The identifier is a lookup hint and never an authenticator: a
+verifier encountering two trust-list entries with the same identifier must try
+both and accept only on a signature that verifies.
+
+The trust list is signed by an offline Root and carries a monotonic version and
+an expiry. A verifier must reject a list numbered below the one it holds
+(rollback), must stop verifying once its cached copy exceeds thirty days
+(staleness), and must reject when the freshest \emph{timestamp statement} has
+expired.
+
+The timestamp statement is a separate signed object with a seven-day validity,
+naming the current trust list's version and digest. It exists because expiry
+alone does not defend against an attacker who can withhold updates: a hostile
+network can pin a verifier to an old but still-valid list, so that a key revoked
+yesterday keeps verifying. This is TUF's timestamp role, adopted for the same
+reason TUF has it and cited as such \citep{tufspec}. The verifier fails closed:
+absent a fresh timestamp statement it stops verifying rather than falling back
+on what it holds.
+
+Verification performs no network access. Everything it needs is supplied by the
+caller. A verifier that fetched during verification could be stalled or steered
+by whoever controls the network at the moment of payment, who at a market stall
+is not a trustworthy party. The repository asserts this with a test that
+poisons every network global and verifies both reference payloads successfully.
+
+\subsection{No signing key at the edge}
+
+The serving infrastructure holds no private key of any kind. The Root signs
+offline in a ceremony; issuer keys live in each institution's hardware security
+module; the timestamp statement is produced by a signer outside the serving
+infrastructure and uploaded. The registry service accepts certificate signing
+requests and queues them; it cannot issue.
+
+This is specification rather than caution: certificate issuance must be
+impossible through compromise of the online portal. Because the property is
+invisible in the type system and easy to lose in a refactor, it is enforced by a
+continuous-integration check that fails if a signing key appears in any service
+configuration or source, and we verified that the check fails on a deliberately
+introduced violation rather than merely passing on the current tree.
+
+\section{Implementation and measurement}
+\label{sec:implementation}
+
+The reference implementation is TypeScript in strict mode, using the Web
+Cryptography API exclusively \citep{webcrypto}, with the services deployed as
+Cloudflare Workers. It is MIT licensed \citep{khsqr2026repo}.
+
+\subsection{Dependency isolation}
+
+Profile A's transitive import graph reaches six modules and depends on nothing
+beyond Web Crypto: no CBOR, no stream APIs, no packages. The intent is
+embeddability --- a mobile wallet should be able to take payment verification and
+nothing else, with no polyfill. Profile B additionally uses CBOR and
+\code{DecompressionStream}, which is acceptable because Profile B verifiers are
+institutional (desktop and web) rather than consumer handsets. A build check
+enforces the split and, like the key check, was verified to fail on an
+introduced violation.
+
+The CBOR codec is hand-written and covers only the fixed claim shapes in use. A
+general CBOR library is a large audit surface on a security-critical path for no
+benefit at this payload complexity. The decoder is deliberately strict ---
+definite lengths only, minimal integer encodings only, no floating point, no
+duplicate map keys, no trailing bytes --- because every construct accepted is a
+construct an attacker may use to make two parsers disagree about the same bytes.
+It is differentially fuzzed against an independent implementation in continuous
+integration.
+
+\subsection{Conformance suite}
+
+The conformance suite is the artefact we expect to outlast the TypeScript. It is
+a single JSON file of forty cases, thirty-one of them negative, each carrying an
+identifier, a profile, a case type, an input, the trust state and time at which
+it is evaluated, the expected outcome and, for a rejection, the expected
+machine-readable reason. A Kotlin or Swift port can demonstrate conformance
+without reading any of our code.
+
+The negative cases are the substance. An implementation that accepts a
+well-formed payload has demonstrated very little; one that rejects a
+DER-encoded signature, a data object appended after the signature template, a
+sub-tag appended after the signature, a byte mutated inside the signed region, a
+byte mutated \emph{outside} it, an expired dynamic code, a static code carrying
+an amount, an unknown key identifier, a revoked key, a rolled-back trust list, a
+trust list past its cache age, an expired timestamp statement, an
+\code{https} payload and a \code{deflate-raw} compression --- each for the correct
+stated reason --- has demonstrated most of the specification.
+
+Two case types are distinguished. A \emph{verify} case asserts that a recorded
+payload produces a stated outcome. A \emph{roundtrip} case asserts that the
+implementation can verify its own output. The distinction is necessary because
+neither ECDSA nor DEFLATE is canonical: signing the same input twice yields
+different signatures, and two conforming compressors produce different bytes. We
+therefore require that the published Profile B payload \emph{decodes and
+verifies}, not that an encoder reproduces it.
+
+\subsection{Symbol size measurement}
+\label{sec:measurement}
+
+Table~\ref{tab:qr} reports measured QR symbol requirements at error-correction
+level M. The measurements are generated by a script in the repository rather
+than transcribed.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrlp{0.3\linewidth}@{}}
+\toprule
+\textbf{Payload} & \textbf{Chars} & \textbf{Version} & \textbf{Modules} & \textbf{Encoding mode} \\
+\midrule
+Unsigned KHQR baseline        & 111 &  5 & $37\times37$ & numeric + byte + alphanumeric \\
+Profile A signed              & 317 & 10 & $57\times57$ & numeric + byte + alphanumeric \\
+Profile B credential          & 381 & 12 & $65\times65$ & alphanumeric \\
+\addlinespace
+Unsigned, uppercase acquirer id & 111 &  5 & $37\times37$ & numeric + alphanumeric \\
+Profile A, uppercase acquirer id & 317 & 10 & $57\times57$ & numeric + alphanumeric \\
+\bottomrule
+\end{tabular}
+\caption{Measured QR symbol requirements, error-correction level M
+\citep{iso18004}. Generated by \code{tools/measure-qr.ts}.}
+\label{tab:qr}
+\end{table}
+
+Signing takes a merchant payment code from version~5 to version~10: a 54 per
+cent increase in linear dimension and 2.4 times the module count. The cost is
+not abstract. At a fixed module size the printed sticker becomes larger; at a
+fixed sticker size the modules become smaller and scan less reliably on an
+inexpensive handset in poor light. It falls on merchants, who must reprint, and
+a scheme that requires every merchant in the country to reprint has an adoption
+problem that no amount of cryptographic elegance addresses.
+
+The measurement also records the encoding mode, which surfaces something the
+version alone conceals. The reference payload's acquirer identifier is
+lowercase, which forces a byte-mode segment; making it uppercase keeps the
+symbol alphanumeric throughout. At these lengths that does not change the
+version, so the finding is a caution against attributing the size cost to the
+wrong cause: the signature is what moves the symbol from version~5 to
+version~10, not the case of one field.
+
+Note that the EU DCC recommends error-correction level Q rather than M
+\citep{eudcc2021}; our measurements at level M are therefore not directly
+comparable to DCC symbol sizes, and a deployment choosing Q would see larger
+symbols than Table~\ref{tab:qr} reports.
+
+\subsection{The container is not legacy-transparent}
+\label{sec:container}
+
+The design's premise for using the unreserved template range was that existing
+applications would ignore the added template while conforming ones required it.
+\textbf{We report that this premise does not hold for a template of this size,
+and that our container deviates from EMVCo in two respects.}
+
+First, EMVCo length fields are exactly two decimal digits with a maximum value
+of 99 \citep{emvco2017mpm}. Template \code{85} carries 201 characters and
+sub-tag \code{99} carries 128. KH-SQR therefore declares both lengths in three
+digits. A strict legacy EMVCo parser reading tag \code{85} would interpret the
+first two of those digits as the length, consume 20 characters, misparse
+everything following, fail to find the CRC tag, and reject the payload
+outright --- rather than ignoring the template as intended.
+
+Second, EMVCo requires that an unreserved template carry a Globally Unique
+Identifier at sub-tag \code{00}, establishing the template's namespace
+\citep{emvco2017mpm}. KH-SQR uses sub-tag \code{00} for a format version, so
+template \code{85} does not identify itself in the way the specification
+prescribes.
+
+Neither deviation is a security defect: the length characters lie inside the
+signed prefix, so tampering with them invalidates the signature, and our
+verifier locates the signature by position rather than by any length field. But
+the deployment consequence is real and was not in the original design's
+reasoning. A national rollout must upgrade parsers, not merely signers, and the
+migration story is correspondingly harder. A future revision should place a
+genuine unique identifier at sub-tag \code{00} and move the format version
+elsewhere; that is a wire-format change we have not made, because it would
+invalidate the published reference vectors this work is cited against.
+
+We also record an erratum in the published vectors: the reference payload
+declares template \code{85}'s length as 200 where its content is 201 characters.
+The payload is retained unchanged as a verification vector, since its signature
+is valid and a conforming verifier accepts it; conforming signers emit the
+correct value.
+
+\subsection{Mirror independence is not satisfied}
+\label{sec:mirrors}
+
+The specification requires the trust list to be published at three mirrors under
+\emph{distinct operational control}. Our reference deployment places all three
+behind one provider.
+
+Anycast delivers availability, not operational independence. Three URLs on one
+provider share one account, one contractual relationship, one legal
+jurisdiction, and one governance failure. If that account is suspended,
+compromised, or subjected to a legal order, all three mirrors fail together, and
+the verifier population enters its fail-closed staleness path at once.
+
+\textbf{We therefore do not claim conformance to this clause}, and the service's
+own health endpoint reports that it does not. Meeting it requires at least two
+mirrors elsewhere --- the NBC's own infrastructure and a second commercial
+provider are the obvious candidates. We state this because a specification that
+requires operational independence and an implementation that quietly does not
+provide it is precisely the kind of gap that a deployment inherits without
+noticing.
+
+\section{What the design does not achieve}
+\label{sec:notachieved}
+
+This is the most important section of the paper. For each item we give the
+reason it is unreachable from the code layer, not merely the observation that it
+is.
+
+\subsection{Authorised push payment fraud}
+
+A criminal shows a victim a genuine KHQR --- their own, correctly registered,
+correctly signed --- with a false story: a refund to be released, a parcel to be
+cleared, a fee to be paid. The victim scans, reads the payee name, and
+authorises.
+
+\textbf{Why it is unreachable.} Every byte of the payload is authentic, and a
+correct implementation of this specification verifies it. There is no forgery to
+detect because nothing was forged. The falsehood exists in the sentence spoken
+or printed above the code, which is not part of the payload, is not available to
+the verifier, and could not be signed by anyone even in principle --- there is no
+party in a position to attest to the truth of an arbitrary claim about why a
+payment is owed.
+
+This is the layer boundary of Section~\ref{sec:layers} in its sharpest form. The
+control is enforced on the instrument; the deception is created in the
+interaction. One cannot govern the other because they are not the same kind of
+object.
+
+The design's only honest response is interface discipline: surfacing the payee
+to the payer, and refusing to let a verification result be reduced to a tick.
+Our specification makes both normative. We do not claim they are sufficient, and
+Section~\ref{sec:indicators} explains why we expect them to be less effective
+than they appear.
+
+\subsection{Registration abuse}
+
+A fraudster registers a merchant account using genuine documents --- their own, or
+a coerced or purchased identity --- and receives a genuine key. The codes they
+produce are correctly signed by a registered issuer, because that is exactly
+what they are.
+
+\textbf{Why it is unreachable.} The signature attests to an identity that is
+real. Its truthfulness is not in question; its \emph{legitimacy} is, and
+legitimacy is a fact about intent and history rather than about bytes. No
+property computable from the payload distinguishes a genuine merchant from a
+genuine criminal who completed the same registration process. The defence is
+know-your-customer quality and post-hoc detection, both of which live at layer~3
+and neither of which is cryptography.
+
+\subsection{Counterfeit verifiers}
+\label{sec:indicators}
+
+An application that shows a green tick for every code defeats the entire scheme
+without breaking any cryptography. An application trust list helps a diligent
+user check what they installed and does nothing for a user who installed the
+application from a link in a message.
+
+\textbf{Why it is unreachable, and why security indicators disappoint.} The
+relevant empirical result is Schechter et al.'s evaluation of website
+authentication indicators \citep{schechter2007emperor}. In a study of 67 bank
+customers, among the 25 participants who used their own accounts, 23 --- 92 per
+cent --- entered their passwords after the site-authentication image, which they
+had previously selected and were expected to verify, was removed and replaced
+with an upgrade message.
+
+We cite this precisely because it is the closest well-controlled evidence to the
+question at hand, and we note its limits: it studied website images rather than
+QR verification, in 2007, in a different population. It does not transfer
+automatically to Cambodian merchants in 2026. What it establishes is narrower
+and still decisive for design purposes: the \emph{absence} of a positive
+security indicator is not reliably noticed by users who have been trained to
+expect it. A scheme whose safety property is ``the user will notice when the
+tick is missing'' rests on an assumption that has been tested and did not hold.
+
+This is why the design excludes URL carriers rather than displaying domains
+prominently, and why the credential API refuses to expose a boolean. Both are
+attempts to avoid depending on a user noticing an absence.
+
+\subsection{Foreign and platform codes}
+
+Codes issued by systems outside the national trust hierarchy --- foreign wallets,
+international platforms, ticketing and loyalty systems --- cannot be verified.
+
+\textbf{Why it is unreachable, and why it is worse than it looks.} This is not
+merely a coverage gap; it actively damages layers~1 and~2. A verifier that
+displays ``unverified'' for the majority of codes a person encounters trains
+that person to proceed past the warning. The indicator's value decays in
+proportion to how often it fires benignly, which is the same mechanism that made
+browser certificate warnings ineffective. A national scheme that verifies only
+domestic codes may therefore leave users \emph{less} attentive than one that
+makes no claim at all --- a possibility we flag rather than resolve, since we have
+no data on it.
+
+\subsection{Summary}
+
+Layers~1 and~2 are the parts of the problem that cryptography addresses, and
+this design addresses them. Layers~3 and~4 are the parts that matter most in
+current Cambodian fraud, and it does not address them at all. Any presentation
+of this work that inverts that emphasis misrepresents it.
+
+\section{The institutional layer}
+\label{sec:institutional}
+
+Layer~3 is not reachable from the code, but it is not unreachable altogether. It
+is reachable from the institutions, and the mechanism is information sharing
+about accounts rather than signatures over codes.
+
+\subsection{Time-to-list as the operative metric}
+
+A mule account's useful life is short: it receives, it forwards, it is
+abandoned. The quantity that determines how much passes through it is the
+interval between the first institution recognising it and every other
+institution being able to act --- \emph{time-to-list}. Detection accuracy matters
+less than dissemination latency, because an accurate signal delivered after the
+funds have moved has no effect on the loss.
+
+This has an immediate architectural consequence, and it is the reason our risk
+list is not built on an eventually consistent store. An eventually consistent
+read leaves a window in which a just-listed account still reads clear, and that
+window is exactly when the account is being drained. The implementation
+therefore routes reads and writes for each account through a serialising object,
+with a durable database as the authority.
+
+\subsection{A hold is not a sanction}
+
+The design distinguishes two statuses, and the distinction is a matter of
+principle rather than granularity:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Restricted} --- a prudential hold. One institution's operational
+    judgement about its own exposure, taking effect immediately, expiring by
+    default after seventy-two hours unless renewed.
+  \item \textbf{Blocked} --- a standing assertion about an account, requiring
+    approval by a second officer before it takes effect.
+\end{itemize}
+
+Conflating them would let an operational reflex acquire the force of a penalty.
+A hold that never expires is a sanction imposed without process; the expiry is
+what keeps it a hold. Removal likewise requires two officers, in both
+directions, so that a single compromised or coerced credential can neither
+freeze money nor release it.
+
+\subsection{Expiry is evaluated when the status is read}
+
+Statuses carry a stored deadline compared against the clock when someone asks,
+and there is no sweep job. This is a deliberate choice about failure direction.
+A cron that fails to run would silently extend a restriction on a real person's
+account, and neither they nor the institution would observe anything wrong; the
+error is invisible and prejudicial. A deadline that has simply passed cannot
+fail in that direction.
+
+\subsection{Attribution, rate limiting and the audit record}
+
+Every write records the institution \emph{and} the individual officer, via
+per-officer mutual TLS credentials. An audit entry naming only an institution is
+not an audit entry: accountability requires that someone specific be nameable
+afterwards. The log is append-only, enforced by database triggers rather than by
+convention, and hash-chained so it can be exported as a file whose interior
+integrity is checkable without trusting the database it came from, and published
+to a transparency log later without redesign. Corrections are new rows.
+
+Writes are rate limited per institution and per officer, and sustained volume
+above a threshold is refused \emph{and} recorded as an incident rather than
+merely throttled. An institution listing thousands of accounts in an hour is
+compromised or misconfigured; neither condition is a reason to act on its
+assertions.
+
+\subsection{Liability allocation}
+
+The fourth layer is not a security control but an allocation of loss, and its
+design determines who has the incentive to reduce the residue.
+
+The United Kingdom's approach is the clearest available precedent. Since 7
+October 2024, in-scope authorised push payment scam victims must be reimbursed
+up to a maximum of GBP 85,000, with the cost shared equally between the sending
+and the receiving payment service provider \citep{psr2024app}. The equal split is
+the substantive design choice: it gives the receiving institution --- the one that
+opened the mule account and is best placed to detect it --- a direct financial
+interest in the quality of its own onboarding, which a sender-pays rule would
+not.
+
+We note the precedent rather than recommending its transplantation. Cambodia's
+market structure, dollarisation, and the balance between banks and payment
+institutions all differ, and a reimbursement cap calibrated to UK incomes has no
+meaning elsewhere. What transfers is the principle that liability should rest
+where the cheapest available control is, and that a scheme which leaves the
+entire loss with the payer has by construction allocated it to the party with
+the least ability to prevent it.
+
+We have not implemented anything at this layer. It is policy, and it is named
+here because a threat decomposition that stopped at layer~3 would misrepresent
+where the residual risk finally settles.
+
+\section{Generalisation}
+\label{sec:general}
+
+\subsection{The layer result}
+
+Stated generally: \emph{a control enforced at layer $n$ cannot govern semantics
+created at layer $n+1$.} A signature binds bytes to an issuer. If the harm is
+produced by the meaning a person attaches to those bytes, and that meaning is
+created above the signed layer, then no strengthening of the signature reduces
+the harm. Effort spent there is not merely insufficient; it is misdirected, and
+it carries the additional cost of producing an assurance that invites the
+inference it does not support.
+
+The diagnostic question for any proposed control is therefore not ``is this
+mechanism sound?'' but ``at which layer is the harmful meaning created, and is
+that at or below the layer where this mechanism is enforced?''
+
+\subsection{The parallel with custody and exposure}
+
+Our earlier work on sovereign hybrid blockchains for regulated DeFi reached the
+same shape by a different route \citep{sengtha2026csb}. Base-layer identity
+controls secured \emph{custody} of an asset --- who may hold and move it --- and did
+not secure \emph{exposure} to it, because the derivative claim conveying that
+exposure was minted one layer above the enforcement point. The identity control
+was correct and did what it said; the harm simply happened somewhere it did not
+reach.
+
+The correspondence is exact:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & \textbf{Regulated DeFi} \citep{sengtha2026csb} & \textbf{QR payments (this work)} \\
+\midrule
+Control        & Base-layer identity   & Signature over the code \\
+What it secures & Custody of the asset  & Authenticity of the instrument \\
+What it misses  & Exposure to the asset & The transaction, and its pretext \\
+Why             & Claim minted one layer above & Meaning created one layer above \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two independent domains producing the same failure shape is weak evidence for
+generality --- two cases is two cases --- but it is enough to motivate the
+diagnostic question above as a design practice.
+
+\subsection{Other push-payment markets}
+
+The analysis applies to any real-time push-payment system in which payments are
+irrevocable and initiated from a machine-readable artefact. India's UPI and
+Brazil's PIX share both properties, and both have contended with the same
+migration of attacker effort from instrument to persuasion. We do not claim
+detailed knowledge of either market's incident data and make no quantitative
+comparison. The structural point stands independently of the numbers: where
+payments are final and initiation is delegated to an artefact the user cannot
+read, securing the artefact is necessary and is not close to sufficient.
+
+\section{Data availability and the absence of Cambodian incident statistics}
+\label{sec:data}
+
+We are unable to report the prevalence of QR-code fraud in Cambodia, and we
+consider this worth stating explicitly.
+
+There is no published national incident dataset. The figures currently in
+circulation --- a widely syndicated claim of a 146 per cent quarter-on-quarter
+increase in ``quishing'' in the first quarter of 2026, and similar --- originate in
+vendor marketing material. They describe telemetry from the vendors' own
+customer bases, with undisclosed denominators, no stated methodology, and no
+Cambodian breakdown. They are not evidence for any claim in this paper and we do
+not rely on them; we mention them only because a reader will encounter them and
+should know why they are absent here.
+
+The absence itself is a finding. A payment system at the scale the NBC reports
+\citep{nbc2024annual} without public incident statistics cannot support
+evidence-based prioritisation: no party can demonstrate that forgery is rarer
+than deception, which is the very claim this paper argues on structural grounds
+and would prefer to argue on data. Establishing mandatory incident reporting for
+payment institutions, with published aggregates, would do more for the design of
+countermeasures than any cryptographic improvement to the codes --- including
+this one.
+
+Everything empirical in this paper is therefore either a citation to a primary
+specification or an artefact that a reader can execute
+\citep{khsqr2026repo}. The symbol measurements in Table~\ref{tab:qr} are
+produced by a script; the conformance claims are produced by a test suite; the
+architectural properties are asserted by continuous-integration checks that we
+verified fail on deliberately introduced violations.
+
+\section{Limitations}
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{No deployment, no field evaluation.} Nothing here has been
+    deployed with real merchants or real users. We report no usability data, no
+    scan-reliability data at the larger symbol sizes, and no adoption data.
+    Section~\ref{sec:measurement}'s claim that a larger symbol scans less well on
+    an inexpensive handset is a reasonable inference, not a measurement.
+
+  \item \textbf{Mirror independence is unmet.} Section~\ref{sec:mirrors}. The
+    implementation does not satisfy a requirement its own specification states.
+
+  \item \textbf{The container is not legacy-transparent.}
+    Section~\ref{sec:container}. Two deviations from EMVCo, one of which
+    invalidates the design's stated premise for the choice of template range.
+
+  \item \textbf{Not implemented.} The offline Root ceremony is specified but not
+    performed. Liability allocation (layer~4) is discussed and not implemented,
+    being policy rather than software. Device attestation for verifier
+    authenticity is named as a mitigation and not built. Cross-border trust-list
+    federation is out of scope entirely.
+
+  \item \textbf{Truncated key identifiers.} Eight bytes is a size choice, not a
+    collision-resistance claim. The specification requires verifiers to treat
+    the identifier as a hint and to try every candidate, which contains the
+    consequence, but an implementer who ignores that rule has a real bug.
+
+  \item \textbf{One implementation.} The conformance suite exists to enable
+    independent ports and has not yet been run against one. Until it has, the
+    suite tests our reading of our own specification.
+
+  \item \textbf{No formal verification, no external audit.} The parsers are
+    hand-written and differentially fuzzed, which is materially weaker than
+    either.
+
+  \item \textbf{The SiteKey evidence is analogical.}
+    Section~\ref{sec:indicators}. A 2007 study of website images in a
+    non-Cambodian population supports a narrow claim about unnoticed absent
+    indicators; it does not establish how Cambodian users respond to QR
+    verification interfaces, and we know of no study that does.
+\end{enumerate}
+
+\section{Conclusion}
+
+We set out to build a signature scheme for Cambodia's national QR payments and
+to say precisely what it achieves. It achieves the elimination of forgery: a
+code that verifies was produced by a registered issuer and has not been altered,
+and the reference implementation demonstrates this against a published
+conformance suite whose negative cases outnumber its positive ones.
+
+It achieves nothing whatever against the fraud that currently dominates. A
+genuine code, correctly signed and payable to a correctly registered account,
+presented with a false story, verifies --- and must. The deception is created one
+layer above the enforcement point, and no control at the lower layer reaches it.
+That is not a deficiency of this design but a property of layered systems, and
+the same property we found in a different domain when base-layer identity
+secured custody of an asset and left exposure to it untouched.
+
+The practical implication is uncomfortable for anyone hoping cryptography will
+settle the matter. The next marginal improvement in Cambodian QR fraud outcomes
+will not come from a better signature. It will come from shortening the interval
+between an institution recognising a mule account and every other institution
+being able to act on it; from allocating liability so that the party best placed
+to prevent a loss bears part of it; and, before either, from publishing incident
+data so that the prioritisation can be argued from evidence rather than, as
+here, from structure.
+
+We offer the artefact because the artefact is useful and the forgery layer
+genuinely needs closing. We offer the analysis because the artefact will be
+misread as doing more than it does, and the most valuable thing a specification
+can contain is an accurate statement of its own limits.
+
+\section*{Declarations}
+
+\paragraph{Funding.} This work received no external funding.
+
+\paragraph{Competing interests.} The author declares no competing interests.
+
+\paragraph{Data and code availability.} The reference implementation,
+conformance vectors, measurement scripts and specification are available at
+\url{https://github.com/sengtha/qrseal} under the MIT licence, cited at tag
+\texttt{v1.0.0} \citep{khsqr2026repo}. The published test key material is
+deliberately public and protects nothing. All tables and quantitative claims in
+this paper are reproducible from that repository.
+
+\paragraph{Disclaimer.} This is a preprint and has not been peer reviewed. It
+describes a research design and a reference implementation. It is not an
+endorsement by, nor produced in cooperation with, the National Bank of Cambodia
+or any operator of the Bakong system, and nothing in it should be read as a
+statement of their plans or positions. The implementation has not been
+independently audited and is not represented as fit for production deployment.
+Nothing here constitutes legal or regulatory advice.
+
+\paragraph{Generative AI disclosure.} Generative AI tools were used in the
+preparation of this work: for drafting and editing prose, for implementing and
+testing the reference code, and for locating candidate sources. All technical
+claims were verified by the author against primary specifications or by
+executing the accompanying artefacts; the test vectors were independently
+re-derived and confirmed; and the design decisions, the layer analysis and the
+argument are the author's. The author accepts full responsibility for the
+content, including any errors.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
