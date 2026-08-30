@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "pnpm -r --filter ./packages/** run build",
+    "build": "pnpm --filter \"@kh-sqr/core\" --filter \"@kh-sqr/cli\" run build",
     "typecheck": "tsc -b --force",
     "lint": "eslint .",
     "test": "vitest run",
