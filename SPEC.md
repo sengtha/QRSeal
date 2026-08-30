@@ -240,6 +240,27 @@ judgement the fraud pattern this design responds to shows people do not reliably
 make. An implementation SHOULD apply this check to every code it scans, not only
 to KH-SQR ones.
 
+**This clause is only half of the rule, and it is the weaker half.** A code
+scanned by the handset's native camera application never reaches this check, and
+that is how a great many codes are scanned. The check binds implementations; it
+cannot bind an attacker's printer.
+
+The other half is not technical and is stated here because a reader of this
+document should not have to infer it:
+
+> No licensed bank, payment institution, government body or telecommunications
+> operator should issue, publish or display a QR code whose payload is an
+> `http` or `https` URL.
+
+Enforced across the regulated perimeter, that prohibition empties the set of
+legitimate URL-bearing payment and official codes, which is what makes the
+corresponding public rule — *a QR code never opens a website; if a website
+opens, do not pay and do not enter your PIN, password, one-time code or personal
+details* — true rather than aspirational. The rule is deliberately categorical:
+a scoped version would require a person to classify a code before scanning it,
+and a QR code's class is not knowable until after it has been scanned. See the
+accompanying paper, §7.1.
+
 ### 3.3 The transplant attack, and the required API shape
 
 A valid Profile B signature proves the credential was issued. It does not prove
@@ -406,6 +427,10 @@ dropped.
 Stated here because an implementer who reads only the normative text should
 still encounter it.
 
+- **URL-bearing codes scanned outside a conforming verifier.** §3.2's check
+  runs only where this specification runs. A code scanned by the handset's
+  native camera application reaches no verifier at all. This is unreachable in
+  software and is addressed by the institutional prohibition in §3.2.
 - **Authorised push payment fraud.** A genuine code presented under a false
   pretext. Unreachable from the code layer: every byte is authentic. Addressed,
   partially and after the fact, by the institutional layer (Annex C) and by

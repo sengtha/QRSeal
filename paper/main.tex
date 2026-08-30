@@ -59,12 +59,17 @@ sovereign hybrid blockchains, where base-layer identity secured custody of an
 asset but not exposure to it, because the derivative claim was minted above the
 enforcement point.
 
-The contribution is threefold: a four-layer decomposition of QR payment trust
+The contribution is fourfold: a four-layer decomposition of QR payment trust
 that locates precisely where cryptographic assurance ends; a working,
 MIT-licensed reference implementation with a language-neutral conformance suite
-of forty cases, thirty-one of them negative; and an explicit account of what the
+of forty cases, thirty-one of them negative; an explicit account of what the
 design does not achieve and why each residual risk is unreachable from the code
-layer. We report two respects in which our own deployment and container fail to
+layer; and a constructive corollary --- that where a control cannot be enforced
+below the harm, it can be placed above it, by emptying the set of legitimate
+artefacts rather than authenticating the illegitimate ones. We give that
+corollary concretely as a categorical national prohibition on URL-bearing
+payment and official QR codes, paired with a public rule that requires no
+judgement to apply. We report two respects in which our own deployment and container fail to
 meet the specification's stated requirements, and we treat the absence of
 Cambodia-specific incident data as a finding rather than a gap to be filled with
 vendor figures.
@@ -148,6 +153,13 @@ substantive section --- to make that reading difficult.
     rather than merely noting that it is, and an institutional-layer design
     (Section~\ref{sec:institutional}) that addresses part of it by
     non-cryptographic means.
+  \item A policy instrument (Section~\ref{sec:categorical}) that reaches an
+    attack the software cannot: a categorical prohibition on URL-bearing QR
+    codes across the regulated perimeter, paired with an unconditional public
+    rule. We show that every software alternative fails at the same point ---
+    it requires a judgement before or during the scan --- and that the rule must
+    not be scoped, because scoping it would require the user to classify a code
+    before it is readable.
   \item Two honest negative results about our own work: the reference deployment
     does not satisfy the mirror-independence requirement the specification
     itself states, and the signature container is not transparent to a strict
@@ -680,6 +692,27 @@ domestic codes may therefore leave users \emph{less} attentive than one that
 makes no claim at all --- a possibility we flag rather than resolve, since we have
 no data on it.
 
+\subsection{The scan path: verification the user never invokes}
+\label{sec:scanpath}
+
+Every control in Section~\ref{sec:design} runs inside a conforming wallet. None
+of it runs when the code is scanned with the handset's native camera
+application, which is how a great many codes are in fact scanned --- a camera is
+already open, it recognises the square, and it offers to act on it.
+
+\textbf{Why it is unreachable.} The verifier cannot intervene in a scan it is
+never asked to perform. The exclusion of URL carriers
+(Section~\ref{sec:design}) is the clearest case: the rule is sound and the
+implementation enforces it, but a URL-bearing code scanned by the camera
+application opens in a browser without ever reaching any code we wrote. Closing
+this in software would require the operating-system vendors to ship a
+Cambodia-specific rule, which is not within national control and would not reach
+the installed base of inexpensive handsets in any case.
+
+This is the residual risk that motivates
+Section~\ref{sec:categorical}, and it is why that section's intervention is not
+software.
+
 \subsection{Summary}
 
 Layers~1 and~2 are the parts of the problem that cryptography addresses, and
@@ -687,12 +720,168 @@ this design addresses them. Layers~3 and~4 are the parts that matter most in
 current Cambodian fraud, and it does not address them at all. Any presentation
 of this work that inverts that emphasis misrepresents it.
 
+There is, however, a constructive corollary that the layer argument itself
+supplies, and it is the subject of Section~\ref{sec:categorical}. If the harm is
+created above the enforcement point, the response is to raise the enforcement
+point rather than to strengthen the control beneath it. The layer above the code
+is not empty: it contains the rules governing what legitimate issuers are
+permitted to emit. A control placed there does not authenticate the illegitimate
+set; it empties the legitimate one, until anything outside becomes recognisable
+without authentication.
+
 \section{The institutional layer}
 \label{sec:institutional}
 
-Layer~3 is not reachable from the code, but it is not unreachable altogether. It
-is reachable from the institutions, and the mechanism is information sharing
-about accounts rather than signatures over codes.
+Layers~3 and~4 are not reachable from the code, but they are not unreachable
+altogether. They are reachable from the institutions, by two mechanisms that are
+not cryptography: constraining what legitimate issuers are permitted to emit,
+and sharing information about accounts. We take them in that order, because the
+first is the cheaper and the more decisive.
+
+\subsection{The categorical rule: a payment QR never opens a website}
+\label{sec:categorical}
+
+The URL-bearing QR code --- ``scan to claim your refund'', ``scan to verify your
+document'' --- is the one attack in this decomposition that a national authority
+can eliminate outright. It cannot be eliminated in software, for the reason
+given in Section~\ref{sec:scanpath}: the code is frequently scanned by an
+application that will never consult a trust list. It can be eliminated by rule.
+
+\paragraph{The rule has two asymmetric halves.}
+The asymmetry is the mechanism, and it is deliberate: the population that bears
+the rule and the population that bears the obligation are different, and each is
+given the form of instruction it can actually follow.
+
+\begin{quote}
+\textbf{Public rule.} A QR code never opens a website. If a website opens, it is
+a scam: do not pay, and do not enter your PIN, password, one-time code or
+personal details.
+\end{quote}
+
+\begin{quote}
+\textbf{Institutional prohibition.} No licensed bank, payment institution,
+government body or telecommunications operator shall issue, publish or display a
+QR code whose payload is an \code{http} or \code{https} URL.
+\end{quote}
+
+The public half is categorical. It admits no exception, requires no comparison,
+and is evaluated on an observation --- a browser window opened --- that anyone can
+make regardless of literacy. The institutional half is a conditional compliance
+obligation, which institutions can follow because they have compliance
+functions and the public does not.
+
+\paragraph{Why the rule must not be scoped.}
+The obvious refinement --- restrict the prohibition to payments and official
+communications, leaving restaurant menus and network logins alone --- fails, and
+its failure is instructive. To apply a scoped rule, a person must classify the
+code before acting on it; but a QR code is not human-readable, so its class is
+knowable only after scanning, which is after the browser has opened. A scoped
+rule is therefore unusable at the moment the decision is made. The categorical
+rule is evaluated after the scan, on what is now visible, and requires no
+classification at all. In a population with low general technology literacy this
+is not a matter of preference: a rule with an exception is a rule that cannot be
+applied.
+
+Stating the rule in terms of the \emph{action} rather than the code --- do not
+pay, do not authenticate --- keeps it categorical while leaving it uncontradicted
+by the legitimate URL codes that exist outside the regulated perimeter. A
+restaurant menu never asks for a one-time code, so encountering one does not
+teach the public that the rule is false. This matters, because a public rule
+falsified by daily experience decays exactly as the browser certificate warning
+did.
+
+\paragraph{Why there is no alternative that reaches the same attack.}
+Every alternative we are aware of fails for one of two reasons: it requires a
+judgement to be made \emph{before or during} the scan, which is precisely the
+judgement the population cannot make; or it requires control over software the
+state does not have.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}p{0.22\linewidth}p{0.26\linewidth}p{0.10\linewidth}p{0.32\linewidth}@{}}
+\toprule
+\textbf{Alternative} & \textbf{What it asks of the user} & \textbf{When} & \textbf{Why it fails} \\
+\midrule
+Wallet-only scanning &
+  Choose the correct application &
+  Before &
+  The code's class is unknowable until it has been scanned \\[0.3em]
+Display the destination domain &
+  Read and compare a string &
+  During &
+  The judgement the population cannot reliably make \citep{schechter2007emperor} \\[0.3em]
+In-wallet domain allowlist &
+  Nothing &
+  During &
+  Bypassed entirely by the native camera application (Section~\ref{sec:scanpath}) \\[0.3em]
+Operating-system camera integration &
+  Nothing &
+  During &
+  Not within national control; unavailable on the installed handset base \\[0.3em]
+Education without a categorical rule &
+  Apply conditions &
+  Before &
+  Conditions are the thing that fails \\[0.3em]
+Confirmation of payee &
+  Check a name &
+  After &
+  Addresses the false pretext, not the URL channel; a different layer \\
+\bottomrule
+\end{tabular}
+\caption{Alternatives to the categorical rule, and the decision point at which
+each one fails.}
+\label{tab:alternatives}
+\end{table}
+
+The categorical rule is the only intervention in
+Table~\ref{tab:alternatives} evaluated \emph{after} the scan, on an observation
+requiring no comparison and no prior classification. That is not an assertion
+that nothing better exists; it is a property of where each control sits relative
+to the decision point, which is the same argument the rest of this paper runs on.
+
+\paragraph{Who is obliged, and why.}
+The public trust that makes this attack profitable is not a natural fact. The
+identification of ``QR'' with ``payment'', and of ``payment'' with
+``sanctioned by the central bank'', is the output of a successful national
+campaign --- it is what adoption at the scale reported in Section~\ref{sec:background}
+means. A trust expectation manufactured by policy can only be bounded by policy,
+and by the same authority that created it. This is a statement about standing,
+not about blame: no other party can make the rule true, because no other party
+can bind the institutions whose conduct would otherwise falsify it.
+
+Accordingly the requirement is stated flatly rather than conditionally. Whether
+it is adopted is a political question and not a property of the design.
+
+\begin{itemize}[leftmargin=1.4em]
+  \item The prohibition MUST bind the full regulated perimeter --- payment
+    institutions, government bodies and telecommunications operators alike.
+    A single ministry running a URL-QR campaign falsifies the public rule for
+    everyone, and the public cannot be asked to hold an exception.
+  \item Legacy printed material MUST be withdrawn within a stated sunset period,
+    with an audit. Branch posters, ATM decals and existing marketing are the
+    counter-examples most likely to be encountered.
+  \item A named regulator MUST hold the obligation, with a public channel for
+    reporting violations by institutions.
+  \item The public wording MUST be identical across institutions. Variation is
+    how a categorical rule erodes into a conditional one.
+\end{itemize}
+
+Section~3.2 of the specification is the enforcement half of the same rule inside
+the software: a Profile~B payload must not be an \code{http} or \code{https}
+URL, and the reference implementation exposes that check as a function intended
+to be applied to every scanned code rather than only to KH-SQR ones
+\citep{khsqr2026repo}. Neither half is sufficient alone. The software half is
+bypassed by the scan path; the policy half has no technical enforcement against
+an attacker, only against the legitimate issuers whose compliance makes it true.
+
+\paragraph{What the rule does not do.}
+It closes a channel; it does not reduce the adversary's budget. Effort displaces
+to what remains permitted --- most obviously to the genuine-code-with-false-pretext
+attack of Section~\ref{sec:notachieved}, which is already the dominant vector and
+which this rule leaves entirely intact --- and to channels with no QR code at all.
+We claim the elimination of one attack, not a reduction in fraud, and the
+distinction is the same one this paper insists on everywhere else.
 
 \subsection{Time-to-list as the operative metric}
 
@@ -885,6 +1074,13 @@ verified fail on deliberately introduced violations.
     Section~\ref{sec:container}. Two deviations from EMVCo, one of which
     invalidates the design's stated premise for the choice of template range.
 
+  \item \textbf{The categorical rule is proposed, not adopted or evaluated.}
+    Section~\ref{sec:categorical} argues from the structure of the decision
+    point, not from evidence that the rule changes behaviour. We know of no
+    trial of a categorical QR rule in any jurisdiction, and we have not run one.
+    Its cost --- the legitimate URL-QR uses it forecloses inside the regulated
+    perimeter --- is real and unquantified here.
+
   \item \textbf{Not implemented.} The offline Root ceremony is specified but not
     performed. Liability allocation (layer~4) is discussed and not implemented,
     being policy rather than software. Device attestation for verifier
@@ -929,12 +1125,18 @@ secured custody of an asset and left exposure to it untouched.
 
 The practical implication is uncomfortable for anyone hoping cryptography will
 settle the matter. The next marginal improvement in Cambodian QR fraud outcomes
-will not come from a better signature. It will come from shortening the interval
-between an institution recognising a mule account and every other institution
-being able to act on it; from allocating liability so that the party best placed
-to prevent a loss bears part of it; and, before either, from publishing incident
-data so that the prioritisation can be argued from evidence rather than, as
-here, from structure.
+will not come from a better signature. It will come from a categorical rule that
+empties the legitimate set of URL-bearing payment codes, which costs nothing to
+enforce against the small regulated population that would otherwise falsify it;
+from shortening the interval between an institution recognising a mule account
+and every other institution being able to act on it; from allocating liability
+so that the party best placed to prevent a loss bears part of it; and, before
+any of them, from publishing incident data so that the prioritisation can be
+argued from evidence rather than, as here, from structure.
+
+Each of those is an intervention at a layer the code cannot reach, which is the
+point. The response to a control that stops too low is not a stronger control at
+the same height.
 
 We offer the artefact because the artefact is useful and the forgery layer
 genuinely needs closing. We offer the analysis because the artefact will be
