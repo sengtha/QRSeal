@@ -2,6 +2,8 @@ import { applyD1Migrations, createExecutionContext, env, waitOnExecutionContext 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import worker, {
+  APPEAL_DEADLINE_BLOCKED_SECONDS,
+  APPEAL_DEADLINE_RESTRICTED_SECONDS,
   DEFAULT_RESTRICTED_TTL_SECONDS,
   INSTITUTION_ANOMALY_THRESHOLD,
   type Env,
@@ -52,6 +54,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await typed.DB.exec('DELETE FROM officers');
   await typed.DB.exec('DELETE FROM proposals');
+  await typed.DB.exec('DELETE FROM appeals');
   await typed.DB.exec('DELETE FROM write_rate');
   await typed.DB.batch([
     typed.DB.prepare("INSERT INTO officers VALUES (?, 'ABAAKHPP', 'alice', 'officer', 1, 1756512000)").bind(ALICE),
@@ -292,5 +295,229 @@ describe('append-only history', () => {
     await expect(typed.DB.prepare("UPDATE status_changes SET status = 'clear'").run()).rejects.toThrow(/append-only/);
     await expect(typed.DB.prepare('DELETE FROM status_changes').run()).rejects.toThrow(/append-only/);
     await expect(typed.DB.prepare('DELETE FROM audit_log').run()).rejects.toThrow(/append-only/);
+  });
+});
+
+
+/* ------------------------------------------------------------------ *
+ * Transaction-time screening
+ * ------------------------------------------------------------------ */
+
+async function list(account: string, status: 'restricted' | 'blocked'): Promise<void> {
+  const response = await call('/listings', {
+    method: 'POST',
+    body: { account, status, reasonCode: 'MULE_SUSPECTED' },
+    fingerprint: ALICE,
+  });
+  if (status === 'blocked') {
+    const id = (await response.json<{ proposalId: string }>()).proposalId;
+    await call(`/proposals/${id}/approve`, { method: 'POST', fingerprint: BORA });
+  }
+}
+
+interface Screening {
+  decision: 'allow' | 'warn' | 'hold' | 'block';
+  screeningRef: string | null;
+  status: string;
+  listedByInstitution: string | null;
+}
+
+const screen = async (account: string, body: Record<string, unknown> = {}): Promise<Screening> =>
+  (
+    await call('/screen', { method: 'POST', body: { account, ...body }, fingerprint: READER })
+  ).json<Screening>();
+
+describe('screening at the moment of payment', () => {
+  it('allows a payment to an unlisted account, and records nothing', async () => {
+    const before = await typed.DB.prepare('SELECT COUNT(*) AS n FROM screenings').first<{ n: number }>();
+    const result = await screen('KH-SCREEN-CLEAR');
+    expect(result.decision).toBe('allow');
+    expect(result.screeningRef).toBeNull();
+    const after = await typed.DB.prepare('SELECT COUNT(*) AS n FROM screenings').first<{ n: number }>();
+    // A cleared payment leaves no trace: this service does not build a record
+    // of who paid whom.
+    expect(after?.n).toBe(before?.n);
+  });
+
+  it('holds a payment to a restricted account', async () => {
+    await list('KH-SCREEN-RESTRICTED', 'restricted');
+    const result = await screen('KH-SCREEN-RESTRICTED', { amount: 25000, currency: 'KHR' });
+    expect(result.decision).toBe('hold');
+    expect(result.screeningRef).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('refuses a payment to a blocked account', async () => {
+    await list('KH-SCREEN-BLOCKED', 'blocked');
+    expect((await screen('KH-SCREEN-BLOCKED')).decision).toBe('block');
+  });
+
+  it('holds even a trivial amount, because the low-value carve-out is off by default', async () => {
+    await list('KH-SCREEN-SMALL', 'restricted');
+    expect((await screen('KH-SCREEN-SMALL', { amount: 1, currency: 'USD' })).decision).toBe('hold');
+  });
+
+  it('records decisions that had a consequence, and only those', async () => {
+    await list('KH-SCREEN-RECORD', 'restricted');
+    await screen('KH-SCREEN-RECORD');
+    const row = await typed.DB.prepare(
+      'SELECT decision, asked_by, account FROM screenings WHERE account = ? ORDER BY seq DESC LIMIT 1',
+    )
+      .bind('KH-SCREEN-RECORD')
+      .first<{ decision: string; asked_by: string; account: string }>();
+    expect(row).toEqual({ decision: 'hold', asked_by: 'NBC', account: 'KH-SCREEN-RECORD' });
+  });
+
+  it('keeps the screening record append-only', async () => {
+    await list('KH-SCREEN-IMMUTABLE', 'restricted');
+    await screen('KH-SCREEN-IMMUTABLE');
+    await expect(typed.DB.prepare("UPDATE screenings SET decision = 'allow'").run()).rejects.toThrow(
+      /append-only/,
+    );
+    await expect(typed.DB.prepare('DELETE FROM screenings').run()).rejects.toThrow(/append-only/);
+  });
+
+  it('requires a client certificate', async () => {
+    const response = await call('/screen', { method: 'POST', body: { account: 'KH-SCREEN-CLEAR' } });
+    expect(response.status).toBe(401);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * The right to contest a listing
+ * ------------------------------------------------------------------ */
+
+async function appeal(account: string, who = OTHER_BANK): Promise<Response> {
+  return call('/appeals', {
+    method: 'POST',
+    body: { account, groundsCode: 'CUSTOMER_DISPUTES' },
+    fingerprint: who,
+  });
+}
+
+describe('appeals', () => {
+  it('cannot be raised against an account that is not listed', async () => {
+    const response = await appeal('KH-APPEAL-UNLISTED');
+    expect(response.status).toBe(409);
+    expect((await response.json<{ code: string }>()).code).toBe('NOT_LISTED');
+  });
+
+  it('is raised by the account-holding institution and answered by the listing one', async () => {
+    await list('KH-APPEAL-BASIC', 'restricted');
+    const response = await appeal('KH-APPEAL-BASIC');
+    expect(response.status).toBe(201);
+    const body = await response.json<{ answeringInstitution: string; deadline: number; appealId: string }>();
+    expect(body.answeringInstitution).toBe('ABAAKHPP');
+
+    const owed = await (await call('/appeals', { fingerprint: ALICE })).json<{ owed: { id: string }[] }>();
+    expect(owed.owed.map((a) => a.id)).toContain(body.appealId);
+  });
+
+  it('gives a shorter deadline than the listing it contests', async () => {
+    await list('KH-APPEAL-DEADLINE', 'restricted');
+    const body = await (await appeal('KH-APPEAL-DEADLINE')).json<{ deadline: number }>();
+    const window = body.deadline - Math.floor(Date.now() / 1000);
+    expect(window).toBeLessThanOrEqual(APPEAL_DEADLINE_RESTRICTED_SECONDS);
+    expect(window).toBeLessThan(DEFAULT_RESTRICTED_TTL_SECONDS);
+  });
+
+  it('does not by itself change the status', async () => {
+    await list('KH-APPEAL-NOCHANGE', 'restricted');
+    await appeal('KH-APPEAL-NOCHANGE');
+    expect((await statusOf('KH-APPEAL-NOCHANGE')).status).toBe('restricted');
+  });
+
+  it('refuses a second open contest of the same listing', async () => {
+    await list('KH-APPEAL-DUPLICATE', 'restricted');
+    expect((await appeal('KH-APPEAL-DUPLICATE')).status).toBe(201);
+    const second = await appeal('KH-APPEAL-DUPLICATE');
+    expect(second.status).toBe(409);
+    expect((await second.json<{ code: string }>()).code).toBe('APPEAL_ALREADY_OPEN');
+  });
+
+  it('lapses the listing when the deadline passes unanswered', async () => {
+    const account = 'KH-APPEAL-SILENCE';
+    await list(account, 'blocked');
+    const body = await (await appeal(account)).json<{ deadline: number }>();
+    expect(body.deadline - Math.floor(Date.now() / 1000)).toBeLessThanOrEqual(APPEAL_DEADLINE_BLOCKED_SECONDS);
+
+    const shard = typed.SHARDS.get(typed.SHARDS.idFromName(await shardFor(account)));
+    expect((await shard.readStatus(account, body.deadline)).status).toBe('blocked');
+
+    // One second past the deadline, with nobody having answered, the listing
+    // is no longer in force. Silence favours the account holder.
+    const after = await shard.readStatus(account, body.deadline + 1);
+    expect(after.status).toBe('clear');
+    expect(after.lapsedFrom).toBe('blocked');
+    expect(after.lapsedBecause).toBe('appeal_unanswered');
+  });
+
+  it('may only be answered by the institution that made the listing', async () => {
+    await list('KH-APPEAL-WRONGBANK', 'restricted');
+    const id = (await (await appeal('KH-APPEAL-WRONGBANK')).json<{ appealId: string }>()).appealId;
+    const response = await call(`/appeals/${id}/resolve`, {
+      method: 'POST',
+      body: { resolution: 'withdrawn', resolutionCode: 'ERROR_ACKNOWLEDGED' },
+      fingerprint: OTHER_BANK,
+    });
+    expect(response.status).toBe(403);
+    expect((await response.json<{ code: string }>()).code).toBe('NOT_THE_LISTING_INSTITUTION');
+  });
+
+  it('leaves the listing standing when upheld, and clears the clock', async () => {
+    const account = 'KH-APPEAL-UPHELD';
+    await list(account, 'restricted');
+    const id = (await (await appeal(account)).json<{ appealId: string }>()).appealId;
+    const response = await call(`/appeals/${id}/resolve`, {
+      method: 'POST',
+      body: { resolution: 'upheld', resolutionCode: 'EVIDENCE_SUFFICIENT' },
+      fingerprint: ALICE,
+    });
+    expect(response.status).toBe(200);
+    const reading = await statusOf(account);
+    expect(reading.status).toBe('restricted');
+    expect(reading.appealDeadline).toBeNull();
+  });
+
+  it('clears the listing when withdrawn, on one officer', async () => {
+    const account = 'KH-APPEAL-WITHDRAWN';
+    await list(account, 'restricted');
+    const id = (await (await appeal(account)).json<{ appealId: string }>()).appealId;
+    // ALICE both made the listing and retracts it. Correcting an error must not
+    // be harder than making one: a restriction takes one officer to impose.
+    const response = await call(`/appeals/${id}/resolve`, {
+      method: 'POST',
+      body: { resolution: 'withdrawn', resolutionCode: 'ERROR_ACKNOWLEDGED' },
+      fingerprint: ALICE,
+    });
+    expect(response.status).toBe(200);
+    expect((await statusOf(account)).status).toBe('clear');
+  });
+
+  it('cannot be answered twice', async () => {
+    const account = 'KH-APPEAL-TWICE';
+    await list(account, 'restricted');
+    const id = (await (await appeal(account)).json<{ appealId: string }>()).appealId;
+    const body = { resolution: 'upheld', resolutionCode: 'EVIDENCE_SUFFICIENT' };
+    expect((await call(`/appeals/${id}/resolve`, { method: 'POST', body, fingerprint: ALICE })).status).toBe(200);
+    expect((await call(`/appeals/${id}/resolve`, { method: 'POST', body, fingerprint: ALICE })).status).toBe(409);
+  });
+
+  it('records both the contest and its answer against named officers', async () => {
+    const account = 'KH-APPEAL-AUDIT';
+    await list(account, 'restricted');
+    const id = (await (await appeal(account)).json<{ appealId: string }>()).appealId;
+    await call(`/appeals/${id}/resolve`, {
+      method: 'POST',
+      body: { resolution: 'withdrawn', resolutionCode: 'ERROR_ACKNOWLEDGED' },
+      fingerprint: ALICE,
+    });
+    const { results } = await typed.DB.prepare(
+      'SELECT actor, action FROM audit_log WHERE subject = ? ORDER BY seq ASC',
+    )
+      .bind(account)
+      .all<{ actor: string; action: string }>();
+    const trail = results.map((r) => `${r.actor}:${r.action}`);
+    expect(trail).toContain('dara:appeal.raised');
+    expect(trail).toContain('alice:appeal.withdrawn');
   });
 });

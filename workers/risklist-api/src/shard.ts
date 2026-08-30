@@ -24,6 +24,9 @@ import { DurableObject } from 'cloudflare:workers';
 
 export type RiskStatus = 'clear' | 'restricted' | 'blocked';
 
+/** Why a stored status is no longer in force. */
+export type LapseReason = 'expired' | 'appeal_unanswered';
+
 export interface StatusRecord {
   readonly account: string;
   readonly status: RiskStatus;
@@ -33,6 +36,12 @@ export interface StatusRecord {
   readonly listedAt: number;
   /** Deadline after which the status no longer applies. Null only for 'clear'. */
   readonly expiresAt: number | null;
+  /**
+   * Deadline by which the listing institution must answer a contest of this
+   * listing. Null when no appeal is open. Evaluated at read time exactly like
+   * the expiry, so an unanswered appeal cannot quietly sustain a listing.
+   */
+  readonly appealDeadline: number | null;
   readonly version: number;
 }
 
@@ -51,6 +60,10 @@ export interface StatusReading {
    * listing expired rather than never existing.
    */
   readonly lapsedFrom: RiskStatus | null;
+  /** Why it lapsed: the listing's own deadline passed, or an appeal went unanswered. */
+  readonly lapsedBecause: LapseReason | null;
+  /** The open appeal deadline, if any. */
+  readonly appealDeadline: number | null;
   /** Which layer answered. Present so a caller can tell a cold read from a warm one. */
   readonly source: 'object' | 'database';
 }
@@ -68,6 +81,8 @@ const CLEAR = (account: string, source: 'object' | 'database'): StatusReading =>
   institution: null,
   version: 0,
   lapsedFrom: null,
+  lapsedBecause: null,
+  appealDeadline: null,
   source,
 });
 
@@ -79,6 +94,7 @@ interface StatusRow {
   institution: string;
   listed_at: number;
   expires_at: number | null;
+  appeal_deadline: number | null;
   version: number;
 }
 
@@ -90,6 +106,7 @@ const toRecord = (row: StatusRow): StatusRecord => ({
   institution: row.institution,
   listedAt: row.listed_at,
   expiresAt: row.expires_at,
+  appealDeadline: row.appeal_deadline,
   version: row.version,
 });
 
@@ -108,8 +125,8 @@ export class AccountShard extends DurableObject<ShardEnv> {
     if (record === undefined) {
       // Cold object, or one evicted since the last write. D1 is the authority.
       const row = await this.env.DB.prepare(
-        'SELECT account, status, reason_code, listed_by, institution, listed_at, expires_at, version ' +
-          'FROM account_status WHERE account = ?',
+        'SELECT account, status, reason_code, listed_by, institution, listed_at, expires_at, ' +
+          'appeal_deadline, version FROM account_status WHERE account = ?',
       )
         .bind(account)
         .first<StatusRow>();
@@ -126,7 +143,22 @@ export class AccountShard extends DurableObject<ShardEnv> {
         ...CLEAR(account, source),
         version: record.version,
         lapsedFrom: record.status,
+        lapsedBecause: 'expired',
         expiresAt: record.expiresAt,
+      };
+    }
+
+    // An appeal the listing institution did not answer in time lapses the
+    // listing. Silence favours the account holder, who is the party unable to
+    // act on their own behalf.
+    if (record.appealDeadline !== null && now > record.appealDeadline) {
+      return {
+        ...CLEAR(account, source),
+        version: record.version,
+        lapsedFrom: record.status,
+        lapsedBecause: 'appeal_unanswered',
+        expiresAt: record.expiresAt,
+        appealDeadline: record.appealDeadline,
       };
     }
 
@@ -139,6 +171,8 @@ export class AccountShard extends DurableObject<ShardEnv> {
       institution: record.institution,
       version: record.version,
       lapsedFrom: null,
+      lapsedBecause: null,
+      appealDeadline: record.appealDeadline,
       source,
     };
   }
@@ -153,18 +187,24 @@ export class AccountShard extends DurableObject<ShardEnv> {
    * D1 by each caller.
    */
   public async applyStatus(
-    input: Omit<StatusRecord, 'version'>,
+    input: Omit<StatusRecord, 'version' | 'appealDeadline'> & { readonly appealDeadline?: number | null },
     now: number,
   ): Promise<{ record: StatusRecord; changeSeq: number }> {
     const current = await this.readStatus(input.account, now);
-    const record: StatusRecord = { ...input, version: current.version + 1 };
+    // A new listing decision supersedes any appeal deadline attached to the
+    // previous one: the contest was about the listing being replaced.
+    const record: StatusRecord = {
+      ...input,
+      appealDeadline: input.appealDeadline ?? null,
+      version: current.version + 1,
+    };
 
     await this.env.DB.prepare(
-      'INSERT INTO account_status (account, status, reason_code, listed_by, institution, listed_at, expires_at, version) ' +
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?) ' +
+      'INSERT INTO account_status (account, status, reason_code, listed_by, institution, listed_at, ' +
+        'expires_at, appeal_deadline, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ' +
         'ON CONFLICT(account) DO UPDATE SET status = excluded.status, reason_code = excluded.reason_code, ' +
         'listed_by = excluded.listed_by, institution = excluded.institution, listed_at = excluded.listed_at, ' +
-        'expires_at = excluded.expires_at, version = excluded.version',
+        'expires_at = excluded.expires_at, appeal_deadline = excluded.appeal_deadline, version = excluded.version',
     )
       .bind(
         record.account,
@@ -174,6 +214,7 @@ export class AccountShard extends DurableObject<ShardEnv> {
         record.institution,
         record.listedAt,
         record.expiresAt,
+        record.appealDeadline,
         record.version,
       )
       .run();
@@ -187,6 +228,29 @@ export class AccountShard extends DurableObject<ShardEnv> {
 
     await this.ctx.storage.put(record.account, record);
     return { record, changeSeq: change?.seq ?? 0 };
+  }
+
+  /**
+   * Attach or remove an appeal deadline without otherwise altering the listing.
+   *
+   * Raising an appeal does not by itself change an account's status: an
+   * institution must not be able to clear its own suspicion, nor another's, by
+   * asserting a contest. What the appeal does is start a clock that the listing
+   * institution must beat.
+   */
+  public async setAppealDeadline(
+    account: string,
+    deadline: number | null,
+    now: number,
+  ): Promise<StatusReading> {
+    const stored = await this.ctx.storage.get<StatusRecord>(account);
+    await this.env.DB.prepare('UPDATE account_status SET appeal_deadline = ? WHERE account = ?')
+      .bind(deadline, account)
+      .run();
+    if (stored !== undefined) {
+      await this.ctx.storage.put(account, { ...stored, appealDeadline: deadline });
+    }
+    return this.readStatus(account, now);
   }
 }
 

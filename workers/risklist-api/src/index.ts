@@ -44,6 +44,25 @@ export const DEFAULT_RESTRICTED_TTL_SECONDS = 72 * 60 * 60;
 export const DEFAULT_BLOCKED_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const MAX_TTL_SECONDS = 90 * 24 * 60 * 60;
 
+/**
+ * How long the listing institution has to answer a contest before the listing
+ * lapses on its own. Shorter than the listing's own lifetime in both cases, so
+ * that appealing actually accelerates something.
+ */
+export const APPEAL_DEADLINE_RESTRICTED_SECONDS = 24 * 60 * 60;
+export const APPEAL_DEADLINE_BLOCKED_SECONDS = 72 * 60 * 60;
+
+/**
+ * Value below which a payment to a `restricted` account is allowed to proceed
+ * with a warning rather than held.
+ *
+ * Zero by default in every currency, which means every payment to a restricted
+ * account is held. This is a policy parameter, not a technical constant: the
+ * safe value is the default, and a regulator who wants less friction on small
+ * payments must choose the threshold and own it.
+ */
+export const LOW_VALUE_SCREENING_THRESHOLD: Readonly<Record<string, number>> = { KHR: 0, USD: 0 };
+
 export const RATE_WINDOW_SECONDS = 3600;
 export const OFFICER_WRITES_PER_WINDOW = 120;
 export const INSTITUTION_WRITES_PER_WINDOW = 600;
@@ -415,6 +434,278 @@ async function exportAudit(env: Env): Promise<Response> {
 }
 
 /* ------------------------------------------------------------------ *
+ * Transaction-time screening
+ * ------------------------------------------------------------------ */
+
+/**
+ * What a payment service provider should do at the moment of payment.
+ *
+ * This is the checkpoint the list exists for. A register nobody consults before
+ * releasing money is a record of the fraud, not a control on it.
+ */
+export type ScreeningDecision = 'allow' | 'warn' | 'hold' | 'block';
+
+const CURRENCY = /^[A-Z]{3}$/;
+
+interface Verdict {
+  readonly decision: ScreeningDecision;
+  readonly guidance: string;
+}
+
+/**
+ * Map a status to an action.
+ *
+ * A restriction is a prudential hold, so it holds. A block is a standing
+ * assertion, so it refuses. The low-value carve-out exists because holding a
+ * one-dollar payment costs a real person more inconvenience than it denies an
+ * attacker, but it is disabled by default: someone must choose that trade.
+ */
+function decide(reading: StatusReading, amount: number | null, currency: string | null): Verdict {
+  if (reading.status === 'blocked') {
+    return {
+      decision: 'block',
+      guidance: 'Do not execute. The payee account carries a standing block approved by two officers.',
+    };
+  }
+  if (reading.status === 'restricted') {
+    const threshold = currency === null ? 0 : (LOW_VALUE_SCREENING_THRESHOLD[currency] ?? 0);
+    if (amount !== null && amount <= threshold) {
+      return {
+        decision: 'warn',
+        guidance: 'Proceed only after showing the payer that this payee is under review.',
+      };
+    }
+    return {
+      decision: 'hold',
+      guidance: 'Do not release funds. Route to manual review, or delay until the restriction lapses.',
+    };
+  }
+  return { decision: 'allow', guidance: 'No listing in force for this payee account.' };
+}
+
+/**
+ * Screen a payee account before executing a push payment.
+ *
+ * Only decisions with a consequence are recorded. Logging every cleared payment
+ * would build a national record of who paid whom, which is outside this
+ * service's purpose; whether an account was listed at a given moment is already
+ * reconstructable from the append-only change feed.
+ *
+ * The payer is never identified to this service, and the payer's identity is
+ * deliberately absent from the request shape.
+ */
+async function screen(request: Request, env: Env, officer: Officer, now: number): Promise<Response> {
+  const body = await readJson(request);
+  const account = field(body, 'account', ACCOUNT);
+
+  const rawCurrency = body['currency'];
+  if (rawCurrency !== undefined && (typeof rawCurrency !== 'string' || !CURRENCY.test(rawCurrency))) {
+    throw new RequestError(400, 'MALFORMED_FIELD', 'currency must be a three-letter code');
+  }
+  const currency = typeof rawCurrency === 'string' ? rawCurrency : null;
+
+  const rawAmount = body['amount'];
+  if (rawAmount !== undefined && (typeof rawAmount !== 'number' || !Number.isFinite(rawAmount) || rawAmount < 0)) {
+    throw new RequestError(400, 'MALFORMED_FIELD', 'amount must be a non-negative number');
+  }
+  const amount = typeof rawAmount === 'number' ? rawAmount : null;
+
+  const reading = await readStatus(env, account, now);
+  const verdict = decide(reading, amount, currency);
+
+  let reference: string | null = null;
+  if (verdict.decision !== 'allow') {
+    reference = crypto.randomUUID();
+    await env.DB.prepare(
+      'INSERT INTO screenings (at, account, decision, status, reason_code, asked_by, reference) ' +
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+    )
+      .bind(now, account, verdict.decision, reading.status, reading.reasonCode ?? '', officer.institutionId, reference)
+      .run();
+  }
+
+  return json({
+    decision: verdict.decision,
+    guidance: verdict.guidance,
+    screeningRef: reference,
+    account,
+    status: reading.status,
+    reasonCode: reading.reasonCode,
+    expiresAt: reading.expiresAt,
+    lapsedFrom: reading.lapsedFrom,
+    lapsedBecause: reading.lapsedBecause,
+    // For institutional routing only. This must not be shown to the payer: it
+    // would tell a mule operator which institution detected them.
+    listedByInstitution: reading.institution,
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Appeals
+ * ------------------------------------------------------------------ */
+
+/**
+ * The right to contest a listing.
+ *
+ * A national register that can freeze a real person's money needs a way for
+ * that person to be wrong about, and to be shown wrong. Expiry, two-officer
+ * approval and an immutable audit trail all reduce the chance of error; none of
+ * them lets the affected person do anything about one.
+ *
+ * Three constraints shape the design:
+ *
+ *   1. The customer cannot query this service, and cannot appeal to it
+ *      directly. An open lookup would tell a mule operator whether their
+ *      account had been detected yet. The account-holding institution raises
+ *      the appeal on the customer's behalf.
+ *   2. Raising an appeal does not change the status. An institution must not be
+ *      able to clear a suspicion — its own or anyone else's — by asserting a
+ *      contest.
+ *   3. An unanswered appeal lapses the listing. Silence favours the account
+ *      holder, because the account holder is the party who cannot act. This is
+ *      the same failure direction as read-time expiry.
+ */
+async function raiseAppeal(request: Request, env: Env, officer: Officer, now: number): Promise<Response> {
+  const body = await readJson(request);
+  const account = field(body, 'account', ACCOUNT);
+  const groundsCode = field(body, 'groundsCode', REASON_CODE);
+
+  const reading = await readStatus(env, account, now);
+  if (reading.status === 'clear') {
+    throw new RequestError(409, 'NOT_LISTED', 'no listing is in force for this account');
+  }
+
+  const open = await env.DB.prepare("SELECT id FROM appeals WHERE account = ? AND state = 'open'")
+    .bind(account)
+    .first<{ id: string }>();
+  if (open !== null) {
+    throw new RequestError(409, 'APPEAL_ALREADY_OPEN', 'a contest of this listing is already open');
+  }
+
+  await enforceRateLimits(env.DB, officer, now);
+
+  const window =
+    reading.status === 'blocked' ? APPEAL_DEADLINE_BLOCKED_SECONDS : APPEAL_DEADLINE_RESTRICTED_SECONDS;
+  const deadline = now + window;
+  const id = crypto.randomUUID();
+  const answering = reading.institution as string;
+
+  await env.DB.prepare(
+    'INSERT INTO appeals (id, account, raised_by_institution, raised_by_officer, raised_at, grounds_code, ' +
+      "answering_institution, deadline, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')",
+  )
+    .bind(id, account, officer.institutionId, officer.officerId, now, groundsCode, answering, deadline)
+    .run();
+
+  await (await shardStub(env, account)).setAppealDeadline(account, deadline, now);
+
+  await append(env.DB, {
+    at: now,
+    actor: officer.officerId,
+    institutionId: officer.institutionId,
+    action: 'appeal.raised',
+    subject: account,
+    detail: JSON.stringify({ appealId: id, groundsCode, answering, deadline }),
+  });
+
+  return json({ appealId: id, account, answeringInstitution: answering, deadline, state: 'open' }, { status: 201 });
+}
+
+/**
+ * Answer a contest.
+ *
+ * Both outcomes take one officer, deliberately. Upholding must not be harder
+ * than ignoring, or the incentive runs the wrong way. Withdrawing must not be
+ * harder than listing: a restriction takes one officer to impose, so requiring
+ * two to retract would make an error more expensive to correct than to make.
+ * The two-officer rule stays where it belongs — on a discretionary removal by
+ * an institution that did not make the listing.
+ */
+async function resolveAppeal(
+  request: Request,
+  env: Env,
+  officer: Officer,
+  id: string,
+  now: number,
+): Promise<Response> {
+  const body = await readJson(request);
+  const resolution = body['resolution'];
+  if (resolution !== 'upheld' && resolution !== 'withdrawn') {
+    throw new RequestError(400, 'MALFORMED_FIELD', "resolution must be 'upheld' or 'withdrawn'");
+  }
+  const resolutionCode = field(body, 'resolutionCode', REASON_CODE);
+
+  const row = await env.DB.prepare(
+    'SELECT id, account, answering_institution, deadline, state FROM appeals WHERE id = ?',
+  )
+    .bind(id)
+    .first<{ id: string; account: string; answering_institution: string; deadline: number; state: string }>();
+
+  if (row === null) throw new RequestError(404, 'NO_SUCH_APPEAL', 'no such appeal');
+  if (row.state !== 'open') throw new RequestError(409, 'ALREADY_RESOLVED', `appeal is already ${row.state}`);
+  if (row.answering_institution !== officer.institutionId) {
+    throw new RequestError(403, 'NOT_THE_LISTING_INSTITUTION', 'only the listing institution may answer a contest');
+  }
+  if (resolution === 'upheld' && now > row.deadline) {
+    throw new RequestError(
+      409,
+      'APPEAL_LAPSED',
+      'the deadline passed and the listing has already lapsed; it cannot be reinstated by answering late',
+    );
+  }
+
+  const reading = await readStatus(env, row.account, now);
+
+  await env.DB.prepare(
+    "UPDATE appeals SET state = ?, resolved_at = ?, resolved_by = ?, resolution_code = ? WHERE id = ? AND state = 'open'",
+  )
+    .bind(resolution, now, officer.officerId, resolutionCode, id)
+    .run();
+
+  if (resolution === 'upheld') {
+    // The listing stands, and runs to its own expiry. The clock is cleared
+    // because it has been answered.
+    await (await shardStub(env, row.account)).setAppealDeadline(row.account, null, now);
+  } else {
+    await applyStatus(env, {
+      account: row.account,
+      status: 'clear',
+      reasonCode: resolutionCode,
+      ttlSeconds: null,
+      officer,
+      now,
+    });
+  }
+
+  await append(env.DB, {
+    at: now,
+    actor: officer.officerId,
+    institutionId: officer.institutionId,
+    action: `appeal.${resolution}`,
+    subject: row.account,
+    detail: JSON.stringify({ appealId: id, resolutionCode, statusWhenAnswered: reading.status }),
+  });
+
+  return json({
+    appealId: id,
+    account: row.account,
+    state: resolution,
+    status: await readStatus(env, row.account, now),
+  });
+}
+
+/** The queue of contests this institution owes an answer to. */
+async function listAppeals(env: Env, officer: Officer): Promise<Response> {
+  const { results } = await env.DB.prepare(
+    'SELECT id, account, raised_by_institution, raised_at, grounds_code, deadline FROM appeals ' +
+      "WHERE state = 'open' AND answering_institution = ? ORDER BY deadline ASC LIMIT 200",
+  )
+    .bind(officer.institutionId)
+    .all();
+  return json({ owed: results });
+}
+
+/* ------------------------------------------------------------------ *
  * Router
  * ------------------------------------------------------------------ */
 
@@ -430,6 +721,7 @@ export default {
         holdsSigningKey: false,
         consistency: 'durable-object per shard; not KV',
         expiry: 'stored deadline evaluated at read time; no sweep job',
+        appeals: 'an unanswered contest lapses the listing; silence favours the account holder',
       });
     }
 
@@ -438,6 +730,27 @@ export default {
       if (status !== null && request.method === 'GET') {
         await authenticate(request, env.DB, ['reader', 'officer', 'supervisor']);
         return json(await readStatus(env, status[1] as string, now));
+      }
+
+      if (path === '/screen' && request.method === 'POST') {
+        const officer = await authenticate(request, env.DB, ['reader', 'officer', 'supervisor']);
+        return await screen(request, env, officer, now);
+      }
+
+      if (path === '/appeals' && request.method === 'POST') {
+        const officer = await authenticate(request, env.DB, ['officer', 'supervisor']);
+        return await raiseAppeal(request, env, officer, now);
+      }
+
+      if (path === '/appeals' && request.method === 'GET') {
+        const officer = await authenticate(request, env.DB, ['officer', 'supervisor']);
+        return await listAppeals(env, officer);
+      }
+
+      const appeal = /^\/appeals\/([0-9a-f-]{36})\/resolve$/.exec(path);
+      if (appeal !== null && request.method === 'POST') {
+        const officer = await authenticate(request, env.DB, ['officer', 'supervisor']);
+        return await resolveAppeal(request, env, officer, appeal[1] as string, now);
       }
 
       if (path === '/listings' && request.method === 'POST') {

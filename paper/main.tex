@@ -899,6 +899,67 @@ window is exactly when the account is being drained. The implementation
 therefore routes reads and writes for each account through a serialising object,
 with a durable database as the authority.
 
+\subsection{Screening: the checkpoint the list exists for}
+\label{sec:screening}
+
+A register that nobody consults before releasing money is a record of the fraud,
+not a control on it. The operative step is therefore a check made by the payer's
+institution, at the moment of payment, against the payee account named in the
+code.
+
+This is also the one point at which layer~1 feeds layer~3. A verified Profile~A
+attestation yields the payee account identifier from a payload that has been
+proved unaltered, so the account screened is the account that will be paid. We
+should be precise about how much the signature contributes here: the account
+identifier would be present in an unsigned payload too, and the risk list would
+still work on it. What the signature adds is that the identifier cannot have
+been substituted in transit, and that the code's issuer is attributable
+afterwards. The control that actually bites on this fraud is the list, not the
+signature.
+
+The reference implementation exposes screening as a single call returning a
+decision rather than a status, because a status invites each institution to
+invent its own mapping, and a national scheme in which one bank holds where
+another releases is not a national scheme. The mapping is normative:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Status} & \textbf{Action} & \textbf{Character} \\
+\midrule
+\code{clear}      & Execute & --- \\
+\code{restricted} & Hold: delay, or route to manual review & Prudential, reversible, expires in 72 hours \\
+\code{blocked}    & Refuse & Standing assertion, two officers \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A low-value carve-out is available --- below a threshold, a payment to a
+restricted account may proceed with a prominent warning rather than being held
+--- because holding a one-dollar transfer costs a real person more inconvenience
+than it denies an attacker. It is disabled by default in every currency. The
+safe value is the default, and a regulator who wants less friction must choose
+the threshold and own the choice.
+
+\paragraph{What is recorded, and what deliberately is not.}
+Only decisions with a consequence --- warn, hold, block --- are written down. A
+cleared payment leaves no trace, and the payer is never identified to the
+service at all. Recording every screening would build a national record of who
+paid whom, which is not this system's business and is not needed for its
+purpose: whether an account was listed at a given moment is already
+reconstructable from the append-only change feed. We note this because a
+transaction-screening service is exactly the kind of infrastructure that
+acquires surveillance functions by accident, one reasonable-sounding field at a
+time.
+
+\paragraph{What screening does not do.}
+It stops payments to accounts that are \emph{already listed}. The victims of a
+mule account during the interval before anyone lists it receive nothing, which
+is why time-to-list and not detection accuracy is the metric. It sees the first
+hop only, and nothing of cash-out or onward layering. And it sits in the payment
+path, so if it is not fast, institutions will find ways around it.
+
 \subsection{A hold is not a sanction}
 
 The design distinguishes two statuses, and the distinction is a matter of
@@ -926,6 +987,56 @@ A cron that fails to run would silently extend a restriction on a real person's
 account, and neither they nor the institution would observe anything wrong; the
 error is invisible and prejudicial. A deadline that has simply passed cannot
 fail in that direction.
+
+\subsection{The right to contest a listing}
+\label{sec:appeal}
+
+A national register that can freeze a real person's money needs a way for that
+person to be wrong about. Expiry, two-officer approval and an immutable audit
+trail all reduce the chance of error. None of them lets the affected person do
+anything about one.
+
+The design has three constraints, and the third is the substantive one.
+
+First, the customer cannot query this service and cannot appeal to it directly.
+An open lookup would tell a mule operator whether their account had been
+detected yet, which would convert a fraud control into reconnaissance. The
+account-holding institution raises the contest on its customer's behalf.
+
+Second, raising a contest does not change the status. An institution must not be
+able to clear a suspicion --- its own or another's --- by asserting that it is
+disputed.
+
+Third, \textbf{an unanswered contest lapses the listing.} Raising it starts a
+clock against the institution that made the listing: 24 hours for a restriction,
+72 hours for a block, in both cases shorter than the listing's own lifetime so
+that appealing accelerates something real. If that institution does not answer
+before the deadline, the listing ceases to be in force --- evaluated at read time,
+like the expiry, with no sweep job. Silence favours the account holder, because
+the account holder is the party who cannot act. An institution that wishes to
+keep an account listed must be willing to say so, on the record, with a named
+officer against it.
+
+\paragraph{An asymmetry we had to correct.}
+Building this exposed a defect in the design as originally specified. A
+restriction takes one officer to impose but two to remove, which makes an error
+more expensive to correct than to make --- the wrong way round for a control that
+acts on people who have done nothing. The rule is now narrower: a withdrawal by
+the institution that made the listing, in answer to a contest, takes one officer,
+because it retracts that institution's own assertion and creates no new one. The
+two-officer requirement stays where it belongs, on a discretionary removal by an
+institution that did not make the listing. Upholding likewise takes one officer,
+so that answering a contest is never more onerous than ignoring it.
+
+\paragraph{An unresolved tension.}
+The listing institution's identity is disclosed to the account-holding
+institution, not to the customer. This preserves the ability to contest while
+respecting the tipping-off constraints that anti-money-laundering regimes
+impose, but it means the affected person learns that they are listed and by
+which category of reason, without learning who listed them or on what evidence.
+We do not think this is satisfactory, and we do not have a better answer that
+does not compromise investigations. We record it as an open problem rather than
+resolving it by assertion.
 
 \subsection{Attribution, rate limiting and the audit record}
 
@@ -1080,6 +1191,13 @@ verified fail on deliberately introduced violations.
     trial of a categorical QR rule in any jurisdiction, and we have not run one.
     Its cost --- the legitimate URL-QR uses it forecloses inside the regulated
     perimeter --- is real and unquantified here.
+
+  \item \textbf{Screening and appeals are implemented but unevaluated.} The
+    endpoints, the status-to-action mapping and the lapse-on-silence rule are
+    built and tested (Sections~\ref{sec:screening} and~\ref{sec:appeal}), but we
+    have no evidence about false-positive rates, about how often institutions
+    would answer a contest in time, or about the latency screening would add in
+    a live payment path.
 
   \item \textbf{Not implemented.} The offline Root ceremony is specified but not
     performed. Liability allocation (layer~4) is discussed and not implemented,

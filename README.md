@@ -152,6 +152,18 @@ window in which a just-listed account still reads clear — which is the window 
 mule account is drained in. A Durable Object per shard serialises reads and
 writes; D1 remains the authority.
 
+**The risk list is checked at the moment of payment, not just maintained.**
+`POST /screen` returns a decision — allow, warn, hold, block — rather than a raw
+status, because a scheme where one bank holds and another releases is not a
+scheme. A cleared payment is recorded nowhere and the payer is never identified
+to the service; only decisions with a consequence are written down.
+
+**A listing can be contested, and silence lapses it.** An unanswered appeal
+clears the listing at its deadline — 24h for a restriction, 72h for a block.
+The account holder is the party who cannot act, so silence favours them. This
+also corrected an asymmetry: a restriction took one officer to impose and two to
+remove, making an error more expensive to correct than to make.
+
 **Risk-list statuses expire at read time.** A stored deadline compared against
 the clock when someone asks, never a cron sweep. A missed sweep would silently
 extend a restriction on a real person's account, and neither they nor the

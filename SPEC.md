@@ -460,3 +460,106 @@ one is given. Cases are typed:
   randomised, so a fresh signature differs from any fixed vector and must still
   verify; and deflate is not canonical, so a Profile B encoder is not required
   to reproduce the published bytes.
+
+## Annex C — account risk list, screening and appeal
+
+Annex C is the institutional layer. It is not cryptography and it is the part
+that reaches authorised push payment fraud, which §0 and §9 record as
+unreachable from the code.
+
+### C.1 Statuses
+
+| Status | Meaning | Approval | Default lifetime |
+|---|---|---|---|
+| `clear` | No listing in force | — | — |
+| `restricted` | A prudential hold: one institution's operational judgement about its own exposure | One officer, immediate | 72 hours |
+| `blocked` | A standing assertion about the account | Two distinct officers | 30 days |
+
+A hold is not a sanction. A status that never expires is a penalty imposed
+without process; the expiry is what keeps a hold a hold. Every status MUST carry
+a deadline, and that deadline MUST be evaluated when the status is read. There
+MUST NOT be a sweep job: a missed sweep would silently extend a restriction on a
+real person's account, and neither they nor the institution would observe
+anything wrong.
+
+### C.2 Screening
+
+A payer's institution MUST screen the payee account before executing a push
+payment, and MUST apply this mapping:
+
+| Status | Action |
+|---|---|
+| `clear` | Execute |
+| `restricted` | Hold: delay, require additional confirmation, or route to manual review |
+| `blocked` | Refuse |
+
+The mapping is normative rather than advisory because a scheme in which one
+institution holds where another releases is not a scheme.
+
+A low-value carve-out MAY allow a payment to a `restricted` account below a
+configured threshold to proceed with a prominent warning. The threshold MUST
+default to zero in every currency, so that the safe behaviour is what an
+unconfigured deployment does.
+
+Reads MUST be strongly consistent. An eventually consistent store leaves a
+window in which a just-listed account still reads clear, and that window is when
+the account is drained.
+
+**Recording.** A screening decision of `warn`, `hold` or `block` MUST be
+recorded. A decision of `allow` MUST NOT be recorded individually, and the payer
+MUST NOT be identified to the service. Whether an account was listed at a given
+moment is reconstructable from the append-only change feed; recording every
+cleared payment would build a national record of who paid whom, which is outside
+this system's purpose.
+
+### C.3 Attribution and audit
+
+Every write MUST record the institution **and** the individual officer, by
+per-officer mutual TLS credentials. An entry naming only an institution is not
+an audit entry.
+
+The audit log MUST be append-only, enforced by the storage layer rather than by
+convention, and hash-chained so that an export's interior integrity is checkable
+without trusting the database it came from. Corrections are new rows.
+
+Writes MUST be rate limited per institution and per officer. Sustained volume
+above a threshold MUST be refused **and** recorded as an incident: an institution
+listing thousands of accounts in an hour is compromised or misconfigured, and
+neither condition is a reason to act on its assertions.
+
+### C.4 The right to contest a listing
+
+An account holder MUST be able to contest a listing, through their
+account-holding institution.
+
+- The affected customer MUST NOT be able to query this service directly. An open
+  lookup would tell a mule operator whether their account had been detected.
+- Raising a contest MUST NOT by itself change the status. No institution may
+  clear a suspicion by asserting that it is disputed.
+- **An unanswered contest MUST lapse the listing.** Raising it starts a deadline
+  against the listing institution — RECOMMENDED: 24 hours for `restricted`, 72
+  hours for `blocked`, in both cases shorter than the listing's own lifetime.
+  The deadline MUST be evaluated at read time, like the expiry. Silence must
+  favour the account holder, who is the party unable to act.
+- Answering takes **one** officer, whether the answer upholds or withdraws.
+  Upholding must not be more onerous than ignoring. Withdrawal by the listing
+  institution must not be more onerous than the listing was: a restriction takes
+  one officer to impose, so requiring two to retract would make an error more
+  expensive to correct than to make. The two-officer requirement remains on a
+  discretionary removal by an institution that did not make the listing.
+
+The listing institution's identity is disclosed to the account-holding
+institution, not to the customer, so that the contest is possible without
+defeating the tipping-off constraints anti-money-laundering regimes impose. This
+leaves the affected person able to contest a listing without learning who made
+it or on what evidence, which is unsatisfactory and is recorded here as an open
+problem.
+
+### C.5 What Annex C does not achieve
+
+- It stops payments only to accounts **already listed**. Victims during the
+  interval before anyone lists an account are not protected. Time-to-list, not
+  detection accuracy, is the operative metric.
+- It sees the first hop only. Cash-out and onward layering are invisible to it.
+- It sits in the payment path, so an implementation that is not fast will be
+  routed around.
