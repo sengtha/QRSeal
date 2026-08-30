@@ -1,0 +1,47 @@
+{
+  "generatedBy": "tools/measure-qr.ts",
+  "errorCorrectionLevel": "M",
+  "library": "qrcode (node), ISO/IEC 18004 capacity tables",
+  "measurements": [
+    {
+      "label": "Unsigned KHQR baseline",
+      "characters": 111,
+      "version": 5,
+      "modules": 37,
+      "mode": "Numeric+Byte+Alphanumeric",
+      "note": ""
+    },
+    {
+      "label": "Profile A signed",
+      "characters": 317,
+      "version": 10,
+      "modules": 57,
+      "mode": "Numeric+Byte+Alphanumeric",
+      "note": ""
+    },
+    {
+      "label": "Profile B credential",
+      "characters": 381,
+      "version": 12,
+      "modules": 65,
+      "mode": "Alphanumeric",
+      "note": ""
+    },
+    {
+      "label": "Unsigned baseline, uppercase acquirer id",
+      "characters": 111,
+      "version": 5,
+      "modules": 37,
+      "mode": "Numeric+Alphanumeric",
+      "note": "alphanumeric mode throughout"
+    },
+    {
+      "label": "Profile A signed, uppercase acquirer id",
+      "characters": 317,
+      "version": 10,
+      "modules": 57,
+      "mode": "Numeric+Alphanumeric",
+      "note": "alphanumeric mode throughout"
+    }
+  ]
+}

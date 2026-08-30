@@ -15,11 +15,11 @@
     "test": "vitest run",
     "test:workers": "pnpm -r --filter ./workers/** run test",
     "vectors:generate": "node --experimental-strip-types tools/generate-vectors.ts",
-    "vectors:check": "vitest run packages/core/test/vectors.test.ts",
+    "vectors:check": "node --experimental-strip-types tools/generate-vectors.ts --check",
     "measure:qr": "node --experimental-strip-types tools/measure-qr.ts",
     "check:profile-a-isolation": "node --experimental-strip-types tools/check-profile-a-isolation.ts",
     "check:no-signing-keys": "node --experimental-strip-types tools/check-no-signing-keys.ts",
-    "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:profile-a-isolation && pnpm check:no-signing-keys"
+    "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm vectors:check && pnpm check:profile-a-isolation && pnpm check:no-signing-keys"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.22.0",

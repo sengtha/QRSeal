@@ -7,7 +7,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { UrlPayloadRejectedError } from '../src/errors.js';
-import { CredentialAssertion, assertNotUrlCarrier, verifyProfileB } from '../src/profileB.js';
+import type { CredentialAssertion} from '../src/profileB.js';
+import { assertNotUrlCarrier, verifyProfileB } from '../src/profileB.js';
 import { anchorFor, suite } from './support/anchors.js';
 
 const vector = suite.cases.find((c) => c.id === 'B-accept-published-reference')!;

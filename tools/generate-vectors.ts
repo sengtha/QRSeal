@@ -12,14 +12,12 @@
  * has any security value.
  */
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import {
   appendCrc,
-  crc16CcittFalse,
-  deflate,
   encodeBase45,
   encodeCoseSign1,
   signProfileA,
@@ -898,8 +896,29 @@ async function main(): Promise<void> {
     cases,
   };
 
-  writeFileSync(OUT, `${JSON.stringify(suite, null, 2)}\n`);
   const rejects = cases.filter((c) => c.expect === 'reject').length;
+
+  // `--check` verifies that the committed suite still matches what the
+  // generator would produce, without demanding byte equality: ECDSA is
+  // randomised, so every regeneration carries different signatures and every
+  // payload containing one differs. What must not drift is the inventory —
+  // which cases exist, what each asserts, and the rejection reason each
+  // expects.
+  if (process.argv.includes('--check')) {
+    const committed = JSON.parse(readFileSync(OUT, 'utf8')) as { cases: readonly Case[] };
+    const inventory = (list: readonly Case[]): string =>
+      JSON.stringify(
+        list.map((c) => [c.id, c.profile, c.type, c.expect, c.reason]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+      );
+    if (inventory(committed.cases) !== inventory(cases)) {
+      process.stderr.write('vectors/vectors.json is out of date; run `pnpm vectors:generate`\n');
+      process.exit(1);
+    }
+    process.stdout.write(`vectors/vectors.json is current (${cases.length} cases)\n`);
+    return;
+  }
+
+  writeFileSync(OUT, `${JSON.stringify(suite, null, 2)}\n`);
   process.stdout.write(
     `wrote ${OUT}\n  ${cases.length} cases (${rejects} negative, ${cases.length - rejects} positive)\n`,
   );

@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests and conformance suite
+        run: pnpm test
+
+      # The suite must be reproducible from the repository alone. Byte
+      # equality is not the test — ECDSA is randomised, so every regeneration
+      # carries fresh signatures. What must not drift is the case inventory.
+      - name: Conformance vectors are current
+        run: |
+          pnpm build
+          node --experimental-strip-types tools/generate-vectors.ts --check
+
+      - name: Conformance suite passes through the CLI
+        run: node packages/cli/dist/index.js run-vectors --file vectors/vectors.json
+
+      # Profile A must stay embeddable in a wallet with no polyfill: Web Crypto
+      # and nothing else, no CBOR, no streams.
+      - name: Profile A dependency isolation
+        run: pnpm check:profile-a-isolation
+
+      # Certificate issuance must be impossible through compromise of an online
+      # service. No Worker may hold or use a signing key.
+      - name: No signing key at the edge
+        run: pnpm check:no-signing-keys
+
+      - name: QR measurements are current
+        run: |
+          node --experimental-strip-types tools/measure-qr.ts
+          git diff --exit-code -- docs/qr-measurements.json
+
+  workers:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [trustlist-edge, registry-api, risklist-api]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Worker tests run in workerd via @cloudflare/vitest-pool-workers, not a
+      # Node shim: the crypto, stream, D1 and Durable Object behaviour under
+      # test must be the real runtime's.
+      - name: Test ${{ matrix.worker }}
+        run: pnpm --filter @kh-sqr/${{ matrix.worker }} test
