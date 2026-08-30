@@ -65,11 +65,12 @@ MIT-licensed reference implementation with a language-neutral conformance suite
 of forty cases, thirty-one of them negative; an explicit account of what the
 design does not achieve and why each residual risk is unreachable from the code
 layer; and a constructive corollary --- that where a control cannot be enforced
-below the harm, it can be placed above it, by emptying the set of legitimate
-artefacts rather than authenticating the illegitimate ones. We give that
-corollary concretely as a categorical national prohibition on URL-bearing
-payment and official QR codes, paired with a public rule that requires no
-judgement to apply. We report two respects in which our own deployment and container fail to
+below the harm, three moves remain --- raise the control above it, make the
+consequence reversible, or reallocate the loss. We give the first concretely as
+a categorical national prohibition on URL-bearing payment and official QR codes,
+paired with a public rule that requires no judgement to apply, and we use Japan,
+where the same QR code sits on a reversible stored-value substrate, to identify
+finality rather than cryptography as the variable that governs exposure. We report two respects in which our own deployment and container fail to
 meet the specification's stated requirements, and we treat the absence of
 Cambodia-specific incident data as a finding rather than a gap to be filled with
 vendor figures.
@@ -942,6 +943,18 @@ than it denies an attacker. It is disabled by default in every currency. The
 safe value is the default, and a regulator who wants less friction must choose
 the threshold and own the choice.
 
+\paragraph{A hold is borrowed reversibility.}
+The deeper justification for holding rather than merely warning is not caution.
+A system whose payments are final has, by construction, no way to undo a
+transfer once the payer has been deceived --- and that property, not the quality
+of anyone's cryptography, is the variable Section~\ref{sec:japan} identifies as
+separating Cambodia's exposure from Japan's. A hold reintroduces a small,
+targeted quantity of the missing reversibility: for the narrow set of payments
+that trip a signal, and for a bounded period, the transfer is not yet final. It
+does not restore general reversibility, which Cambodia gave up deliberately and
+for good reasons. It buys back just enough of it, in just the cases where the
+loss would otherwise be irreversible.
+
 \paragraph{What is recorded, and what deliberately is not.}
 Only decisions with a consequence --- warn, hold, block --- are written down. A
 cleared payment leaves no trace, and the payer is never identified to the
@@ -1055,6 +1068,7 @@ compromised or misconfigured; neither condition is a reason to act on its
 assertions.
 
 \subsection{Liability allocation}
+\label{sec:liability}
 
 The fourth layer is not a security control but an allocation of loss, and its
 design determines who has the incentive to reduce the residue.
@@ -1097,6 +1111,98 @@ The diagnostic question for any proposed control is therefore not ``is this
 mechanism sound?'' but ``at which layer is the harmful meaning created, and is
 that at or below the layer where this mechanism is enforced?''
 
+\subsection{Three degrees of freedom}
+\label{sec:degrees}
+
+If a control cannot reach the layer at which the harm is created, three moves
+remain, and we can identify only three. Each acts at a different point in the
+causal chain: before the meaning is created, on the consequence of acting on it,
+or on who bears that consequence.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}p{0.19\linewidth}p{0.36\linewidth}p{0.37\linewidth}@{}}
+\toprule
+\textbf{Move} & \textbf{Mechanism} & \textbf{Instance in this paper} \\
+\midrule
+Raise the control above the harm &
+  Empty the set of legitimate artefacts, so anything outside it is recognisable
+  without authentication &
+  The categorical prohibition on URL-bearing codes
+  (Section~\ref{sec:categorical}) \\[0.4em]
+Make the consequence reversible &
+  Interpose a ledger somebody controls, so a transfer can be undone after the
+  deception has already succeeded &
+  Japan's stored-value substrate (Section~\ref{sec:japan}); and, narrowly, the
+  prudential hold (Section~\ref{sec:screening}) \\[0.4em]
+Reallocate the loss &
+  Move the cost to the party holding the cheapest available control &
+  Liability allocation (Section~\ref{sec:liability}) \\
+\bottomrule
+\end{tabular}
+\caption{What remains available when a control cannot reach the layer where the
+harm is created.}
+\label{tab:degrees}
+\end{table}
+
+The second move is the one worth dwelling on, because it is the least obvious
+and because it does not contradict the layer result --- it sidesteps it.
+Reversibility does not govern meaning at all. It governs \emph{consequence}. The
+deception still succeeds, the victim is still deceived, and the harm is undone
+from \emph{below} the layer at which the lie was told. That is possible
+precisely because consequence, unlike meaning, is a property of the substrate,
+and the substrate is something a designer chooses.
+
+\subsection{Japan: the same code, a different substrate}
+\label{sec:japan}
+
+The QR code was invented in Japan, at Denso Wave in 1994, by a team led by
+Masahiro Hara, to track automotive parts; its designers did not exercise their
+patent rights, which is the main reason the format became universal
+\citep{densowave}. Japan also has substantial code-payment volume
+\citep{meti2026cashless}. It does not have Cambodia's QR fraud shape, and the
+reason is not better cryptography.
+
+Japanese code payments are predominantly operator-mediated stored value: the
+scan spends a balance funded in advance, or authorises a linked card, and
+settlement to the merchant occurs afterwards across the operator's own books.
+Cambodia's arrangement is the opposite. The scan \emph{is} the settlement
+instruction, and the transfer is interbank, immediate and final.
+
+Four consequences follow from that single difference:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item an operator is interposed, holding a ledger it controls and can adjust;
+    in an interbank push there is no middle, and nobody positioned to reverse;
+  \item the loss is bounded by the funded balance rather than by the account
+    balance;
+  \item recourse exists --- an operator dispute for prepaid value, and inherited
+    chargeback rights where a card funds the wallet;
+  \item the set of payees is curated by the operator, so paying an arbitrary
+    stranger's account is not the default primitive.
+\end{itemize}
+
+\noindent Two qualifications, and both matter.
+
+\textbf{Japan is not free of the deception this paper is about.} Impersonation
+and investment fraud are serious there. The money travels by bank transfer, cash
+handover or crypto instead. Stored value did not stop deception; it stopped
+deception arriving \emph{by QR}. Attackers go where finality is, which is an
+uncomfortable way to read Cambodia's exposure rather than a reassuring one.
+
+\textbf{Finality was chosen deliberately, and it bought something.} Removing
+chargeback risk is part of why acceptance costs are low enough for a market
+stall (Section~\ref{sec:background}). Recommending Japan's architecture would
+undo that and insert intermediary rent in its place. We do not recommend it. We
+use it to identify the variable, and then --- in Section~\ref{sec:screening} --- to
+buy a little of that variable back where it matters most.
+
+We characterise the architecture at the level of its class rather than auditing
+individual operators, and we report no Japanese incident figures: the sources we
+consulted disagreed on both category and magnitude, and we did not verify them
+against the National Police Agency's own releases.
+
 \subsection{The parallel with custody and exposure}
 
 Our earlier work on sovereign hybrid blockchains for regulated DeFi reached the
@@ -1129,10 +1235,12 @@ diagnostic question above as a design practice.
 
 \subsection{Other push-payment markets}
 
-The analysis applies to any real-time push-payment system in which payments are
-irrevocable and initiated from a machine-readable artefact. India's UPI and
-Brazil's PIX share both properties, and both have contended with the same
-migration of attacker effort from instrument to persuasion. We do not claim
+Where Japan is a contrast, India's UPI and Brazil's PIX are instances. Both are
+real-time push-payment systems in which payments are irrevocable and initiated
+from a machine-readable artefact --- the same substrate as Bakong --- and both have
+contended with the same migration of attacker effort from instrument to
+persuasion. Contrast and instance do different work: the instances show the
+pattern recurs, and the contrast identifies which property drives it. We do not claim
 detailed knowledge of either market's incident data and make no quantitative
 comparison. The structural point stands independently of the numbers: where
 payments are final and initiation is delegated to an artefact the user cannot
@@ -1184,6 +1292,12 @@ verified fail on deliberately introduced violations.
   \item \textbf{The container is not legacy-transparent.}
     Section~\ref{sec:container}. Two deviations from EMVCo, one of which
     invalidates the design's stated premise for the choice of template range.
+
+  \item \textbf{The Japanese comparison is architectural, not empirical.}
+    Section~\ref{sec:japan} characterises a class of payment architecture and
+    reports no Japanese incident data. We did not audit individual operators,
+    and we did not verify fraud figures against the National Police Agency's own
+    releases. The contrast identifies a variable; it does not measure its effect.
 
   \item \textbf{The categorical rule is proposed, not adopted or evaluated.}
     Section~\ref{sec:categorical} argues from the structure of the decision
