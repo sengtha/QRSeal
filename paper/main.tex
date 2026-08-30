@@ -72,8 +72,11 @@ a categorical national prohibition on URL-bearing payment and official QR codes,
 paired with a public rule that requires no judgement to apply, and we use Japan, where the same QR code sits on a
 reversible stored-value substrate whose illiquidity is statutory rather than
 designed, to identify the properties of the payment substrate --- not the
-strength of any cryptography --- as what governs exposure. We report two respects in which our own deployment and container fail to
-meet the specification's stated requirements, and we treat the absence of
+strength of any cryptography --- as what governs exposure. We report that the gap between institutional control and public
+credulity widens structurally, and that this design widens the part of it the
+design cannot close: a code that visibly verifies manufactures the confidence
+the unaddressed attack depends on. We report two respects in which our own
+deployment and container fail to meet the specification's stated requirements, and we treat the absence of
 Cambodia-specific incident data as a finding rather than a gap to be filled with
 vendor figures.
 \end{abstract}
@@ -113,7 +116,10 @@ like to coincide:
 \end{itemize}
 
 \noindent The second is much larger than the first, and it is the difference
-between them that attackers operate in. A sticker over a merchant's code is
+between them that attackers operate in. It is also widening: the two boundaries
+grow at different rates and only one of them can contract, which
+Section~\ref{sec:trajectory} argues is the more consequential fact about this
+system's future than anything in its present. A sticker over a merchant's code is
 inside the gap. So is a printed code on a leaflet claiming to verify a document.
 So, crucially, is a completely genuine KHQR presented with a false story
 attached.
@@ -716,12 +722,100 @@ This is the residual risk that motivates
 Section~\ref{sec:categorical}, and it is why that section's intervention is not
 software.
 
+\subsection{The gap widens, and this design widens part of it}
+\label{sec:trajectory}
+
+Everything above is stated as of now. The more uncomfortable claim is about
+direction.
+
+Section~\ref{sec:background} described two boundaries --- what the authorities
+actually control, and what the public extends its trust to --- and presented the
+distance between them as a static gap. It is not static. The two grow at
+different rates, and only one of them can contract.
+
+The \textbf{trust boundary} grows linearly and is bounded by administrative
+capacity: one issuer registered, one code signed, one credential type covered at
+a time. The \textbf{credulity boundary} grows with public habituation, and does
+not contract. Five mechanisms drive it, each running one way only:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Late adopters inherit the QR code as furniture.} Early users
+    encountered it as a novel instrument and learned some caution with it. Every
+    subsequent cohort receives it already normalised, and learns none.
+  \item \textbf{Every uneventful scan strengthens the prior.} The base rate of
+    safe scans is overwhelming, and remains overwhelming even as fraud rises, so
+    ordinary experience keeps confirming that scanning is safe. Individual
+    evidence and population risk move in opposite directions.
+  \item \textbf{Attacker learning is cumulative and shared; victim learning is
+    neither.} A pretext that works becomes a template and propagates. Having
+    been defrauded propagates poorly, because shame suppresses the telling.
+  \item \textbf{The value at risk per account rises} as salary, bills and
+    remittances migrate onto the rail. The same attack yields more for no
+    additional effort.
+  \item \textbf{The substrate does not improve on its own.} Finality and the
+    liquidity of the output (Section~\ref{sec:japan}) are fixed unless
+    deliberately changed, so the loss per successful incident stays at its
+    maximum.
+\end{enumerate}
+
+\paragraph{And this design widens the gap it cannot close.}
+Every signed code that a person scans successfully teaches them that the system
+checks these codes on their behalf. That raises credulity. It does not extend
+the trust boundary over what actually harms them, because
+Section~\ref{sec:notachieved} is untouched by any of it. A measure that
+manufactures precisely the confidence the dominant attack feeds on is not a
+neutral addition to the system.
+
+We therefore state the expected effect plainly. Deploying this design should be
+expected to reduce forgery \emph{and} to increase exposure to authorised push
+payment fraud. We do not know the sign of the sum. This is the result of
+Section~\ref{sec:indicators} in dynamic form: users do not reliably notice an
+indicator that is absent, and they do generalise from one that is present.
+
+\paragraph{The trajectory is not observable.}
+With no baseline there is no trend. A country without incident statistics cannot
+detect a gradual rise in fraud it does not measure, and the first reliable signal
+is a crisis rather than a gradient. Section~\ref{sec:data} argues for mandatory
+reporting on the ground that prioritisation cannot otherwise be argued from
+evidence; this is the stronger form of that argument. Without measurement, the
+trajectory described here cannot be observed even in principle, and the net
+effect of deploying this design will remain unknown for as long as that holds.
+
+\paragraph{What follows for sequencing.}
+If exposure grows, the interventions of Section~\ref{sec:institutional} do not
+age equally, and the difference is systematic.
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Detection-dependent controls degrade with volume.} Screening
+    protects nobody until somebody has listed the account; the contest procedure
+    requires officers to answer within a deadline. Both consume institutional
+    effort in proportion to attacker volume, and in a rising market both lose
+    that race.
+  \item \textbf{Substrate controls are volume-independent.} Exit controls
+    (Section~\ref{sec:exit}) do not care how many attacks occur. Illiquidity
+    applies identically at ten incidents and at ten thousand, and costs no more
+    to enforce at either.
+\end{itemize}
+
+\noindent Under a rising trajectory the ordering should therefore shift further
+towards the substrate and away from detection. We record this as a consequence
+of the argument rather than as a recommendation we can support with measurement.
+
+\paragraph{What kind of claim this is.}
+It is a mechanism argument, not a forecast. Each item above is structural and
+one-directional, and we can say which way the gap moves. We cannot say how fast,
+and with no incident data we can neither estimate the magnitude nor, at present,
+observe it. We make no quantitative prediction, and we would distrust one.
+
 \subsection{Summary}
 
 Layers~1 and~2 are the parts of the problem that cryptography addresses, and
 this design addresses them. Layers~3 and~4 are the parts that matter most in
 current Cambodian fraud, and it does not address them at all. Any presentation
-of this work that inverts that emphasis misrepresents it.
+of this work that inverts that emphasis misrepresents it. And by
+Section~\ref{sec:trajectory}, the share of the problem it does not address
+should be expected to grow --- partly for reasons that have nothing to do with
+this design, and partly because of it.
 
 There is, however, a constructive corollary that the layer argument itself
 supplies, and it is the subject of Section~\ref{sec:categorical}. If the harm is
@@ -1506,6 +1600,16 @@ argued from evidence rather than, as here, from structure.
 Each of those is an intervention at a layer the code cannot reach, which is the
 point. The response to a control that stops too low is not a stronger control at
 the same height.
+
+One further thing should be said, because it is the finding we would least like
+to be right about. The gap between what the authorities control and what the
+public trusts is not fixed; it widens, for reasons structural enough to name and
+none of which reverse. Part of that widening is this design's own doing: a code
+that visibly verifies teaches its user that codes are checked on their behalf,
+which is exactly the belief the attack we cannot address depends on. We expect
+deployment to reduce forgery and to increase exposure to authorised push payment
+fraud, we do not know the sign of the sum, and in the absence of incident
+statistics nobody will find out.
 
 We offer the artefact because the artefact is useful and the forgery layer
 genuinely needs closing. We offer the analysis because the artefact will be

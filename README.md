@@ -71,6 +71,14 @@ listed within minutes, and the funds are traceable and freezable. The attack doe
 not become impossible — it becomes expensive, non-repeatable and attributable.
 That attribution is what the institutional layer (§4) runs on.
 
+**And a cost that is easy to miss.** Every signed code a person scans
+successfully teaches them that *the system checks these for me*. That raises
+what the public is willing to trust. It does not extend what anyone actually
+controls, because P4 is untouched by any of it. **Deploying QRSeal should be
+expected to reduce forgery and to increase exposure to authorised push payment
+fraud** — and with no incident data, nobody will learn the sign of the sum. See
+§3.9.
+
 ---
 
 ## 3. What QRSeal cannot solve
@@ -125,6 +133,66 @@ tested and did not hold.
 
 *Why unreachable:* by the time funds move, the payment is final and irreversible.
 Addressed partly at the institutional layer (§4.3 and §4.4), and only for the first hop.
+
+### 3.9 The gap widens over time — and this design widens part of it
+
+The eight problems above are stated as of now. The direction matters more.
+
+Two boundaries govern this system: what the authorities actually control and can
+vouch for, and what the public extends central-bank trust to. The distance
+between them is where every attack in §1 operates — and it is not static.
+
+**The trust boundary grows linearly**, bounded by administrative capacity: one
+issuer registered, one code signed, one credential type covered at a time.
+
+**The credulity boundary grows with habituation and never contracts.** Five
+mechanisms, each running one way only:
+
+1. **Late adopters inherit QR as furniture.** Early users met it as a novel
+   instrument and learned some caution. Every later cohort receives it already
+   normalised, and learns none.
+2. **Every uneventful scan strengthens the prior.** The base rate of safe scans
+   stays overwhelming even as fraud rises, so ordinary experience keeps
+   confirming that scanning is safe. Individual evidence and population risk move
+   in opposite directions.
+3. **Attacker learning is cumulative and shared; victim learning is neither.** A
+   pretext that works becomes a template. Having been defrauded propagates
+   poorly, because shame suppresses the telling.
+4. **Value at risk per account rises** as salary, bills and remittances move onto
+   the rail. Same attack, larger yield, no extra effort.
+5. **The substrate does not improve on its own.** Finality and the liquidity of
+   the output (§4.3) are fixed unless deliberately changed, so loss per incident
+   stays at maximum.
+
+**QRSeal contributes to the fifth column of that ledger.** A measure that
+manufactures precisely the confidence the dominant attack feeds on is not a
+neutral addition. This is the SiteKey result (P6) in dynamic form: users do not
+reliably notice an indicator that is *absent*, and they do generalise from one
+that is *present*.
+
+**The trajectory is not observable.** With no baseline there is no trend. A
+country without incident statistics cannot detect a gradual rise in fraud it does
+not measure; the first reliable signal is a crisis, not a gradient. This is the
+strongest form of the argument in §4.1 — without measurement, none of this can be
+observed even in principle.
+
+**What follows for the ranking in §4.** If exposure grows, interventions do not
+age equally:
+
+- **Detection-dependent controls degrade with volume.** Screening (§4.4) needs
+  someone to have listed the account; contest (§4.5) needs officers to answer in
+  time. Both spend institutional effort against attacker volume, and lose.
+- **Substrate controls are volume-independent.** Exit controls (§4.3) do not care
+  how many attacks occur — illiquidity applies identically at ten incidents or
+  ten thousand, and costs no more at either.
+
+So a rising trajectory pushes the ranking *further* toward the substrate and away
+from detection.
+
+**What kind of claim this is.** A mechanism argument, not a forecast. Each
+mechanism is structural and one-directional, so the *direction* is determined.
+The magnitude is not, and with no incident data it can neither be estimated nor
+currently observed. No number is predicted here, and one should be distrusted.
 
 ---
 
