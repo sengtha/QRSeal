@@ -5,7 +5,9 @@
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "pnpm -r --filter ./packages/** run build",
     "typecheck": "tsc -b --force",
@@ -20,13 +22,24 @@
     "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:profile-a-isolation && pnpm check:no-signing-keys"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20260830.1",
     "@eslint/js": "^9.39.1",
     "@types/node": "^22.10.2",
+    "@vitest/runner": "^4.1.11",
+    "@vitest/snapshot": "^4.1.11",
+    "cbor2": "^2.0.1",
     "eslint": "^9.39.1",
+    "qrcode": "^1.5.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vitest": "^3.2.4",
-    "qrcode": "^1.5.4",
-    "cbor2": "^2.0.1"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.127.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
   }
 }

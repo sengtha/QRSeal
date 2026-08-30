@@ -1,0 +1,20 @@
+{
+  "name": "@kh-sqr/trustlist-edge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serves the KH-SQR trust list, timestamp statement and application trust list. Read-only. Holds no key.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@kh-sqr/core": "workspace:*",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20260830.1",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.48.1"
+  }
+}

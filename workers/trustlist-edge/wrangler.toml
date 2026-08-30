@@ -1,0 +1,27 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "kh-sqr-trustlist-edge"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+workers_dev = false
+
+# This Worker is read-only and holds no key of any kind. The signed artifacts
+# it serves are produced elsewhere: the trust list in an offline Root ceremony,
+# the timestamp statement by a separate signer outside Cloudflare. There is
+# deliberately no secret binding here, and CI fails if one appears.
+# See tools/check-no-signing-keys.ts.
+
+[[r2_buckets]]
+binding = "ARTIFACTS"
+bucket_name = "kh-sqr-artifacts"
+
+[[kv_namespaces]]
+binding = "POINTER"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[observability]
+enabled = true
+
+[vars]
+# Mirrors under distinct operational control. A single-provider deployment does
+# NOT satisfy the specification's mirror-independence requirement; see README.
+MIRROR_HINTS = "https://trustlist.nbc.gov.kh/,https://kh-sqr-mirror.example.org/"

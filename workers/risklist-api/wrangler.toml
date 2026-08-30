@@ -1,0 +1,30 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "kh-sqr-risklist-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+workers_dev = false
+
+# No secret binding, and none may be added. This service holds no key: it
+# authenticates callers by mutual TLS, which Cloudflare terminates, and signs
+# nothing. CI fails if a signing key appears here.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kh-sqr-risklist"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# Deliberately NOT KV. KV is eventually consistent, which leaves a window in
+# which an account that has just been listed still reads clear — precisely the
+# window a mule account is drained in. A Durable Object per shard serialises
+# reads and writes for the accounts it owns.
+[[durable_objects.bindings]]
+name = "SHARDS"
+class_name = "AccountShard"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AccountShard"]
+
+[observability]
+enabled = true

@@ -1,0 +1,27 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "kh-sqr-registry-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+workers_dev = false
+
+# No secret binding, and none may be added. This service queues certificate
+# signing requests for an offline ceremony and publishes the certificates the
+# ceremony produces. It never signs. Issuance must be impossible through
+# compromise of this portal. CI fails if a signing key appears here.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kh-sqr-registry"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "ARTIFACTS"
+bucket_name = "kh-sqr-registry-artifacts"
+
+[observability]
+enabled = true
+
+# Access is gated by Cloudflare API Shield mutual TLS. Each officer holds their
+# own client certificate; the certificate identifies the person, not merely the
+# institution, so the audit log can name who acted.

@@ -1,0 +1,20 @@
+{
+  "name": "@kh-sqr/risklist-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Annex C account risk list: authenticated institutional writes, strongly consistent status reads, delta feed.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "migrate:local": "wrangler d1 migrations apply kh-sqr-risklist --local",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20260830.1",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.127.1"
+  }
+}

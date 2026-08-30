@@ -1,3 +1,16 @@
 packages:
   - 'packages/*'
   - 'workers/*'
+allowBuilds:
+  ',': true
+  b: true
+  d: true
+  e: true
+  i: true
+  k: true
+  l: true
+  o: true
+  r: true
+  s: true
+  u: true
+  w: true
