@@ -268,7 +268,241 @@ it.
 
 ---
 
-## 5. What is here
+---
+
+## 5. Stakeholders
+
+No single organisation can deliver any of the interventions above. Each needs a
+different combination of parties, and the ones that matter most need parties
+outside the central bank's perimeter. This section names them.
+
+Four roles recur:
+
+| Role | Meaning |
+|---|---|
+| **Mandates** | Has the authority to require the change |
+| **Operates** | Runs the machinery |
+| **Complies** | Must change what it does |
+| **Bears the outcome** | Experiences the result, and usually cannot act alone |
+
+And one category that matters because it is *absent*: handset operating-system
+vendors, who control the scan path and cannot be bound by Cambodian rule.
+
+### Who must act, per solution
+
+| Solution | Mandates | Operates | Complies | Bears the outcome |
+|---|---|---|---|---|
+| **S0** QRSeal signing | NBC | Root ceremony, `trustlist-edge`, `registry-api` | Banks/PSPs, ministries, merchants, wallet developers | Payers, document verifiers |
+| **S1** Incident reporting | NBC, MPTC | NBC statistics function | Banks/PSPs, telcos | Public, researchers, policy |
+| **S2** URL prohibition | NBC + MPTC + line ministries | Named regulator (audit) | Banks/PSPs, ministries, telcos, wallet developers | Public |
+| **S3** Screening | NBC | `risklist-api` | Sending and receiving PSPs | Payers, payees held in error |
+| **S4** Right to contest | NBC | `risklist-api` | Account-holding and listing institutions | Account holders |
+| **S5** Liability allocation | NBC / regulator | Dispute or ombudsman body | Sending and receiving PSPs | Victims |
+
+### S0 — QRSeal signing (solves P1, P2, P7)
+
+```mermaid
+flowchart LR
+  NBC["NBC<br/>Root key, trust list"]:::mandate
+  CER["Ceremony officers<br/>offline, air-gapped"]:::operate
+  REG["registry-api<br/>CSR queue"]:::operate
+  TL["trustlist-edge<br/>serves list + timestamp"]:::operate
+  PSP["Banks / PSPs<br/>issuer key in HSM"]:::comply
+  MIN["Line ministries<br/>credential issuers"]:::comply
+  MERCH["Merchants<br/>must reprint codes"]:::comply
+  WALLET["Wallet developers<br/>embed the verifier"]:::comply
+  PAYER["Payer"]:::affected
+
+  PSP -->|"CSR"| REG
+  MIN -->|"CSR"| REG
+  REG -->|"queued for ceremony"| CER
+  NBC --> CER
+  CER -->|"certificates, signed trust list"| TL
+  TL -->|"trust list + timestamp"| WALLET
+  PSP -->|"signed codes"| MERCH
+  MERCH -->|"displays"| PAYER
+  WALLET -->|"payee disclosure"| PAYER
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+```
+
+The cost lands on **merchants**, who must reprint at a larger symbol size, and on
+**wallet developers**, who must ship a verifier. Neither is the party that
+benefits most, which is the adoption problem in one sentence.
+
+### S1 — Mandatory incident reporting (priority 1)
+
+```mermaid
+flowchart LR
+  NBC["NBC<br/>mandates and publishes"]:::mandate
+  MPTC["MPTC / national CERT<br/>non-payment incidents"]:::mandate
+  PSP["Banks / PSPs<br/>report incidents"]:::comply
+  TELCO["Telecom operators"]:::comply
+  POL["Law enforcement"]:::operate
+  PUB["Public, researchers,<br/>policy design"]:::affected
+
+  NBC -->|"reporting obligation"| PSP
+  MPTC -->|"reporting obligation"| TELCO
+  PSP -->|"incident returns"| NBC
+  TELCO -->|"quishing reports"| MPTC
+  MPTC -->|"shared dataset"| NBC
+  NBC -->|"published aggregates"| PUB
+  NBC -->|"referrals"| POL
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+```
+
+The smallest stakeholder set of any intervention here, and the one that makes
+every other priority arguable from evidence rather than from structure.
+
+### S2 — Categorical URL prohibition (priority 2)
+
+Two asymmetric halves. The prohibition binds institutions; the rule addresses the
+public. Both are needed, and the software check is the weakest of the three.
+
+```mermaid
+flowchart TB
+  NBC["NBC"]:::mandate
+  MPTC["MPTC"]:::mandate
+  IAG["Inter-agency instrument<br/>binds the whole perimeter"]:::mandate
+  AUD["Named regulator<br/>audit + violation channel"]:::operate
+
+  PSP["Banks / PSPs"]:::comply
+  MIN["Line ministries"]:::comply
+  TELCO["Telecom operators"]:::comply
+  WALLET["Wallet developers<br/>software check"]:::comply
+
+  PUB["Public<br/>one unchanged sentence"]:::affected
+  OS["Handset OS vendors<br/>control the scan path"]:::outside
+
+  NBC --> IAG
+  MPTC --> IAG
+  IAG -->|"no URL-bearing QR"| PSP
+  IAG -->|"no URL-bearing QR"| MIN
+  IAG -->|"no URL-bearing QR"| TELCO
+  IAG -->|"reject http/https"| WALLET
+  IAG -->|"public rule"| PUB
+  AUD -->|"audits legacy print"| PSP
+  AUD -->|"audits campaigns"| MIN
+  OS -.->|"cannot be bound<br/>by national rule"| PUB
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+  classDef outside fill:#F2F2F2,stroke:#777,color:#111,stroke-dasharray:4 3
+```
+
+**The critical dependency is the inter-agency instrument.** NBC alone binds banks
+and PSPs. One ministry running a URL-QR campaign falsifies the public rule for
+everyone, and the public cannot be asked to hold an exception — so MPTC, line
+ministries and telcos must be inside the same instrument or the rule is not true.
+
+### S3 — Screening at the moment of payment (priority 3, built)
+
+```mermaid
+flowchart LR
+  NBC["NBC<br/>operates the register"]:::mandate
+  RISK["risklist-api<br/>POST /screen"]:::operate
+  RECV["Receiving PSP<br/>lists the mule account"]:::comply
+  SEND["Sending PSP<br/>screens before release"]:::comply
+  PAYER["Payer<br/>payment held"]:::affected
+  PAYEE["Payee<br/>may be held in error"]:::affected
+
+  NBC --> RISK
+  RECV -->|"restricted / blocked"| RISK
+  SEND -->|"screen payee account"| RISK
+  RISK -->|"allow / warn / hold / block"| SEND
+  SEND -->|"holds or refuses"| PAYER
+  SEND -.->|"funds withheld"| PAYEE
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+```
+
+The **receiving PSP** is the load-bearing party: it sees the account behaviour
+first and nothing works until it lists. That is also why liability allocation
+(S5) matters — it is the party with the information and, today, none of the cost.
+
+### S4 — The right to contest a listing (built)
+
+```mermaid
+flowchart LR
+  HOLDER["Account holder<br/>cannot query the register"]:::affected
+  HOLD_INST["Account-holding institution<br/>raises the contest"]:::comply
+  RISK["risklist-api<br/>starts the deadline clock"]:::operate
+  LIST_INST["Listing institution<br/>owes the answer"]:::comply
+  NBC["NBC<br/>sets deadlines, oversight"]:::mandate
+
+  HOLDER -->|"disputes the freeze"| HOLD_INST
+  HOLD_INST -->|"POST /appeals"| RISK
+  RISK -->|"queue + deadline"| LIST_INST
+  LIST_INST -->|"uphold or withdraw<br/>one officer either way"| RISK
+  RISK -.->|"no answer by deadline:<br/>listing lapses"| HOLDER
+  NBC --> RISK
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+```
+
+The account holder appears only at the two ends of this diagram: they start the
+contest and they receive its outcome, and they touch nothing in between. That is
+deliberate — an open lookup would tell a mule operator whether they had been
+detected — but it is also why the **dotted lapse arrow** matters. It is the only
+path in the diagram that protects the account holder without requiring any other
+party to act.
+
+### S5 — Liability allocation (policy, not built)
+
+```mermaid
+flowchart LR
+  REG["NBC / regulator<br/>reimbursement rule"]:::mandate
+  SEND["Sending PSP"]:::comply
+  RECV["Receiving PSP<br/>opened the mule account"]:::comply
+  VICTIM["Victim"]:::affected
+  DISP["Dispute or<br/>ombudsman body"]:::operate
+
+  REG -->|"reimburse up to a cap"| SEND
+  REG -->|"equal cost share"| RECV
+  SEND -->|"reimburses"| VICTIM
+  RECV -->|"half the cost"| SEND
+  VICTIM -->|"escalates a refusal"| DISP
+  DISP -->|"findings"| REG
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+```
+
+The **equal cost share** is the whole mechanism. It routes part of the loss to
+the receiving PSP, which is the party holding the information S3 depends on. A
+sender-pays rule leaves that party with the detection capability and none of the
+incentive.
+
+### Where the stakeholder analysis lands
+
+- **NBC cannot deliver S2 alone.** It is the only intervention here requiring an
+  instrument that reaches outside the financial perimeter, and it is priority 2.
+- **The receiving PSP is load-bearing twice** — it lists accounts (S3) and it
+  holds half the loss (S5). Those two facts should be designed together.
+- **Merchants pay for S0 and benefit least**, which is where adoption will stall.
+- **The public is asked for exactly one thing** in the entire programme: the
+  single sentence in S2. Everything else is asked of institutions. That is the
+  correct distribution, and any design that inverts it is asking the wrong party.
+
+
+## 6. What is here
 
 ```
 packages/core/         isomorphic library. Web Crypto only. What a wallet embeds.
@@ -294,7 +528,7 @@ paper/                 the preprint
 `SPEC.md` is the normative specification, including **Annex C** for the risk
 list, screening and appeals.
 
-## 6. Usage
+## 7. Usage
 
 ```bash
 pnpm install
@@ -343,7 +577,7 @@ Prove a port conforms, without reading any of this TypeScript:
 node packages/cli/dist/index.js run-vectors --file vectors/vectors.json
 ```
 
-## 7. Design decisions worth knowing
+## 8. Design decisions worth knowing
 
 **The signing input is a prefix.** Profile A signs from position 0 up to and
 including the five characters `99128`. A verifier recovers it with a substring,
@@ -381,7 +615,7 @@ A Durable Object per shard serialises reads and writes; D1 remains the authority
 when someone asks, never a cron sweep. A missed sweep would silently extend a
 restriction on a real person's account, invisibly to them and to the institution.
 
-## 8. Measured QR symbol sizes
+## 9. Measured QR symbol sizes
 
 Error-correction level M. Generated by `pnpm measure:qr`, not transcribed.
 
@@ -399,7 +633,7 @@ grows; at fixed sticker size the modules shrink and scan less reliably on a chea
 handset in poor light. **This cost falls on merchants, who must reprint** — an
 adoption problem no cryptographic elegance addresses.
 
-## 9. Where this repository does not conform to its own specification
+## 10. Where this repository does not conform to its own specification
 
 **Mirror independence.** `SPEC.md` §4.4 requires three mirrors under *distinct
 operational control*. This deployment is one provider — one account, one
@@ -414,7 +648,7 @@ at sub-tag `00`, where KH-SQR puts a format version. A strict legacy parser will
 therefore *fail* on a signed payload rather than ignoring it. Deployment must
 upgrade parsers, not merely signers.
 
-## 10. Reproducing the reference vectors
+## 11. Reproducing the reference vectors
 
 Every key comes from a published scalar or a published label, so the suite
 regenerates from this repository alone:
@@ -430,7 +664,7 @@ bytes. The published Profile B payload came from a different deflate
 implementation and is a `verify` case: conformance requires that it decodes and
 verifies, not that your encoder reproduces it.
 
-## 11. Development
+## 12. Development
 
 ```bash
 pnpm check:all      # typecheck, lint, tests, vectors, both architectural guards
