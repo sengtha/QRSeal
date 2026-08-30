@@ -124,7 +124,7 @@ tested and did not hold.
 ### P8 — Mule cash-out and layering · **not addressed by the code**
 
 *Why unreachable:* by the time funds move, the payment is final and irreversible.
-Addressed partly at the institutional layer (§4.3), and only for the first hop.
+Addressed partly at the institutional layer (§4.3 and §4.4), and only for the first hop.
 
 ---
 
@@ -136,11 +136,12 @@ Ranked by expected effect. Note how little of it is cryptography.
 |---|---|---|---|
 | **1** | Mandatory incident reporting, published aggregates | Everything — makes prioritisation arguable at all | **Policy. Not built.** |
 | **2** | Categorical prohibition on URL-bearing QR codes | P3 | **Half built** — software check in `SPEC.md` §3.2; the rule itself is policy |
-| **3** | Time-to-list, plus screening at the moment of payment | P4, P8 | **Built** — `risklist-api` |
-| **4** | The right to contest a listing | Wrongful listings | **Built** — `risklist-api` |
-| **5** | Liability allocation | P4 incentives | **Policy. Not built.** |
-| **6** | Onboarding quality (know-your-customer) | P5 | Out of scope here |
-| **7** | Verification inside the OS scan path | P3, P6 | Not nationally achievable |
+| **3** | Exit controls on cash-out | P4, P8 | **Policy + account infrastructure. Not built.** |
+| **4** | Time-to-list, plus screening at the moment of payment | P4, P8 | **Built** — `risklist-api` |
+| **5** | The right to contest a listing | Wrongful listings | **Built** — `risklist-api` |
+| **6** | Liability allocation | P4 incentives | **Policy. Not built.** |
+| **7** | Onboarding quality (know-your-customer) | P5 | Out of scope here |
+| **8** | Verification inside the OS scan path | P3, P6 | Not nationally achievable |
 
 ### 4.1 Publish incident data — first, because everything else depends on it
 
@@ -200,7 +201,64 @@ Only the categorical rule is evaluated *after* the scan.
 budget. Effort displaces to P4, which is already dominant and which this rule
 leaves entirely intact.
 
-### 4.3 Screen at the moment of payment — built
+### 4.3 Remove the convertibility of the proceeds — exit controls
+
+The QR substrate has two independent properties that govern fraud exposure, and
+Cambodia holds the worse value of both:
+
+| | **Finality of the transfer** | **Liquidity of the output** |
+|---|---|---|
+| **Cambodia (Bakong)** | Final. No party can reverse. | **Money.** Withdrawable as cash, forwardable, convertible. |
+| **Japan (code payments)** | Reversible. An operator holds the ledger. | **A claim** redeemable through a chokepoint the operator owns. |
+
+Finality is not available to change — it is why Bakong exists, and §8 of the
+paper records what it bought. **That leaves liquidity as the one substrate
+property still open, and it is the more consequential of the two.**
+
+Fraud is a business and the business needs an *exit*. Reversibility only helps
+if somebody notices in time, so it inherits every weakness of detection.
+Illiquidity attacks the economics directly: if the proceeds cannot become cash,
+the scheme does not pay whether or not anyone detects it, whether or not the
+victim is believed, and whether or not any account was ever listed.
+
+Japan's version is **statutory, not a product choice**, which is what makes it a
+policy instrument rather than an architectural accident. The Payment Services
+Act separates prepaid payment instruments from funds transfer services; refund
+of a prepaid balance is generally prohibited, and a scheme designed to permit
+general refunds risks reclassification into the heavier licence. PayPay
+accordingly distinguishes a verified, withdrawable balance from an unverified,
+non-withdrawable one — and value loaded as the non-withdrawable kind **stays**
+non-withdrawable even after the holder later completes identity verification.
+The restriction attaches to the value at the moment it arrived, not to the
+holder's current status, so past receipts cannot be liberated by upgrading the
+account afterwards. Worth copying exactly.
+
+Three forms, in increasing order of friction:
+
+- **Withdrawability tiered by verification.** A low-tier account may receive
+  freely but cannot cash out above a threshold without stepping up.
+- **A cooling window on onward transfer** of recently received funds, for
+  accounts in a defined risk class.
+- **Velocity limits** on newly opened accounts, and on accounts receiving from
+  many unrelated payers for the first time — the signature of a mule account,
+  visible without knowing anything about any particular payment.
+
+**Why this ranks above screening.** Screening (§4.4) protects nobody until an
+account has been listed, so every victim between the first fraudulent receipt
+and the first listing is unprotected by construction — and those are precisely
+the victims that make a fresh mule account worth opening. Exit controls bind
+from the first receipt. The two are **complements, not alternatives**: exit
+controls cover the window screening cannot reach.
+
+**The cost is serious and lands on the wrong people.** Exit friction is friction
+on cash flow, and small traders live on cash flow. A market seller who needs
+today's takings today is exactly who Bakong was built to serve. Any workable
+design must bind a *risk class* — new account, no history, anomalous inbound
+pattern — and leave an established merchant untouched. A control felt by ordinary
+users and merely irritating to criminals gets routed around, relaxed, and
+eventually removed, having cost something in the meantime.
+
+### 4.4 Screen at the moment of payment — built
 
 A register nobody consults before releasing money is a record of the fraud, not a
 control on it. `risklist-api` exposes `POST /screen`, returning a **decision**
@@ -227,7 +285,7 @@ the first listing get nothing, which is why **time-to-list**, not detection
 accuracy, is the operative metric. It sees the first hop only. It sits in the
 payment path, so if it is slow, institutions will route around it.
 
-### 4.4 The right to contest a listing — built
+### 4.5 The right to contest a listing — built
 
 A national register that can freeze a real person's money needs a way for that
 person to be wrong about.
@@ -252,7 +310,7 @@ tipping-off constraints anti-money-laundering regimes impose, but leaving the
 affected person unable to learn who listed them or on what evidence. We do not
 think this is satisfactory and have no better answer.
 
-### 4.5 Allocate liability — policy, not built
+### 4.6 Allocate liability — policy, not built
 
 The UK has required reimbursement of in-scope APP scam victims up to £85,000
 since 7 October 2024, **split equally between sending and receiving institution**.
@@ -295,6 +353,7 @@ vendors, who control the scan path and cannot be bound by Cambodian rule.
 | **S0** QRSeal signing | NBC | Root ceremony, `trustlist-edge`, `registry-api` | Banks/PSPs, ministries, merchants, wallet developers | Payers, document verifiers |
 | **S1** Incident reporting | NBC, MPTC | NBC statistics function | Banks/PSPs, telcos | Public, researchers, policy |
 | **S2** URL prohibition | NBC + MPTC + line ministries | Named regulator (audit) | Banks/PSPs, ministries, telcos, wallet developers | Public |
+| **S6** Exit controls | NBC (licensing + account tiers) | Account-holding institutions | Banks/PSPs, wallet operators | Account holders, small traders |
 | **S3** Screening | NBC | `risklist-api` | Sending and receiving PSPs | Payers, payees held in error |
 | **S4** Right to contest | NBC | `risklist-api` | Account-holding and listing institutions | Account holders |
 | **S5** Liability allocation | NBC / regulator | Dispute or ombudsman body | Sending and receiving PSPs | Victims |
@@ -404,7 +463,37 @@ and PSPs. One ministry running a URL-QR campaign falsifies the public rule for
 everyone, and the public cannot be asked to hold an exception — so MPTC, line
 ministries and telcos must be inside the same instrument or the rule is not true.
 
-### S3 — Screening at the moment of payment (priority 3, built)
+### S6 — Exit controls on cash-out (priority 3)
+
+```mermaid
+flowchart LR
+  NBC["NBC<br/>licensing and account tiers"]:::mandate
+  RULE["Tiering rule<br/>withdrawability by verification"]:::mandate
+  PSP["Banks / PSPs / wallet operators<br/>enforce at the exit"]:::comply
+  MULE["Mule account<br/>receives, cannot convert"]:::affected
+  TRADER["Small trader<br/>needs today's takings today"]:::affected
+  KYC["Identity verification<br/>step-up path"]:::operate
+
+  NBC --> RULE
+  RULE -->|"low tier: receive, do not cash out"| PSP
+  RULE -->|"restriction attaches to the value,<br/>not the holder"| PSP
+  PSP -.->|"conversion blocked"| MULE
+  PSP -->|"risk class only"| TRADER
+  TRADER -->|"step up, unrestricted"| KYC
+  KYC --> PSP
+
+  classDef mandate fill:#E8EEF7,stroke:#2C5282,color:#111
+  classDef operate fill:#E9F3EC,stroke:#276749,color:#111
+  classDef comply fill:#FDF3E2,stroke:#975A16,color:#111
+  classDef affected fill:#F5EDF6,stroke:#6B2D6B,color:#111
+```
+
+This is the only intervention that acts on the **fraudster** rather than on the
+payer, the payee or the code. It also has the sharpest collateral cost: the same
+friction that traps a mule's proceeds delays a market seller's takings, which is
+why the tier must bind a risk class and not everyone.
+
+### S3 — Screening at the moment of payment (priority 4, built)
 
 ```mermaid
 flowchart LR
@@ -432,7 +521,7 @@ The **receiving PSP** is the load-bearing party: it sees the account behaviour
 first and nothing works until it lists. That is also why liability allocation
 (S5) matters — it is the party with the information and, today, none of the cost.
 
-### S4 — The right to contest a listing (built)
+### S4 — The right to contest a listing (priority 5, built)
 
 ```mermaid
 flowchart LR
@@ -462,7 +551,7 @@ detected — but it is also why the **dotted lapse arrow** matters. It is the on
 path in the diagram that protects the account holder without requiring any other
 party to act.
 
-### S5 — Liability allocation (policy, not built)
+### S5 — Liability allocation (priority 6, policy, not built)
 
 ```mermaid
 flowchart LR
@@ -497,6 +586,8 @@ incentive.
 - **The receiving PSP is load-bearing twice** — it lists accounts (S3) and it
   holds half the loss (S5). Those two facts should be designed together.
 - **Merchants pay for S0 and benefit least**, which is where adoption will stall.
+- **Only S6 acts on the fraudster.** Everything else acts on the payer, the
+  payee, the code or the institutions. That is worth noticing when ranking.
 - **The public is asked for exactly one thing** in the entire programme: the
   single sentence in S2. Everything else is asked of institutions. That is the
   correct distribution, and any design that inverts it is asking the wrong party.

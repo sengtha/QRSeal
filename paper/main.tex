@@ -65,12 +65,14 @@ MIT-licensed reference implementation with a language-neutral conformance suite
 of forty cases, thirty-one of them negative; an explicit account of what the
 design does not achieve and why each residual risk is unreachable from the code
 layer; and a constructive corollary --- that where a control cannot be enforced
-below the harm, three moves remain --- raise the control above it, make the
-consequence reversible, or reallocate the loss. We give the first concretely as
+below the harm, four moves remain, acting at successive points of the causal
+chain --- raise the control above the meaning, reverse the transfer, remove the
+convertibility of the proceeds, or reallocate the loss. We give the first concretely as
 a categorical national prohibition on URL-bearing payment and official QR codes,
-paired with a public rule that requires no judgement to apply, and we use Japan,
-where the same QR code sits on a reversible stored-value substrate, to identify
-finality rather than cryptography as the variable that governs exposure. We report two respects in which our own deployment and container fail to
+paired with a public rule that requires no judgement to apply, and we use Japan, where the same QR code sits on a
+reversible stored-value substrate whose illiquidity is statutory rather than
+designed, to identify the properties of the payment substrate --- not the
+strength of any cryptography --- as what governs exposure. We report two respects in which our own deployment and container fail to
 meet the specification's stated requirements, and we treat the absence of
 Cambodia-specific incident data as a finding rather than a gap to be filled with
 vendor figures.
@@ -973,6 +975,63 @@ is why time-to-list and not detection accuracy is the metric. It sees the first
 hop only, and nothing of cash-out or onward layering. And it sits in the payment
 path, so if it is not fast, institutions will find ways around it.
 
+\subsection{Exit controls: attacking the conversion, not the payment}
+\label{sec:exit}
+
+Section~\ref{sec:japan} identifies two substrate properties that govern
+exposure, and observes that Cambodia holds the worse value of both. Finality is
+not available to change: it is why Bakong exists, and Section~\ref{sec:background}
+records what it bought. That leaves the liquidity of the output as the one
+substrate property still open, and it is the more consequential of the two.
+
+The mechanism is different in kind from everything else in this section.
+Screening (Section~\ref{sec:screening}) acts on the \emph{entry}: it decides
+whether a payment should be made, and it can only do so for accounts somebody
+has already listed. Exit controls act on the \emph{departure}: they do not ask
+whether the inbound payment was legitimate, and they require no detection, no
+listing and nobody to have been believed. They make the proceeds slow or
+impossible to convert.
+
+Three forms, in increasing order of friction:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Withdrawability tiered by verification.} An account at a low
+    identity-assurance tier may receive without limit but may not cash out above
+    a threshold without stepping up. Japan's prepaid boundary is the strong
+    version of this, and its refinement is worth copying: the restriction
+    attaches to the value at the moment it arrived, not to the holder's current
+    status, so a recipient cannot liberate past receipts by upgrading afterwards
+    \citep{paypaybalance}.
+  \item \textbf{A cooling window on onward transfer} of recently received funds,
+    for accounts in a defined risk class.
+  \item \textbf{Velocity limits} on newly opened accounts, and on accounts
+    receiving from many unrelated payers for the first time --- the signature of
+    a mule account, and one visible without knowing anything about any
+    particular payment.
+\end{itemize}
+
+\paragraph{Why this may matter more than screening.}
+Screening protects nobody until an account has been listed, so the victims
+between the first fraudulent receipt and the first listing are unprotected by
+construction --- and those are the victims that make a fresh mule account
+worthwhile. Exit controls bind from the first receipt. The two are complements
+rather than alternatives: exit controls cover the window screening cannot reach,
+and screening covers the accounts that pass a risk class's tests.
+
+\paragraph{The cost, which is serious and falls on the wrong people.}
+Exit friction is friction on cash flow, and small traders live on cash flow. A
+market seller who needs today's takings today is precisely who Bakong was built
+to serve, and a blanket delay would tax them to inconvenience a fraudster. Any
+workable design must therefore bind a \emph{risk class} --- new account, no
+history, anomalous inbound pattern --- and leave an established merchant
+untouched. We state this plainly because the failure mode is predictable: a
+control that is felt by ordinary users and merely irritating to criminals will
+be routed around, relaxed, and eventually removed, and it will have cost
+something in the meantime.
+
+We have not implemented exit controls. They belong to account infrastructure
+rather than to the QR layer, and nothing in this repository touches them.
+
 \subsection{A hold is not a sanction}
 
 The design distinguishes two statuses, and the distinction is a matter of
@@ -1122,37 +1181,57 @@ or on who bears that consequence.
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabular}{@{}p{0.19\linewidth}p{0.36\linewidth}p{0.37\linewidth}@{}}
+\begin{tabular}{@{}p{0.17\linewidth}p{0.13\linewidth}p{0.31\linewidth}p{0.29\linewidth}@{}}
 \toprule
-\textbf{Move} & \textbf{Mechanism} & \textbf{Instance in this paper} \\
+\textbf{Move} & \textbf{Acts on} & \textbf{Mechanism} & \textbf{Instance} \\
 \midrule
 Raise the control above the harm &
+  The meaning, before it is created &
   Empty the set of legitimate artefacts, so anything outside it is recognisable
   without authentication &
   The categorical prohibition on URL-bearing codes
   (Section~\ref{sec:categorical}) \\[0.4em]
 Make the consequence reversible &
+  The transfer, after it is made &
   Interpose a ledger somebody controls, so a transfer can be undone after the
   deception has already succeeded &
-  Japan's stored-value substrate (Section~\ref{sec:japan}); and, narrowly, the
+  Japan's operator-held ledger (Section~\ref{sec:japan}); narrowly, the
   prudential hold (Section~\ref{sec:screening}) \\[0.4em]
+Remove convertibility of the proceeds &
+  The value, after it arrives &
+  Let the transfer stand, but ensure what arrives cannot become spendable money &
+  Japan's prepaid boundary (Section~\ref{sec:japan}); exit controls
+  (Section~\ref{sec:exit}) \\[0.4em]
 Reallocate the loss &
+  Who pays, after everything &
   Move the cost to the party holding the cheapest available control &
   Liability allocation (Section~\ref{sec:liability}) \\
 \bottomrule
 \end{tabular}
 \caption{What remains available when a control cannot reach the layer where the
-harm is created.}
+harm is created. The four moves act at successive points of the causal chain:
+meaning, transfer, value, loss.}
 \label{tab:degrees}
 \end{table}
 
-The second move is the one worth dwelling on, because it is the least obvious
-and because it does not contradict the layer result --- it sidesteps it.
-Reversibility does not govern meaning at all. It governs \emph{consequence}. The
-deception still succeeds, the victim is still deceived, and the harm is undone
-from \emph{below} the layer at which the lie was told. That is possible
-precisely because consequence, unlike meaning, is a property of the substrate,
-and the substrate is something a designer chooses.
+The middle two moves are the ones worth dwelling on, because neither contradicts
+the layer result --- both sidestep it. Neither governs meaning at all. One governs
+\emph{consequence}: the deception still succeeds, the victim is still deceived,
+and the transfer is undone from \emph{below} the layer at which the lie was
+told. The other governs \emph{convertibility}: the transfer is never undone, and
+the fraud still fails, because what the fraudster now holds cannot be turned
+into money.
+
+Both are available precisely because consequence and convertibility, unlike
+meaning, are properties of the substrate, and a substrate is something a
+designer or a legislator chooses.
+
+The distinction between them matters operationally. Reversibility is a
+\emph{recovery} mechanism: it works only if somebody notices in time, so it
+inherits every weakness of detection. Removing convertibility attacks the
+economics directly: if the proceeds cannot become cash, the scheme does not pay
+whether or not anyone detects it, whether or not the victim is believed, and
+whether or not any account was ever listed.
 
 \subsection{Japan: the same code, a different substrate}
 \label{sec:japan}
@@ -1182,6 +1261,57 @@ Four consequences follow from that single difference:
   \item the set of payees is curated by the operator, so paying an arbitrary
     stranger's account is not the default primitive.
 \end{itemize}
+
+\paragraph{The second property, which matters more.}
+Reversibility is not the whole of it, and probably not the important half. The
+two substrates also differ in what \emph{comes out}. In Cambodia the payee
+receives money: a balance in a bank account, withdrawable as cash, forwardable,
+convertible. In Japan the payee typically receives a claim redeemable through a
+chokepoint the operator owns.
+
+These two properties are independent, and separating them is the analytically
+useful step:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & \textbf{Finality of the transfer} & \textbf{Liquidity of the output} \\
+\midrule
+Cambodia (Bakong) & Final; no party can reverse & Money: withdrawable, forwardable \\
+Japan (code payments) & Reversible; operator holds the ledger & A claim redeemable at a chokepoint \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent A system may be final and illiquid, or reversible and liquid. Cambodia
+holds the worst available combination and Japan the best, but nothing forces
+them to move together.
+
+\paragraph{And the illiquidity is statutory, not a product choice.}
+This is the part that makes the observation a policy instrument rather than an
+architectural accident. Japan's Payment Services Act distinguishes prepaid
+payment instruments from funds transfer services; refund of a prepaid balance is
+generally prohibited, and a scheme designed to permit general refunds is liable
+to be reclassified as a funds transfer service, with the heavier licensing that
+entails \citep{jpsa}. Operators therefore have a standing regulatory reason to
+keep value non-withdrawable.
+
+The effect is visible in product design. PayPay distinguishes a verified,
+withdrawable balance from an unverified, non-withdrawable one --- and value loaded
+into the non-withdrawable class stays non-withdrawable even after the holder
+subsequently completes identity verification \citep{paypaybalance}. The
+restriction attaches to the value at the moment it was loaded, not to the
+holder's current status, so a recipient cannot convert previously received funds
+by upgrading their account afterwards.
+
+We note, because it bears on how much credit the design deserves, that none of
+this was built as an anti-fraud control. It is a licensing boundary drawn for
+prudential and consumer-protection reasons, and the closure of the fraud exit is
+a side effect. That makes it more interesting rather than less: a property this
+valuable arose from a rule written for another purpose, which is a reason to
+look at licensing boundaries generally when asking where fraud economics can be
+attacked.
 
 \noindent Two qualifications, and both matter.
 
@@ -1292,6 +1422,13 @@ verified fail on deliberately introduced violations.
   \item \textbf{The container is not legacy-transparent.}
     Section~\ref{sec:container}. Two deviations from EMVCo, one of which
     invalidates the design's stated premise for the choice of template range.
+
+  \item \textbf{Exit controls are proposed, not designed or evaluated.}
+    Section~\ref{sec:exit} argues that the liquidity of the output is the
+    remaining substrate lever, and sketches three forms. We have not specified
+    thresholds, defined the risk classes, or estimated the cost to legitimate
+    small-trader cash flow, which is real and which we believe would dominate
+    the design.
 
   \item \textbf{The Japanese comparison is architectural, not empirical.}
     Section~\ref{sec:japan} characterises a class of payment architecture and
