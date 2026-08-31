@@ -372,6 +372,7 @@ KH-SQR defines two profiles. The full normative text is in the repository's
 argumentative weight.
 
 \subsection{Profile A: payment}
+\label{sec:profileA}
 
 Profile A adds a signature to an existing EMVCo merchant-presented payload using
 template \code{85} from the unreserved range, carrying a format version, a key
@@ -1519,6 +1520,67 @@ which this rule leaves entirely intact --- and to channels with no QR code at al
 We claim the elimination of one attack, not a reduction in fraud, and the
 distinction is the same one this paper insists on everywhere else.
 
+\subsection{A second categorical rule: a payment code is displayed, not printed}
+\label{sec:display}
+
+The rule in Section~\ref{sec:categorical} empties the set of legitimate
+URL-bearing payment codes. The same move is available against overlay forgery,
+and it is stronger there than anything in this specification: require that a
+merchant-presented payment code be \emph{rendered on a screen at the moment of
+payment} rather than printed and left in place.
+
+This does not detect the sticker attack. It removes it. A code that exists only
+on a merchant's display for the duration of a transaction cannot be covered by
+one that was printed in advance, and --- more to the point --- a printed payment
+code becomes recognisable as illegitimate \emph{without authenticating
+anything}, exactly as a URL-bearing one does under the first rule. Both are
+instances of the first row of Table~\ref{tab:degrees}: act on the meaning before
+it is created, by emptying the set of legitimate artefacts, so that recognition
+replaces verification.
+
+\paragraph{The rule is unenforceable without the signature, which is the point.}
+``Displayed, not printed'' is not a property of a payload and not something a
+verifier can observe: a photograph of a screen is a print, and an attacker's
+sticker can claim whatever it likes. What makes the rule checkable is that the
+point-of-initiation indicator sits \emph{inside the signed prefix}, and that a
+dynamic code in this specification carries an expiry no more than 300 seconds
+after issuance (Section~\ref{sec:profileA}). A verifier can therefore refuse a
+static code outright, and a dynamic one whose window has closed, and neither
+refusal can be defeated by printing something that asserts otherwise.
+
+So the operational rule and the cryptographic layer are not alternatives, and
+neither is redundant. Without the signature the rule is a request. Without the
+rule the signature detects a forgery that the medium would not have permitted.
+This is the clearest case in the paper for the two working together, and it is
+worth stating because a reader may reasonably ask why a scheme should be signed
+at all once codes are dynamic.
+
+\paragraph{The cost is severe and lands where the previous ones did.} A printed
+sticker costs almost nothing, needs no device, no electricity and no
+connectivity, and that is precisely why KHQR reached the merchants it reached. A
+display requirement excludes the market seller, the tuk-tuk driver and the stall
+without power --- the same constituency that bears the cost of the exit controls
+in Section~\ref{sec:exit}, and a large share of the merchant base rather than
+its margin. A rule imposed without subsidised devices would not reduce fraud so
+much as reallocate who is allowed to take digital payment at all. We think the
+right form is a phased obligation on merchants above a turnover threshold,
+paired with provision for those below it, but we are naming a design question
+rather than answering it: the distributional analysis it needs is beyond what
+this paper can support.
+
+\paragraph{What it does not reach.} Not authorised push payment fraud, which
+uses a genuine code the criminal is entitled to display, on a screen as readily
+as on paper. Not quishing, whose codes are not merchant payment codes at all.
+Not registration abuse. The rule closes one attack completely and leaves the
+category this paper identifies as dominant exactly where it was.
+
+\paragraph{And it does not transfer to documents.} A screen cannot be attached
+to a diploma or a land title. A printed credential has to carry its own proof,
+possibly for decades, which is why Section~\ref{sec:verifygov} argues about
+offline signatures rather than about the medium. The two problems look alike
+because both involve a printed square, and they are not alike: one instrument is
+consumed in seconds and the other must survive its holder.
+
 \subsection{Time-to-list as the operative metric}
 \label{sec:ttl}
 
@@ -1926,7 +1988,8 @@ Raise the control above the harm &
   Empty the set of legitimate artefacts, so anything outside it is recognisable
   without authentication &
   The categorical prohibition on URL-bearing codes
-  (Section~\ref{sec:categorical}) \\[0.4em]
+  (Section~\ref{sec:categorical}); the display-not-print rule for payment codes
+  (Section~\ref{sec:display}) \\[0.4em]
 Make the consequence reversible &
   The transfer, after it is made &
   Interpose a ledger somebody controls, so a transfer can be undone after the
