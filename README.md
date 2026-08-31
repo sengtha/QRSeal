@@ -98,6 +98,21 @@ the verifier, and not signable by anyone even in principle. No party is in a
 position to attest to the truth of an arbitrary claim about why a payment is
 owed.
 
+*One subset is reachable, and the difference is not in the lie.* P4 divides on
+whether the payee account is shown to one victim or to many. A pretext built for
+a single victim consumes the account and abandons it, and no register will be
+populated while it still matters. A pretext that is a **standing offer** — goods
+advertised and never sent, a service sold and never delivered — must present the
+same payee to every victim it recruits, because a fresh account per victim costs
+an identity. That kind accumulates reports against a stable identifier *while it
+is still operating*, which is the only condition under which a risk list does
+anything. No verifier can tell the two apart; both are genuine. The distinction
+is visible only in aggregate, across victims — to an institution, never to a
+payer. This is why [§4.4 screening](#44-screen-at-the-moment-of-payment--built)
+reaches *part* of P4 rather than none of it, and why **time-to-list**, not
+detection accuracy, is the metric. We claim nothing about how large that subset
+is in Cambodia; [nobody publishes the data](#41-publish-incident-data--first-because-everything-else-depends-on-it).
+
 ### P5 — Registration abuse · **not addressed**
 
 *Why unreachable:* the signature attests an identity that is genuinely real. Its

@@ -636,6 +636,30 @@ control is enforced on the instrument; the deception is created in the
 interaction. One cannot govern the other because they are not the same kind of
 object.
 
+\paragraph{One subset of it is reachable, and the difference is not in the lie.}
+This category divides on a property that has nothing to do with the deception:
+whether the payee account is presented to one victim or to many. A pretext built
+for a single victim --- a specific parcel, a particular refund --- consumes the
+account and abandons it, and no register will ever be populated while it still
+matters. A pretext that is a standing offer --- goods advertised and never sent,
+a service sold and never delivered --- must present the same payee to every
+victim it recruits, because collecting to a fresh account for each victim costs
+the operator an identity, and identities are the scarce input. The second kind
+therefore accumulates reports against a stable identifier \emph{while it is
+still operating}, which is the only condition under which a risk list does
+anything at all.
+
+Nothing in the payload distinguishes the two, and no verifier can: both are
+genuine codes presented with a lie. The distinction is visible only in
+aggregate, across victims, after the fact --- which is to say it is visible to an
+institution and not to a payer. This is why we claim the screening layer of
+Section~\ref{sec:screening} reaches part of this category rather than none of
+it, and it is also the reason time-to-list (Section~\ref{sec:ttl}) is the metric
+that matters rather than detection accuracy: the reachable subset is reachable
+only inside the window in which the account is still being reused. We make no
+claim about how large that subset is in Cambodia, for the reason given in
+Section~\ref{sec:data}.
+
 The design's only honest response is interface discipline: surfacing the payee
 to the payer, and refusing to let a verification result be reduced to a tick.
 Our specification makes both normative. We do not claim they are sufficient, and
@@ -1158,6 +1182,7 @@ We claim the elimination of one attack, not a reduction in fraud, and the
 distinction is the same one this paper insists on everywhere else.
 
 \subsection{Time-to-list as the operative metric}
+\label{sec:ttl}
 
 A mule account's useful life is short: it receives, it forwards, it is
 abandoned. The quantity that determines how much passes through it is the
@@ -1453,13 +1478,13 @@ The diagnostic question for any proposed control is therefore not ``is this
 mechanism sound?'' but ``at which layer is the harmful meaning created, and is
 that at or below the layer where this mechanism is enforced?''
 
-\subsection{Three degrees of freedom}
+\subsection{Four degrees of freedom}
 \label{sec:degrees}
 
-If a control cannot reach the layer at which the harm is created, three moves
-remain, and we can identify only three. Each acts at a different point in the
-causal chain: before the meaning is created, on the consequence of acting on it,
-or on who bears that consequence.
+If a control cannot reach the layer at which the harm is created, four moves
+remain, and we can identify only four. Each acts at a different point in the
+causal chain: before the meaning is created, on the transfer once it is made, on
+the value once it arrives, or on who bears the loss at the end.
 
 \begin{table}[htbp]
 \centering

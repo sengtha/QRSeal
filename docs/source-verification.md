@@ -26,6 +26,9 @@ both corrections are reflected in the paper.
 | PayPay distinguishes a verified, withdrawable balance (PayPay Money) from an unverified, non-withdrawable one (PayPay Money Light); value loaded as Money Light stays non-withdrawable even after the holder later completes identity verification | PayPay Help pages (the operator's own documentation) | **Verified** against the operator's own help pages. The stickiness of the restriction to the *value* rather than the *holder* is stated explicitly there, and is the detail the paper recommends copying. |
 | Japanese impersonation and investment fraud are severe, and the money travels by bank transfer, cash or crypto rather than by QR | Japan National Police Agency | **Deliberately unquantified.** Secondary sources disagreed on both category and magnitude, and unit confusion between 億円 and 兆円 was present. No Japanese figure appears in the paper. If figures are wanted, take them from the NPA's own release. |
 | Bakong 2024: 608.32 million transactions; ~4.5 million KHQR-registered accounts, +36.4% on 2023 | National Bank of Cambodia, *Annual Report 2024* | **Partially verified.** The figures are consistently reported and attributed to the NBC Annual Report 2024, but the primary PDF could not be retrieved in the build environment (egress restricted). **Confirm against the NBC PDF before submission.** These figures are illustrative of scale and no argument in the paper depends on them. |
+| The Department of Technology and Crime Prevention issued a public warning about QR "quishing" on 27 January 2024, naming fake websites, infected downloads and impersonation of a payee, and asking citizens to check the source, look for anomalies in the code's design, beware redirect links and shorteners, and share the advice onward | Khmer Times, 27 January 2024 | **Verified.** Full article text supplied by the author and read in full. Every characterisation in paper §7.1 is drawn from that text; the paper's claim about it is not that the advice is wrong but that all three asks are directed at the public and two of them ask for judgements the medium does not support. |
+| The Anti-Cybercrime Department launched the Kapea Scams public reporting application in August 2026, including automatic blocking of calls from numbers linked to scams, with a stated intention to analyse reports for patterns and drive SMS warnings | Khmer Times, 28 August 2026 | **Verified.** Full article text supplied by the author and read in full. The paper's load-bearing observation is an **absence within that text**: publication of aggregate statistics is not among the stated uses. That is a claim about what the article does not say, checked by reading it entire, and it is why §9's recommendation is a publication duty on an existing system rather than a new system. |
+| An Android banking trojan distributed as a service, operated at least in part from a compound in Sihanoukville; attack chain of VoIP impersonation, migration to a messaging application, delivery of "a link or a QR code", coached installation past system warnings, SMS OTP interception, and a counterfeit KYC overlay that authenticates the operator into the victim's banking application | Infoblox Threat Intel and Chong Lua Dao, 10 April 2026 | **Verified.** Full report text supplied by the author and read in full; not taken from the secondary outlets that syndicated it, which were rejected for this purpose. Used in paper §6.5 for the attack chain only. The report's targeting and volume figures are DNS telemetry with undisclosed denominators and **no argument depends on them**. §6.5 states explicitly that this evidences account takeover rather than APP fraud, that the victims are largely outside Cambodia, and that §9's no-prevalence-data finding is unchanged by it. |
 | No published Cambodia-specific QR-fraud incident data; circulating "146% Q1 2026 quishing surge" figures are vendor telemetry with undisclosed denominators | — | **Verified as an absence.** Searching surfaced only syndicated vendor press material with no Cambodian breakdown and no stated methodology. The paper treats the absence as a finding (§8) and does not rely on the vendor figure. |
 
 ## Claims supported by a reproducible artefact
@@ -46,6 +49,14 @@ both corrections are reflected in the paper.
 | Blocking and removal each require a second officer | `workers/risklist-api/test/index.test.ts` | same |
 | The audit log rejects UPDATE and DELETE at the database level | `workers/*/test/index.test.ts` | same |
 
+## Sources considered and rejected
+
+| Material | Why it was not used |
+|---|---|
+| A Google AI Overview headed "Common QR Scam Tactics in Cambodia", listing sticker overlays, phishing links by SMS and social media, malicious free Wi-Fi codes, and e-commerce buyers paying by KHQR and then being blocked | **A generated summary is not a source.** It has no author, no date, no methodology and no stable text, and its inline attributions point at material that must be read directly if it is to be cited at all. Two of its underlying sources (Khmer Times, Infoblox) are in the table above and were read in full; the remainder were not obtainable. The one analytic point it prompted — that authorised push payment fraud divides into one-shot and repeat-payee variants, and that only the second is reachable by a risk list — appears in paper §6.1 and README P4 as an argument about the design, carrying **no citation and no prevalence claim**, because it needs neither. |
+| Political material in the Infoblox report: named Cambodian officials, a United States Congressional resolution, and foreign asset seizures | Outside the paper's competence to assess, and no part of its argument depends on it. Excluded deliberately, not by oversight. |
+| Secondary outlets syndicating the Infoblox findings | Used to locate the report, never cited in its place. |
+
 ## Deliberately not claimed
 
 - Any prevalence, frequency or trend figure for QR fraud in Cambodia.
@@ -54,3 +65,10 @@ both corrections are reflected in the paper.
   labelled an inference, not a measurement.
 - Any adoption, usability or field-deployment result. Nothing has been deployed.
 - Conformance to the specification's mirror-independence requirement.
+- Any characterisation of the two Go Digital Cambodia awareness posters beyond
+  the generic statement that public-awareness material has repeated the same
+  category of guidance. The Khmer text was read by the author's machine
+  translation and no translated wording is quoted in the paper.
+- Any claim about the *relative* frequency of the one-shot and repeat-payee
+  variants of authorised push payment fraud. The distinction is structural; the
+  proportions are unmeasured, here and everywhere.
