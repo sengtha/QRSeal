@@ -701,6 +701,75 @@ domestic codes may therefore leave users \emph{less} attentive than one that
 makes no claim at all --- a possibility we flag rather than resolve, since we have
 no data on it.
 
+\subsection{Device compromise, and the assumption verification makes about the verifier}
+\label{sec:device}
+
+Every interface obligation in Section~\ref{sec:notachieved} assumes something the
+specification never states: that the payer's handset shows the payer what the
+verifier computed. Threat research published in April 2026 by Infoblox Threat
+Intel with the Vietnamese non-profit Chong Lua Dao documents why that assumption
+should not be granted \citep{infoblox2026cambodia}. The researchers traced an
+Android banking trojan, distributed through a malware-as-a-service platform and
+assessed as operated at least in part from the K99 Triumph City compound in
+Sihanoukville, from a spike in DNS queries across their customer networks. The
+operation registers on the order of thirty-five new domains a month,
+impersonating banks, pension funds, revenue authorities, utilities, immigration
+and police services across at least twenty-one countries.
+
+The attack chain matters here more than the malware. Operators contact targets
+by voice over IP while impersonating government officials, move the conversation
+to a messaging application, and send \textbf{a link or a QR code} pointing at a
+lure page. They then talk the victim through installing the application and
+granting permissions, explicitly coaching them past the operating system's own
+warnings. Once installed, the operator intercepts the SMS one-time passcode and
+presents a counterfeit know-your-customer overlay that induces the victim to
+perform a facial-recognition check --- which authenticates the \emph{operator}
+into the victim's banking application. The victim believes throughout that they
+are complying with a new government programme.
+
+Three consequences follow for this design, and the third is the one we should
+have written down before seeing this report.
+
+\paragraph{Coached installation defeats every passive defence at layer~2.}
+Section~\ref{sec:indicators} treats a counterfeit verifier as a user who chose
+badly, and offers an application trust list against it. This is a human
+adversary walking the victim through the choice in real time, with rapport
+already established by telephone, instructing them to disregard exactly the
+warnings a trust list would rely on. No curation of an application store reaches
+a user who is being talked past the warnings by someone they believe is an
+official.
+
+\paragraph{Consent is harvestable.}
+The biometric step is not stolen; it is performed by the victim, willingly, under
+a false description of what it is for. This is authorised push payment fraud's
+logic applied to authentication rather than to payment: the control operated
+correctly, the user genuinely consented, and the consent meant something other
+than what the user thought.
+
+\paragraph{Verification assumes an uncompromised verifier, and we did not say so.}
+Section~\ref{sec:design} is careful that verification requires no network, and
+gives the reason. It is silent on requiring an uncompromised device, and that
+silence is a defect. On a handset under an operator's control the payee
+disclosure that Section~\ref{sec:notachieved} obliges an interface to show can be
+suppressed, altered, or overlaid. Every user-facing guarantee in this
+specification is conditional on the integrity of the device presenting it, and
+that condition is under documented, industrial-scale attack from infrastructure
+hosted in the country this design is for.
+
+\paragraph{What this evidence does and does not show.}
+It is not evidence about the prevalence of QR fraud in Cambodia, and we do not
+use it as such: Section~\ref{sec:data}'s finding stands unchanged. The documented
+attack is account takeover --- unauthorised fraud --- rather than the authorised
+push payment fraud of Section~\ref{sec:notachieved}, and its victims are
+largely outside Cambodia, with the highest query volumes observed in Indonesia,
+Thailand, Spain and T\"urkiye. Cambodia appears here as a host of the
+infrastructure rather than as the principal market for it. What the report
+establishes is narrower and sufficient for our purposes: QR codes are in
+operational use as a delivery vector for device compromise, the technique
+defeats device-side verification, and the operators run it at industrial scale
+using, on the researchers' account and that of the United Nations reporting they
+cite, forced labour.
+
 \subsection{The scan path: verification the user never invokes}
 \label{sec:scanpath}
 
@@ -835,12 +904,120 @@ not cryptography: constraining what legitimate issuers are permitted to emit,
 and sharing information about accounts. We take them in that order, because the
 first is the cheaper and the more decisive.
 
+\subsection{The response so far, and why nobody can evaluate it}
+\label{sec:response}
+
+Cambodian authorities identified this threat early. On 27 January 2024 the
+Department of Technology and Crime Prevention issued a public warning about
+``quishing'' and phishing by QR code, naming three harms: users tricked into
+reaching fake websites, users induced to download infected software, and
+\emph{impersonation of a payee} \citep{khmertimes2024quishing}. The last is the
+overlay attack of Section~\ref{sec:layers}, recognised officially two years
+before this paper was written. Nothing here is a threat the authorities have
+failed to notice.
+
+The warning asked citizens to do three things: check the source and look for
+anomalies in the QR code's design before scanning; beware of fake links,
+particularly redirect links and link shorteners; and share the advice onward.
+Public-awareness material issued since has repeated the same category of
+guidance.
+
+Three observations follow, none of which requires knowing whether any campaign
+changed an outcome.
+
+\paragraph{Every ask is directed at the public.}
+None of the three binds an institution to do, or to refrain from, anything. The
+third is explicitly to propagate the advice further. The burden of detection is
+placed entirely on the party with the least information, the least time and the
+least expertise, at the moment of payment.
+
+\paragraph{Two of the three ask for judgements the medium does not support.}
+``Check for anomalies in the QR code design'' asks a person to visually assess a
+field of black and white modules for irregularity. Outside the case of a
+physically visible sticker edge there is nothing in the symbology for an unaided
+reader to assess, and at an unfamiliar merchant there is no reference image to
+compare against. ``Beware of link shorteners'' asks a reader to be wary of a
+construct whose defining property is that the destination is not visible: the
+evaluation the advice calls for is precisely the one the construct exists to
+prevent. These are not poorly worded instructions. They are instructions for a
+task that cannot be performed.
+
+\paragraph{The interval matters more than any single campaign.}
+Between that warning and the awareness material still being published in
+mid-2026 lies about thirty-one months of the same instrument. We draw no
+conclusion about its effect, because none is available: no measurement exists
+that would tell anyone --- including the departments running the campaigns ---
+whether any of it changed anything. Section~\ref{sec:data} argues that the
+absence of incident statistics prevents evidence-based prioritisation. This is
+the same absence seen from the other side. A government has sustained an
+intervention for two and a half years with no feedback signal of any kind, and
+that is not a failure of diligence; it is a consequence of never having built
+the measurement.
+
+\paragraph{August 2026 is a different kind of step, and it deserves saying so.}
+In late August 2026 the National Police launched \emph{Kapea Scams}, a public
+application for reporting online and technology-related fraud
+\citep{khmertimes2026kapea}. Two features distinguish it from everything above.
+
+First, it contains an actual control rather than advice. Reports feed a
+capability to block incoming calls automatically from numbers identified as
+linked to scams. That is the first Cambodian measure in this evidence that asks
+the citizen to judge nothing: the block is enforced by the system. It acts on
+the attacker's channel, which is the right target, and it is subject to the
+limit Section~\ref{sec:trajectory} describes for every detection-dependent
+control --- a number must be identified before it can be blocked, numbers are
+cheap, and the mechanism therefore scales against attacker volume rather than
+with it.
+
+Second, and more consequentially, it builds collection. The stated intent is to
+analyse submitted reports to identify emerging scam patterns, to drive public
+warning messages, and to inform further systems.
+
+\paragraph{What is missing is one sentence, not one system.}
+Publication is not among those stated uses. The reported purposes --- police
+action, warning messages, internal system development --- are all internal. None
+of them produces a public statistic, and a national dataset that is never
+published cannot support the evidence-based prioritisation
+Section~\ref{sec:data} asks for, nor allow anyone outside the police to
+establish whether the trajectory of
+Section~\ref{sec:trajectory} is real.
+
+This narrows our first recommendation considerably, and makes it much cheaper.
+We are not asking for a reporting system to be built: one now exists. We are
+asking for a publication duty to be attached to it, and for the collection to
+be extended from victim self-reporting --- which under-reports severely, for the
+reasons Section~\ref{sec:trajectory} gives --- to mandatory institutional
+reporting by banks and payment institutions, who observe the money movement that
+victims do not. The mechanism is new, which is precisely when a publication
+obligation is cheapest to attach.
+
+\paragraph{The coordination this paper asks for already exists.}
+Section~\ref{sec:categorical} identifies the critical dependency of a
+categorical prohibition as an instrument reaching beyond the financial
+perimeter, into telecommunications and the line ministries. The evidence above
+shows several arms of government already working this problem together: a
+crime-prevention department under the interior portfolio, a digital-government
+programme under posts and telecommunications, and an anti-cybercrime department
+of the National Police operating both enforcement and a public reporting
+channel.
+The capacity to coordinate is demonstrated. What the next section proposes is
+not new machinery but a change of target: the same coordination, pointed at the
+few hundred licensed institutions that can be bound, rather than at the
+population that cannot act on what it is being told.
+
 \subsection{The categorical rule: a payment QR never opens a website}
 \label{sec:categorical}
 
 The URL-bearing QR code --- ``scan to claim your refund'', ``scan to verify your
 document'' --- is the one attack in this decomposition that a national authority
-can eliminate outright. It cannot be eliminated in software, for the reason
+can eliminate outright. It is not hypothetical: the delivery step documented in
+Section~\ref{sec:device} is precisely ``a link or a QR code'' sent to the victim
+by an operator impersonating an official \citep{infoblox2026cambodia}. Note that
+the rule proposed here reaches that case as readily as it reaches a sticker on a
+wall, because it is stated in terms of what the victim observes rather than
+where the code was found --- and note that ``check the source before scanning''
+does not reach it at all, the source being a government official the victim has
+already spoken to by telephone. It cannot be eliminated in software, for the reason
 given in Section~\ref{sec:scanpath}: the code is frequently scanned by an
 application that will never consult a trust list. It can be eliminated by rule.
 
@@ -1103,6 +1280,18 @@ Three forms, in increasing order of friction:
     a mule account, and one visible without knowing anything about any
     particular payment.
 \end{itemize}
+
+\paragraph{Coerced labour is a reason to prefer this over friction.}
+The operations documented in Section~\ref{sec:device} are staffed, on the
+researchers' account, by trafficked people compelled to work under threat of
+violence. Setting aside what that fact demands of policy on its own terms, it
+has a narrow analytical consequence for control selection: the adversary's
+marginal labour cost is near zero and is not borne by the adversary. Every
+control whose mechanism is \emph{making fraud more effortful} --- additional
+verification steps, manual review, friction in the attack path --- is discounted
+accordingly. Controls that remove the convertibility of the proceeds are
+indifferent to how much labour is available to the attacker, because they do not
+operate on the attacker's effort at all.
 
 \paragraph{Why this may matter more than screening.}
 Screening protects nobody until an account has been listed, so the victims
@@ -1494,6 +1683,29 @@ payment institutions, with published aggregates, would do more for the design of
 countermeasures than any cryptographic improvement to the codes --- including
 this one.
 
+That recommendation became substantially cheaper in August 2026, and it is worth
+being precise about what remains to be done. A national collection mechanism now
+exists: the Kapea Scams application gathers public reports of technology-related
+fraud, and its operators state an intention to analyse them for emerging
+patterns \citep{khmertimes2026kapea}. What is absent is not the collection but
+the \emph{publication}, and the \emph{institutional} half of the collection. The
+reported uses are all internal to enforcement. Two additions would convert an
+enforcement intake into a national evidence base:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item a duty to publish aggregates on a fixed schedule, by category, so that
+    prioritisation --- by anyone, including the authorities themselves --- can be
+    argued from evidence; and
+  \item mandatory reporting by banks and payment institutions alongside victim
+    self-reporting, because institutions observe the money movement that victims
+    do not, and because victim reporting under-reports for reasons
+    (Section~\ref{sec:trajectory}) that no application design can remove.
+\end{enumerate}
+
+\noindent Neither is a new institution. Both attach to a mechanism built weeks
+before this paper was written, which is when such obligations are cheapest to
+impose and hardest to argue against.
+
 Everything empirical in this paper is therefore either a citation to a primary
 specification or an artefact that a reader can execute
 \citep{khsqr2026repo}. The symbol measurements in Table~\ref{tab:qr} are
@@ -1516,6 +1728,20 @@ verified fail on deliberately introduced violations.
   \item \textbf{The container is not legacy-transparent.}
     Section~\ref{sec:container}. Two deviations from EMVCo, one of which
     invalidates the design's stated premise for the choice of template range.
+
+  \item \textbf{The device-compromise evidence is about a different fraud.}
+    Section~\ref{sec:device} documents account takeover, not authorised push
+    payment fraud, and its victim population is largely outside Cambodia. We use
+    it for three narrow claims --- QR codes are an operational delivery vector,
+    coached installation defeats passive defences, and device-side verification
+    can be subverted --- and for nothing about Cambodian fraud prevalence.
+
+  \item \textbf{We make no claim about the effect of the awareness campaigns.}
+    Section~\ref{sec:response} observes what they ask of the public and for how
+    long they have run. It does not assert that they failed, because the
+    counterfactual is unavailable for the same reason everything else here is:
+    there is no outcome measurement. A reader who takes that section as evidence
+    of ineffectiveness has read more into it than it says.
 
   \item \textbf{Exit controls are proposed, not designed or evaluated.}
     Section~\ref{sec:exit} argues that the liquidity of the output is the
