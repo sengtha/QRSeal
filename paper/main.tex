@@ -503,11 +503,33 @@ requires stating this, because the comparison has so far run one way. An online
 record can be corrected, withdrawn or annotated the moment an institution
 decides to, and the next reader sees the current state. A signed offline
 credential cannot: a signature is a statement that was true when made and stays
-verifiable afterwards, so revocation has to be distributed separately, as status
-lists that verifiers must fetch and that reintroduce the online dependency the
-design existed to remove. This is not a small caveat. It is the hardest unsolved
-part of offline credentials, the EU scheme met it too, and a degree that is
-rescinded is exactly the case where it bites.
+verifiable afterwards. It does not become false when the issuer changes their
+mind, and nothing in a payload can carry news that postdates it. This is not a
+small caveat. It is the hardest unsolved part of offline credentials, the EU
+scheme met it too, and a rescinded degree is exactly where it bites.
+
+Our design does less here than we had implied, and the distinction matters. The
+trust list revokes \emph{keys}, and a revoked key invalidates everything its
+holder ever signed --- correct for a compromised key, useless for one withdrawn
+diploma among four hundred thousand. There is no per-credential revocation in
+this specification, and adding one honestly means adding a status service, which
+is a live service, which is the dependency the offline design exists to remove.
+
+What we do instead is refuse to paper over it. The verification result carries a
+\code{credentialStatus} field whose only value is \code{unchecked}, and a test
+pins it. The field is present rather than omitted precisely because an absent
+field reads as nothing to worry about, and an interface must not be able to
+present a credential of unknown standing as a current one. A deployment that
+wants revocation should compose the two designs: publish the signed credential
+for the properties in this section, and consult the issuer's online record where
+a network exists, reporting three states rather than two. The offline path
+degrades to \emph{signature valid, standing unknown}, which is less than the
+online design offers and is the true state of the verifier's knowledge.
+
+We would rather state the residue than close the section on a claim we cannot
+support: for a credential that can be withdrawn and must be checked without a
+network, no signature scheme --- ours included --- gives the reader what an
+online lookup gives them.
 
 The platform is not open source, so the rest of this comparison rests on its
 published description rather than on its code. We note that as a limit on what follows,

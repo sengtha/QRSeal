@@ -99,3 +99,13 @@ describe('URL carriers', () => {
     expect(() => assertNotUrlCarrier('KH1:NCFOXN%TSMAHN')).not.toThrow();
   });
 });
+
+describe('credential status is never asserted', () => {
+  it('reports unchecked, because offline verification cannot know', async () => {
+    const result = await assertion();
+    // Not omitted, and not 'active'. A caller must be able to see that status
+    // was not established, so silence cannot be mistaken for assurance. The
+    // existing boolean test above covers the shape; this pins the value.
+    expect(result.credentialStatus).toBe('unchecked');
+  });
+});

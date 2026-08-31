@@ -248,6 +248,22 @@ export class CredentialAssertion {
    * proves issuance; only this comparison connects the credential to the paper.
    */
   public readonly mustMatchPrintedDocument: PrintedDocumentFields;
+  /**
+   * Whether this particular credential has been withdrawn by its issuer.
+   *
+   * Always `'unchecked'`. Verification is offline by construction, so this
+   * library cannot know whether a degree was rescinded or a licence
+   * suspended after it was signed. A signature is a statement that was true
+   * when it was made; it does not become false when the issuer changes their
+   * mind, and nothing in the payload can carry news that postdates it.
+   *
+   * The field exists rather than being omitted so that a caller cannot mistake
+   * silence for assurance. An interface MUST NOT present an unchecked
+   * credential as current. Key revocation (see `trustlist.ts`) is a different
+   * and much blunter thing: it invalidates everything an issuer ever signed,
+   * which is right for a compromised key and wrong for one withdrawn diploma.
+   */
+  public readonly credentialStatus: 'unchecked' = 'unchecked';
 
   public constructor(kid: string, claims: CredentialClaims) {
     this.kid = kid;

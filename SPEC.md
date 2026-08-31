@@ -430,6 +430,14 @@ dropped.
    currency is unrecognised and MUST NOT imply the local one.
 5. A Profile B verifier MUST require the caller to handle the printed-document
    comparison fields (§3.3).
+6. A Profile B result MUST carry a per-credential status field, and offline
+   verification MUST report it as `unchecked`. An implementation MUST NOT omit
+   the field, and MUST NOT present an `unchecked` credential as current. This
+   specification defines no per-credential revocation mechanism: the trust list
+   revokes *keys*, which invalidates everything an issuer ever signed and is
+   the wrong granularity for a single withdrawn document. A deployment needing
+   revocation must consult the issuer's own record, and must report
+   *signature valid, standing unknown* when it cannot.
 6. An implementation MUST NOT log payload contents.
 
 ### 8.1 Why clauses 3 and 4 are MUST
