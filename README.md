@@ -737,6 +737,114 @@ paper/                 the preprint
 `SPEC.md` is the normative specification, including **Annex C** for the risk
 list, screening and appeals.
 
+### 6.1 The three Workers, and what each one is *unable* to do
+
+The services are shaped around one rule: **the online components must not be
+able to do the damaging thing at all**, rather than being trusted not to. Each
+is best described by what compromising it would *fail* to achieve.
+
+`pnpm check:no-signing-keys` fails the build if a signing key ever appears in
+any Worker source or configuration. It is verified to fail on a deliberately
+introduced violation, not merely to pass.
+
+| Worker | Holds | Can be made to | **Cannot be made to** |
+|---|---|---|---|
+| `trustlist-edge` | nothing secret | withhold or delay artefacts | issue, alter or backdate one |
+| `registry-api` | no key material | enqueue junk, read the queue | mint an issuer |
+| `risklist-api` | no key material | restrict an account (one officer, ≤72h) | block or unlist alone; edit history |
+
+#### `trustlist-edge` — read-only distribution
+
+Serves the trust list, the timestamp statement and the application trust list
+from R2, with a KV pointer naming the current version. **Any method other than
+`GET`/`HEAD` is refused before routing** — the service has no mutating route to
+find.
+
+The trust list is signed offline in a Root ceremony; the timestamp statement is
+produced by a separate signer outside Cloudflare and uploaded. So the worst a
+compromise achieves is *withholding* — and the verifier already treats silence
+as hostile, through the staleness and rollback rules in
+`packages/core/src/trustlist.ts`. Versioned objects (`/trustlist/v/{n}`) never
+change and are cached immutably; `/trustlist/current` carries
+`x-kh-sqr-version` and a `link rel="canonical"` back to the versioned URL.
+`/.well-known/kh-sqr/…` aliases exist for both.
+
+`/health` reports `holdsSigningKey: false` and, honestly,
+`mirrorIndependence: "not satisfied by this deployment"` — one provider, one
+account, one governance failure. See [§10](#10-where-this-repository-does-not-conform-to-its-own-specification).
+
+#### `registry-api` — CSR intake for an offline ceremony
+
+`POST /csr` accepts a certificate signing request (≤8 KiB, PEM-shaped, checked
+by regex), stores it in D1/R2 and queues it. **It cannot issue a certificate.**
+A ceremony officer later uploads the certificate the offline Root produced.
+Putting the portal online and the Root offline is the whole design: compromise
+yields the ability to enqueue rubbish and read the queue, never to mint an
+issuer.
+
+Routes: `POST /csr`, `GET /queue`, `POST /requests/:id/{approve,reject}`,
+`GET /requests/:id`, `GET /audit/export`.
+
+#### `risklist-api` — Annex C: screening, listing, appeals
+
+The largest service, and the one that acts on the fraud the cryptography cannot
+reach ([§3 P4](#p4--authorised-push-payment-fraud--not-addressed-at-all),
+[§4.4](#44-screen-at-the-moment-of-payment--built)).
+
+**State lives in a Durable Object per account** (`AccountShard`), not in KV.
+That is deliberate: an eventually consistent read leaves a window in which a
+just-listed account still reads clear, and that window is exactly when the
+account is being drained. Reads and writes for one account serialise through one
+object with a durable SQLite store behind it.
+
+**Expiry is evaluated when the status is read** — never by a cron sweep, because
+a missed sweep silently extends a restriction nobody authorised. Both deadlines
+lapse in the subject's favour, and the record says which one fired
+(`lapsedBecause: 'expired' | 'appeal_unanswered'`).
+
+| | Restricted | Blocked |
+|---|---|---|
+| To impose | one officer | **two officers** |
+| Expires after | 72 h | 30 d |
+| Must answer an appeal within | 24 h | 72 h |
+
+Removal by a non-listing institution also takes two officers — but **answering a
+contest takes one officer either way**. An earlier version had this wrong: a
+restriction took one officer to impose and two to lift, which made an error more
+expensive to correct than to make.
+
+Writes are attributed to an individual officer via per-officer mTLS, rate
+limited at 120/officer and 600/institution per window, and an institution
+reaching 1200 is refused *and recorded as an incident* rather than merely
+throttled — thousands of listings in an hour means compromised or
+misconfigured, and neither is a reason to act on the assertions.
+
+Routes: `POST /screen`, `POST /listings`, `POST /removals`,
+`POST /proposals/:id/approve`, `POST|GET /appeals`, `POST /appeals/:id/resolve`,
+`GET /accounts/:id/status`, `GET /delta`, `GET /audit/export`.
+
+#### The audit log (`src/audit.ts` + `migrations/*.sql`, in both write services)
+
+Append-only and hash-chained, **enforced by SQLite triggers rather than by
+convention**. The triggers live in the migrations; `UPDATE` and `DELETE` are
+rejected at the database level with an `append-only` abort, and tests assert it
+in both services — on `audit_log`, and in `risklist-api` on `status_changes` and
+`screenings` too. Every row names the institution *and* the officer; an entry
+naming only an institution is not an audit entry. Corrections are new rows.
+`/audit/export` emits the chain as a file whose interior integrity is checkable
+without trusting the database that produced it.
+
+This is not defensive engineering against a hypothetical insider. It is why a
+listing made for a reason other than the stated one leaves a record its author
+cannot quietly revise — see the paper's §7.11 on who ends up holding these
+powers.
+
+#### Deploying
+
+Each Worker has its own `wrangler.toml` with `workers_dev = false` and
+placeholder resource IDs (`REPLACE_WITH_…`). There are **no secret bindings in
+any of them**, and that absence is enforced by CI rather than by review.
+
 ## 7. Usage
 
 ```bash
