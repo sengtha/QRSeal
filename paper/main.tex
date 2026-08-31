@@ -439,7 +439,14 @@ the prose. The code on a university degree carries a URL of the shape
 \]
 --- an opaque 256-bit document reference and a 256-bit parameter named
 \code{key}. There is no signature in the code and nothing in it a verifier could
-check offline. We did not resolve the URL, which addresses a named individual's
+check offline.
+
+This is the durable finding, and it is the one that does not depend on what the
+platform does today. Rendering, field selection, status handling and interface
+copy are all things an operator can revise between one release and the next.
+Putting a URL in the code is not: it fixes verification to a live service, and
+every property discussed below follows from that choice rather than from any
+particular version of the site. We did not resolve the URL, which addresses a named individual's
 education record, and we record its structure only.
 
 Two properties follow from that structure, and they hold whether the parameter
@@ -484,23 +491,6 @@ on. We place it in the shape of a return type that a caller cannot get a verdict
 out of without handling the fields, and a test that fails the build if anyone
 adds a way around it. Neither makes a person compare. Only one makes the
 \emph{program} unable to pretend the comparison happened.
-
-\paragraph{Status is a banner, and the record renders regardless.} The page we
-were shown carries a status notice at the top, in red with a cross, which we
-read as reporting that the document's validity has lapsed. Beneath it the full
-field list renders exactly as it otherwise would.
-
-We do not know what that status means for this class of document, and the
-platform does not publish the semantics, so we draw no conclusion about the
-particular record. The structural observation stands on its own: a design that
-communicates status in a banner and content in a table has separated the finding
-from the thing the reader came for. The table is what fills the screen, it is
-what looks like the answer, and a reader who is scrolling to find a name --- or
-who does not read the language of the banner --- reaches the reassuring part
-without passing through the disqualifying one. This is the same failure mode as
-Section~\ref{sec:indicators}: people act on the presence of content, not on the
-absence of a warning. Where a status can be negative, it has to gate the
-disclosure rather than sit above it.
 
 \paragraph{And the disclosure is broader than the question.} A reader who wants
 to know whether a certificate is genuine is shown the subject's date of birth,
