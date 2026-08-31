@@ -412,10 +412,12 @@ different}
 Profile B is not proposed into a vacuum. Cambodia operates \code{verify.gov.kh},
 a national document-verification platform that places QR codes on secondary
 school and university diplomas, medical licences, certificates of incorporation,
-land titles, driving permits and civil status documents, and it has attracted
-substantial international recognition \citep{cambodianess2026verifygov}. Any
-proposal in this space has to say how it relates to that system, and the honest
-answer is that the two are solving the same problem with opposite architectures.
+land titles, driving permits and civil status documents. It was built by a
+Cambodian technical team, it received the 2026 United Nations Public Service
+Award, and Timor-Leste has adopted it
+\citep{cambodianess2026verifygov,khmertimes2026verifygov}. Any proposal in this
+space has to say how it relates to that system, and the honest answer is that
+the two are solving the same problem with opposite architectures.
 
 The mechanism, in the platform's own description, is online lookup. A unique QR
 and digital code are attached to the issued document, and that code ``together
@@ -464,15 +466,31 @@ verify in forty years and a land title in a hundred, and over those intervals
 the guarantee is not cryptographic but organisational: that some institution
 keeps the same service reachable at the same name.
 
-The scale makes this concrete rather than hypothetical. Several hundred
-thousand secondary-school diplomas have been issued through the platform since
-2022 --- reporting puts the figure above four hundred thousand
-\citep{cambodianess2026verifygov} --- so a commitment measured in decades has
+The scale makes this concrete rather than hypothetical, and the figures are
+now official. More than 418{,}000 students who passed the grade~12 national
+examination between 2022 and 2025 received certificates carrying standardised QR
+codes through the platform, and one university reports 12{,}351 doctoral,
+master's and bachelor's degrees issued through it between 2023 and 2026
+\citep{khmertimes2026verifygov}. A commitment measured in decades has therefore
 been accumulated in three years, and it grows by a cohort annually. Whether
-those documents are still verifiable in 2060 is not a question about
-cryptography. It is a question about whether an organisation and a domain name
-outlive the people named on the certificates, and it is being answered by
-default rather than by design. Offline verification also
+those documents still verify in 2060 is not a question about cryptography. It is
+a question about whether an organisation and a domain name outlive the people
+named on the certificates, and it is being answered by default rather than by
+design.
+
+\paragraph{Crossing a border makes the dependency sharper, not weaker.} The
+platform is being shared internationally under a stated aim that a document
+issued in one country can be verified in another
+\citep{khmertimes2026verifygov}. That ambition is exactly right and it is the
+strongest case we can make for the offline complement. A Cambodian degree
+presented to an employer abroad in 2050, under an online-lookup design, is
+verifiable only while a foreign ministry's servers remain reachable, unblocked
+and answering at the same name --- a dependency on another state's continuing
+operations that the holder cannot control and the relying party cannot audit. A
+signed credential inverts that: the relying party needs the issuer's archived
+public key and nothing else, which is why the EU chose it for a credential that
+had to be checked across borders by parties with no relationship to the issuer
+\citep{eudcc2021}. Offline verification also
 works where the network does not, which for land titles is much of the country,
 and it does not disclose to the issuer who is checking which document and when
 --- a property that matters for employment and for land. A signed credential
