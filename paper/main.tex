@@ -406,227 +406,108 @@ and a test asserts that no boolean member exists on the result type --- so that 
 later refactor adding a convenience accessor fails the build rather than
 silently removing the only defence.
 
-\subsection{The national system that already exists, and why this one is
-different}
+\subsection{Carrying the credential, or carrying a reference to it}
 \label{sec:verifygov}
 
 Profile B is not proposed into a vacuum. Cambodia operates \code{verify.gov.kh},
-a national document-verification platform that places QR codes on secondary
-school and university diplomas, medical licences, certificates of incorporation,
-land titles, driving permits and civil status documents. It was built by a
-Cambodian technical team, it received the 2026 United Nations Public Service
-Award, and Timor-Leste has adopted it
-\citep{cambodianess2026verifygov,khmertimes2026verifygov}. Any proposal in this
-space has to say how it relates to that system, and the honest answer is that
-the two are solving the same problem with opposite architectures.
+a national platform that places QR codes on diplomas, medical licences,
+certificates of incorporation, land titles and civil status documents; it was
+built by a Cambodian technical team, received the 2026 United Nations Public
+Service Award, and has been adopted by Timor-Leste
+\citep{cambodianess2026verifygov,khmertimes2026verifygov}. We do not audit it
+here --- little technical documentation is public, and a comparison built on
+inference would not be worth reading. One architectural fact is enough, and it
+is settled from an artefact rather than from prose: the code on an issued degree
+carries a URL of the shape \code{https://verify.gov.kh/verify/}$\langle$64
+hex$\rangle$\code{?key=}$\langle$64 hex$\rangle$, with no signature and nothing a
+verifier could check offline.\footnote{We did not resolve the URL, which
+addresses a named individual's record, and we record its structure only.}
 
-The mechanism, in the platform's own description, is online lookup. A unique QR
-and digital code are attached to the issued document, and that code ``together
-with condensed information from the document, is stored on the blockchain'';
-opening the document by its QR code on the site shows ``its contents as stored
-on the blockchain''; and the platform checks that the document came from a
-recognised government body \citep{verifygovkh}. Profile B is offline
-verification: the code carries the signature, and the verifier checks it against
-a trust list without contacting anyone. Our implementation enforces the
-difference with a test asserting that verification performs no network access at
-all.
+That is the distinction this section is about, and it generalises past any one
+platform. A scanned code can carry the credential or a reference to it. The
+choice is architectural: rendering, field selection and interface copy are all
+revisable between releases, but which of those two things is in the symbol is
+not.
 
-An issued certificate settles the question from the artefact rather than from
-the prose. The code on a university degree carries a URL of the shape
-\[
-\code{https://verify.gov.kh/verify/}\langle\text{64 hex}\rangle
-\code{?key=}\langle\text{64 hex}\rangle
-\]
---- an opaque 256-bit document reference and a 256-bit parameter named
-\code{key}. There is no signature in the code and nothing in it a verifier could
-check offline.
+\paragraph{What a reference costs.} It binds verification to a live service, so
+the credential's lifetime becomes the service's. A degree must verify in forty
+years and a land title in a hundred, and over those spans the guarantee stops
+being cryptographic and becomes organisational --- that some institution keeps
+the same service reachable at the same name. The obligation is already large:
+more than 418{,}000 grade~12 certificates were issued this way between 2022 and
+2025, and one university reports 12{,}351 degrees between 2023 and 2026
+\citep{khmertimes2026verifygov}. Crossing a border sharpens the dependency
+rather than easing it, and the platform is being shared internationally under a
+stated aim that a document issued in one country be verifiable in another
+\citep{khmertimes2026verifygov}: a Cambodian degree shown to an employer abroad
+in 2050 then verifies only while a foreign ministry's servers remain reachable,
+unblocked and answering --- a dependency the holder cannot control and the
+relying party cannot audit. A signature inverts it. The relying party needs the
+issuer's archived public key and nothing else, which is why the EU chose one for
+a credential checked across borders by parties with no relationship to the
+issuer \citep{eudcc2021}.
 
-This is the durable finding, and it is the one that does not depend on what the
-platform does today. Rendering, field selection, status handling and interface
-copy are all things an operator can revise between one release and the next.
-Putting a URL in the code is not: it fixes verification to a live service, and
-every property discussed below follows from that choice rather than from any
-particular version of the site. We did not resolve the URL, which addresses a named individual's
-education record, and we record its structure only.
+A reference with a capability in it costs something further. Where the URL
+carries a secret, possession of the link is possession of the record: a
+photograph of the certificate --- sent to an employer, posted to a profile,
+forwarded through a messaging application --- carries a working key, and the copy
+is functionally the original. Path and query components are not confidential the
+way a request body is; they appear in browser history, server and proxy logs and
+link previews. The leak is silent, because copying the key requires only having
+seen the document. This is a property of the carrier, not a claim about any
+operator's handling of it.
 
-Two properties follow from that structure, and they hold whether the parameter
-decrypts a stored record or merely authorises access to one.
+\paragraph{What a reference buys, and we cannot match it: revocation.} An online
+record can be corrected or withdrawn the moment an institution decides, and the
+next reader sees the current state. A signature is a statement that was true
+when made; it does not become false when the issuer changes their mind, and
+nothing in a payload can carry news that postdates it.
 
-\paragraph{The code is a bearer credential.} Possession of the URL is possession
-of the record. A photograph of the certificate --- shared with an employer,
-attached to an application, posted to a professional profile, forwarded through
-a messaging application --- carries a working key with it, and the copy is
-indistinguishable in function from the original. This is the transplant problem
-of Section~\ref{sec:transplant} with a disclosure problem added: the artefact
-that proves the credential also discloses it, to anyone who ever sees the paper.
+Our design does less here than we had implied. The trust list revokes
+\emph{keys}, and a revoked key invalidates everything its holder ever signed ---
+right for a compromised key, useless for one withdrawn diploma among four
+hundred thousand. There is no per-credential revocation in this specification,
+and adding one honestly means adding a live service, which is the dependency the
+offline design exists to remove. What we do instead is refuse to paper over it:
+the result carries a \code{credentialStatus} field whose only value is
+\code{unchecked}, present rather than omitted because an absent field reads as
+nothing to worry about. For a credential that can be withdrawn and must be
+checked without a network, no signature scheme --- ours included --- gives the
+reader what a lookup gives them.
 
-\paragraph{A secret in a URL travels where URLs travel.} Path and query
-components are not confidential in the way a request body or a header is. They
-appear in browser history, in server and proxy access logs, in link previews
-generated by messaging clients, and in any screenshot of the document. A design
-that places a long-lived capability in a URL has chosen a carrier that leaks by
-default, and the leak is silent: nothing tells the subject that their key has
-been copied, because copying it requires only having seen the certificate.
+\paragraph{Both designs meet the same wall, and that is the useful finding.}
+Resolving such a URL produces neither the original document nor a verdict about
+the paper in the reader's hand. It produces a short field list --- issuing
+institution, subject name, date of birth, document number, award, field of
+study, examination date --- above an instruction, in Khmer, telling the reader to
+check their document against the data shown.
 
-We draw no conclusion about how the platform manages this, which is not public.
-The observation is about the carrier, and it applies to any scheme that puts a
-capability in a scanned link.
+That instruction is the argument of Section~\ref{sec:transplant}, reached
+independently and stated to the public in plain language. Two designs with
+opposite architectures arrive at the same irreducible requirement: somebody must
+compare the attested fields against the artefact, because no infrastructure on
+either side of that step can perform it. What differs is where the requirement
+is enforced. A sentence above a table asks a reader who may not read it. A
+return type a caller cannot extract a verdict from without handling the fields,
+with a test that fails the build if anyone adds a way around it, asks a
+programmer who cannot decline. Neither makes a person compare; only one stops
+the program pretending the comparison happened. We take that as the transferable
+result, and it is why the same discipline appears in Profile~A's payee
+disclosure.
 
-\paragraph{The rendered page asks the reader to do the comparison.} Resolving
-such a URL produces neither the original document nor a verdict about the paper
-in the reader's hand. It produces a short field list --- issuing institution,
-subject name in Khmer and Latin script, date of birth, document number, award,
-field of study, examination date --- above which the page instructs the reader,
-in Khmer, to check their document against the data shown in order to confirm it
-is correct.
+The corollary is that no printed mark can be the control either. A certificate
+carrying a verification service's logo carries a statement about itself,
+reproducible by anyone with a printer; a forgery can bear a convincing badge and
+any code its maker likes. The badge advertises a check and will sometimes be
+mistaken for one.
 
-That instruction is the whole argument of Section~\ref{sec:transplant}, reached
-independently by a national platform and stated to the public in plain language.
-Two designs with opposite architectures arrive at the same irreducible
-requirement: somebody must compare the attested fields against the artefact,
-because no amount of infrastructure on either side of that step can perform it.
-The difference is where the requirement is enforced. The platform places it in a
-sentence above a table, which a reader may not read and cannot be made to act
-on. We place it in the shape of a return type that a caller cannot get a verdict
-out of without handling the fields, and a test that fails the build if anyone
-adds a way around it. Neither makes a person compare. Only one makes the
-\emph{program} unable to pretend the comparison happened.
-
-\paragraph{And the disclosure is broader than the question.} A reader who wants
-to know whether a certificate is genuine is shown the subject's date of birth,
-along with everything else on the record. Anyone holding the link sees it, which
-returns to the bearer property above: the certificate proves the credential by
-disclosing it, and it discloses more than the relying party needed to ask.
-
-\paragraph{What their design gets that ours does not: revocation.} Balance
-requires stating this, because the comparison has so far run one way. An online
-record can be corrected, withdrawn or annotated the moment an institution
-decides to, and the next reader sees the current state. A signed offline
-credential cannot: a signature is a statement that was true when made and stays
-verifiable afterwards. It does not become false when the issuer changes their
-mind, and nothing in a payload can carry news that postdates it. This is not a
-small caveat. It is the hardest unsolved part of offline credentials, the EU
-scheme met it too, and a rescinded degree is exactly where it bites.
-
-Our design does less here than we had implied, and the distinction matters. The
-trust list revokes \emph{keys}, and a revoked key invalidates everything its
-holder ever signed --- correct for a compromised key, useless for one withdrawn
-diploma among four hundred thousand. There is no per-credential revocation in
-this specification, and adding one honestly means adding a status service, which
-is a live service, which is the dependency the offline design exists to remove.
-
-What we do instead is refuse to paper over it. The verification result carries a
-\code{credentialStatus} field whose only value is \code{unchecked}, and a test
-pins it. The field is present rather than omitted precisely because an absent
-field reads as nothing to worry about, and an interface must not be able to
-present a credential of unknown standing as a current one. A deployment that
-wants revocation should compose the two designs: publish the signed credential
-for the properties in this section, and consult the issuer's online record where
-a network exists, reporting three states rather than two. The offline path
-degrades to \emph{signature valid, standing unknown}, which is less than the
-online design offers and is the true state of the verifier's knowledge.
-
-We would rather state the residue than close the section on a claim we cannot
-support: for a credential that can be withdrawn and must be checked without a
-network, no signature scheme --- ours included --- gives the reader what an
-online lookup gives them.
-
-The platform is not open source, so the rest of this comparison rests on its
-published description rather than on its code. We note that as a limit on what follows,
-not as a criticism --- and observe that it is the reason this paper publishes an
-implementation and a conformance suite, since a verification claim that cannot
-be independently executed can only be taken on trust.
-
-\paragraph{There are two verification paths, and they are not equally strong.}
-This is the substantive finding, and it is not visible from secondary
-descriptions. The site's verification page asks the reader to \emph{upload the
-document in PDF format} \citep{verifygovkh}. That path is strong: the server
-holds the record and receives the whole artefact, so it can compare the two in
-full, and a transplanted code fails because the file it arrives attached to is
-not the file the record describes.
-
-The scanned path is a different matter. A reader holding a paper certificate
-cannot upload it. They scan, and what returns is the condensed information the
-platform stored --- a set of fields to compare against the document in their hand.
-That is structurally the same disclosure Profile B makes, and it carries the
-same burden: the reader must perform the comparison, and a transplanted code
-shows the genuine subject's genuine fields either way. Online lookup does not
-defeat the transplant attack on paper documents. It relocates where the fields
-come from.
-
-We stated the opposite in an earlier draft of this section, on the strength of a
-secondary description saying the platform ``presents the authenticated original
-document''. The platform's own text says condensed information, which is a
-weaker claim and a different one. How much the condensed record contains is not
-published, so the residual strength of the scanned path cannot be assessed from
-outside.
-
-\paragraph{Where a signature is better, and it is not a matter of taste.} An
-online-lookup credential has a lifetime bounded by its server. A degree must
-verify in forty years and a land title in a hundred, and over those intervals
-the guarantee is not cryptographic but organisational: that some institution
-keeps the same service reachable at the same name.
-
-The scale makes this concrete rather than hypothetical, and the figures are
-now official. More than 418{,}000 students who passed the grade~12 national
-examination between 2022 and 2025 received certificates carrying standardised QR
-codes through the platform, and one university reports 12{,}351 doctoral,
-master's and bachelor's degrees issued through it between 2023 and 2026
-\citep{khmertimes2026verifygov}. A commitment measured in decades has therefore
-been accumulated in three years, and it grows by a cohort annually. Whether
-those documents still verify in 2060 is not a question about cryptography. It is
-a question about whether an organisation and a domain name outlive the people
-named on the certificates, and it is being answered by default rather than by
-design.
-
-\paragraph{The badge is not the property.} Certificates carrying these codes
-print the verification service's logo beside the symbol. That mark is a
-statement about the document, made on the document, and it is copyable by
-anyone with a printer. A forged certificate can carry a convincing badge and a
-QR code of the forger's choosing, and the reader who takes the badge's presence
-as assurance has been given a signal that costs an attacker nothing to
-reproduce. This is not a criticism of printing the logo, which is how a reader
-learns the service exists. It is the reason no printed mark can be the control:
-the only thing that distinguishes a genuine document from a forgery is what
-happens when the code is resolved, and that step is the one
-Section~\ref{sec:scanpath} argues most readers will not take. The mark is an
-advertisement for a check, and it will sometimes be mistaken for the check.
-
-\paragraph{Crossing a border makes the dependency sharper, not weaker.} The
-platform is being shared internationally under a stated aim that a document
-issued in one country can be verified in another
-\citep{khmertimes2026verifygov}. That ambition is exactly right and it is the
-strongest case we can make for the offline complement. A Cambodian degree
-presented to an employer abroad in 2050, under an online-lookup design, is
-verifiable only while a foreign ministry's servers remain reachable, unblocked
-and answering at the same name --- a dependency on another state's continuing
-operations that the holder cannot control and the relying party cannot audit. A
-signed credential inverts that: the relying party needs the issuer's archived
-public key and nothing else, which is why the EU chose it for a credential that
-had to be checked across borders by parties with no relationship to the issuer
-\citep{eudcc2021}. Offline verification also
-works where the network does not, which for land titles is much of the country,
-and it does not disclose to the issuer who is checking which document and when
---- a property that matters for employment and for land. A signed credential
-verifies against an archived trust list long after the issuing service is gone,
-which is the property the EU chose for the same reason \citep{eudcc2021}.
-
-\paragraph{On the ledger.} The platform stores the code together with condensed
-information from the document on a blockchain \citep{verifygovkh}. That is a real property and it is worth being
-exact about which one: it makes it evident if the operator alters a record after
-the fact. It does nothing for the citizen at the point of scanning, whose
-information all arrives over a page the operator serves --- so the ledger
-constrains the operator's history without changing what the reader is trusting
-in the moment. It is a defence against a different adversary than the one this
-paper is concerned with, and it is not an alternative to a signature the reader's
-own device can check.
-
-\paragraph{What we actually propose.} Not a replacement. The two compose: a
-platform that already holds the authoritative record could emit a signed,
-offline-verifiable credential alongside the lookup code at no cost to the lookup
-path, and get archival longevity, offline operation and reader privacy without
-giving up the display of the original. The design in this paper is best read as
-a specification for that second artefact.
+\paragraph{What we propose.} Not a replacement. The two compose: a platform that
+already holds the authoritative record could emit a signed, offline-verifiable
+credential alongside the lookup code at no cost to the lookup path, gaining
+archival longevity, offline operation and reader privacy, and reporting three
+states rather than two --- current, withdrawn, or \emph{signature valid,
+standing unknown}. The design in this paper is a specification for that second
+artefact, and the rest of this section returns to it.
 
 \subsection{Trust hierarchy and the fail-closed verifier}
 
