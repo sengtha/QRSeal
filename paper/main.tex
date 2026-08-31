@@ -405,6 +405,62 @@ and a test asserts that no boolean member exists on the result type --- so that 
 later refactor adding a convenience accessor fails the build rather than
 silently removing the only defence.
 
+\subsection{The national system that already exists, and why this one is
+different}
+\label{sec:verifygov}
+
+Profile B is not proposed into a vacuum. Cambodia operates \code{verify.gov.kh},
+a national document-verification platform that places QR codes on secondary
+school and university diplomas, medical licences, certificates of incorporation,
+land titles, driving permits and civil status documents, and it has attracted
+substantial international recognition \citep{cambodianess2026verifygov}. Any
+proposal in this space has to say how it relates to that system, and the honest
+answer is that the two are solving the same problem with opposite architectures.
+
+The described mechanism is online lookup: the code is scanned with an ordinary
+camera or browser, the platform is consulted, and it \emph{displays the
+authenticated original document} for the reader to compare against the paper in
+hand. Profile B is offline verification: the code carries a signature, and the
+verifier checks it against a trust list without contacting anyone. Our
+implementation enforces the difference with a test asserting that verification
+performs no network access at all.
+
+\paragraph{Where online lookup is straightforwardly better.} It defeats the
+transplant attack, which Profile B can only mitigate. We ask a verifier to
+compare signed fields against the printed page and constrain the API so the
+comparison cannot be skipped; an online lookup \emph{supplies} the authoritative
+original to compare with. That is a stronger answer, and we would rather record
+it than pretend the trade runs one way.
+
+\paragraph{Where a signature is better, and it is not a matter of taste.} An
+online-lookup credential has a lifetime bounded by its server. A degree must
+verify in forty years and a land title in a hundred, and over those intervals
+the guarantee is not cryptographic but organisational: that some institution
+keeps the same service reachable at the same name. Offline verification also
+works where the network does not, which for land titles is much of the country,
+and it does not disclose to the issuer who is checking which document and when
+--- a property that matters for employment and for land. A signed credential
+verifies against an archived trust list long after the issuing service is gone,
+which is the property the EU chose for the same reason \citep{eudcc2021}.
+
+\paragraph{On the ledger.} The platform is described as inscribing a
+cryptographic hash of each document on a blockchain layer
+\citep{cambodianess2026verifygov}. That is a real property and it is worth being
+exact about which one: it makes it evident if the operator alters a record after
+the fact. It does nothing for the citizen at the point of scanning, whose
+information all arrives over a page the operator serves --- so the ledger
+constrains the operator's history without changing what the reader is trusting
+in the moment. It is a defence against a different adversary than the one this
+paper is concerned with, and it is not an alternative to a signature the reader's
+own device can check.
+
+\paragraph{What we actually propose.} Not a replacement. The two compose: a
+platform that already holds the authoritative record could emit a signed,
+offline-verifiable credential alongside the lookup code at no cost to the lookup
+path, and get archival longevity, offline operation and reader privacy without
+giving up the display of the original. The design in this paper is best read as
+a specification for that second artefact.
+
 \subsection{Trust hierarchy and the fail-closed verifier}
 
 Keys are identified by the first eight bytes of SHA-256 over the uncompressed
@@ -1233,9 +1289,35 @@ UNESCO's own publication and nothing here depends on their exact values. They
 are cited to say that the gap between adoption and competence is documented
 rather than assumed.
 
+The hardest test of this rule is not a restaurant menu. It is
+\code{verify.gov.kh} (Section~\ref{sec:verifygov}): a government platform, on
+official documents, whose entire mechanism is that scanning a code opens a
+website. A rule phrased as ``an official QR code never opens a website'' would
+be false on the day it was issued, contradicted by the state's own
+award-winning system, and would decay accordingly.
+
 Stating the rule in terms of the \emph{action} rather than the code --- do not
-pay, do not authenticate --- keeps it categorical while leaving it uncontradicted
-by the legitimate URL codes that exist outside the regulated perimeter. A
+pay, do not authenticate --- survives that test, and it is the reason the
+formulation matters rather than being a stylistic preference. Scanning a
+verification code asks the reader to \emph{look at} a document. It asks for no
+payment and no credential, so it neither violates the rule nor teaches the
+public that the rule is negotiable. The rule and the platform can coexist, but
+only in this formulation.
+
+We record one residual cost, because it is the same argument this paper makes
+about KHQR. A widely used state platform whose normal behaviour is ``scan a
+government code, a website opens, an official record appears'' manufactures
+exactly the expectation an attacker needs, and a counterfeit page reached from a
+sticker on a forged document inherits that credibility. The system's design
+gives a reader no offline means of telling the real page from a convincing one:
+the decision falls back to reading a domain name, which
+Section~\ref{sec:indicators} gives reason to doubt. This is not an argument
+against the platform. It is an argument for the signed, offline-verifiable
+credential proposed in Section~\ref{sec:verifygov}, whose whole point is that
+the reader's device can answer the question without asking a server.
+
+The same phrasing leaves legitimate URL codes outside the regulated perimeter
+uncontradicted. A
 restaurant menu never asks for a one-time code, so encountering one does not
 teach the public that the rule is false. This matters, because a public rule
 falsified by daily experience decays exactly as the browser certificate warning
