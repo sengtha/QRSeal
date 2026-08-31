@@ -417,20 +417,46 @@ substantial international recognition \citep{cambodianess2026verifygov}. Any
 proposal in this space has to say how it relates to that system, and the honest
 answer is that the two are solving the same problem with opposite architectures.
 
-The described mechanism is online lookup: the code is scanned with an ordinary
-camera or browser, the platform is consulted, and it \emph{displays the
-authenticated original document} for the reader to compare against the paper in
-hand. Profile B is offline verification: the code carries a signature, and the
-verifier checks it against a trust list without contacting anyone. Our
-implementation enforces the difference with a test asserting that verification
-performs no network access at all.
+The mechanism, in the platform's own description, is online lookup. A unique QR
+and digital code are attached to the issued document, and that code ``together
+with condensed information from the document, is stored on the blockchain'';
+opening the document by its QR code on the site shows ``its contents as stored
+on the blockchain''; and the platform checks that the document came from a
+recognised government body \citep{verifygovkh}. Profile B is offline
+verification: the code carries the signature, and the verifier checks it against
+a trust list without contacting anyone. Our implementation enforces the
+difference with a test asserting that verification performs no network access at
+all.
 
-\paragraph{Where online lookup is straightforwardly better.} It defeats the
-transplant attack, which Profile B can only mitigate. We ask a verifier to
-compare signed fields against the printed page and constrain the API so the
-comparison cannot be skipped; an online lookup \emph{supplies} the authoritative
-original to compare with. That is a stronger answer, and we would rather record
-it than pretend the trade runs one way.
+The platform is not open source, so this comparison rests on its published
+description rather than on its code. We note that as a limit on what follows,
+not as a criticism --- and observe that it is the reason this paper publishes an
+implementation and a conformance suite, since a verification claim that cannot
+be independently executed can only be taken on trust.
+
+\paragraph{There are two verification paths, and they are not equally strong.}
+This is the substantive finding, and it is not visible from secondary
+descriptions. The site's verification page asks the reader to \emph{upload the
+document in PDF format} \citep{verifygovkh}. That path is strong: the server
+holds the record and receives the whole artefact, so it can compare the two in
+full, and a transplanted code fails because the file it arrives attached to is
+not the file the record describes.
+
+The scanned path is a different matter. A reader holding a paper certificate
+cannot upload it. They scan, and what returns is the condensed information the
+platform stored --- a set of fields to compare against the document in their hand.
+That is structurally the same disclosure Profile B makes, and it carries the
+same burden: the reader must perform the comparison, and a transplanted code
+shows the genuine subject's genuine fields either way. Online lookup does not
+defeat the transplant attack on paper documents. It relocates where the fields
+come from.
+
+We stated the opposite in an earlier draft of this section, on the strength of a
+secondary description saying the platform ``presents the authenticated original
+document''. The platform's own text says condensed information, which is a
+weaker claim and a different one. How much the condensed record contains is not
+published, so the residual strength of the scanned path cannot be assessed from
+outside.
 
 \paragraph{Where a signature is better, and it is not a matter of taste.} An
 online-lookup credential has a lifetime bounded by its server. A degree must
@@ -453,9 +479,8 @@ and it does not disclose to the issuer who is checking which document and when
 verifies against an archived trust list long after the issuing service is gone,
 which is the property the EU chose for the same reason \citep{eudcc2021}.
 
-\paragraph{On the ledger.} The platform is described as inscribing a
-cryptographic hash of each document on a blockchain layer
-\citep{cambodianess2026verifygov}. That is a real property and it is worth being
+\paragraph{On the ledger.} The platform stores the code together with condensed
+information from the document on a blockchain \citep{verifygovkh}. That is a real property and it is worth being
 exact about which one: it makes it evident if the operator alters a record after
 the fact. It does nothing for the citizen at the point of scanning, whose
 information all arrives over a page the operator serves --- so the ledger
@@ -1302,7 +1327,10 @@ rather than assumed.
 The hardest test of this rule is not a restaurant menu. It is
 \code{verify.gov.kh} (Section~\ref{sec:verifygov}): a government platform, on
 official documents, whose entire mechanism is that scanning a code opens a
-website. A rule phrased as ``an official QR code never opens a website'' would
+website. This is confirmed by the platform's own description rather than
+inferred: verification happens in a browser, against the platform's servers, so
+what the code carries is a reference to be resolved and not a credential to be
+checked \citep{verifygovkh}. A rule phrased as ``an official QR code never opens a website'' would
 be false on the day it was issued, contradicted by the state's own
 award-winning system, and would decay accordingly.
 
