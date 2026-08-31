@@ -934,6 +934,7 @@ one --- so the burden falls back on dissemination
 (Section~\ref{sec:ttl}) rather than on the registration desk.
 
 \subsection{Counterfeit verifiers}
+\label{sec:counterfeit}
 \label{sec:indicators}
 
 An application that shows a green tick for every code defeats the entire scheme
@@ -1102,6 +1103,46 @@ not contract. Five mechanisms drive it, each running one way only:
     deliberately changed, so the loss per successful incident stays at its
     maximum.
 \end{enumerate}
+
+\paragraph{The same trajectory is now running on documents, one step behind.}
+Everything above concerns payments, because that is where habituation is
+complete. Document verification is at the stage payments were at earlier: a
+national platform exists, adoption is real but the artefacts are not yet
+load-bearing in daily life, and the payoff to attacking it is correspondingly
+low. That is a statement about \emph{today}, and the mechanisms listed above do
+not care which artefact they run on.
+
+The attack the trajectory produces is worth stating before it arrives, because
+its shape is already fully determined by the design. A forged certificate, land
+title or official notice is manufactured with a QR code of the forger's
+choosing. The recipient is told the document is genuine and invited to check it
+--- \emph{scan the code and see for yourself} --- and the code opens a
+counterfeit page that confirms the document and, in the second stage, asks the
+reader to enter their own details to complete the check. Every element is
+supplied by the attacker: the paper, the code, the page, and the instruction to
+scan.
+
+Three things make this worse than its payment equivalent rather than merely
+analogous. There is no genuine artefact underneath, as there is beneath a
+sticker on a merchant's code, so nothing is displaced and nothing goes missing
+to be noticed later. The invitation to verify is not a red flag but the
+mechanism working as designed --- a forger who says ``scan it and check''
+sounds exactly like an honest issuer, and confidence in the document rises
+because the check was offered. And the reader's only defence is reading a domain
+name, since a counterfeit page is reached the same way the real one is, which
+returns to Section~\ref{sec:indicators}.
+
+The residue is what makes the timing matter. Habituation is what the attack
+consumes, and habituation is what successful adoption produces: the more
+reliably a state platform teaches the public that scanning a government code
+yields an authoritative answer, the more a counterfeit of it is worth. An
+offline signature removes the page from the attack entirely --- there is no
+service to impersonate when the verifier consults nothing --- and relocates the
+residue to the verifier application, which Section~\ref{sec:counterfeit} says is
+addressed weakly. That is a smaller and better-understood problem than a
+counterfeit website, and it is the case for making the change before the
+platform is load-bearing rather than after, when the installed base of printed
+documents will make it expensive.
 
 \paragraph{And this design widens the gap it cannot close.}
 Every signed code that a person scans successfully teaches them that the system
@@ -1393,32 +1434,30 @@ rather than assumed.
 The hardest test of this rule is not a restaurant menu. It is
 \code{verify.gov.kh} (Section~\ref{sec:verifygov}): a government platform, on
 official documents, whose entire mechanism is that scanning a code opens a
-website. This is confirmed by the platform's own description rather than
-inferred: verification happens in a browser, against the platform's servers, so
-what the code carries is a reference to be resolved and not a credential to be
-checked \citep{verifygovkh}. A rule phrased as ``an official QR code never opens a website'' would
-be false on the day it was issued, contradicted by the state's own
-award-winning system, and would decay accordingly.
+website. Verification happens in a browser against the platform's servers, so
+what the code carries is a reference to be resolved rather than a credential to
+be checked \citep{verifygovkh}.
 
-Stating the rule in terms of the \emph{action} rather than the code --- do not
-pay, do not authenticate --- survives that test, and it is the reason the
-formulation matters rather than being a stylistic preference. Scanning a
-verification code asks the reader to \emph{look at} a document. It asks for no
-payment and no credential, so it neither violates the rule nor teaches the
-public that the rule is negotiable. The rule and the platform can coexist, but
-only in this formulation.
+We should be plain about the consequence, because an earlier draft of this
+section was not. The two halves do not fall the same way, and only one of them
+survives. Scanning a verification code asks the reader to \emph{look at}
+something; it asks for no payment, no credential and no personal details, so it
+does not violate the \emph{public} rule. The \emph{institutional} prohibition it
+violates outright: a government body is issuing QR codes whose payload is an
+\code{https} URL, on official documents, at national scale. Our own rule
+prohibits the state's award-winning platform in its current form, and we would
+rather say so than quietly narrow the rule until it doesn't.
 
-We record one residual cost, because it is the same argument this paper makes
-about KHQR. A widely used state platform whose normal behaviour is ``scan a
-government code, a website opens, an official record appears'' manufactures
-exactly the expectation an attacker needs, and a counterfeit page reached from a
-sticker on a forged document inherits that credibility. The system's design
-gives a reader no offline means of telling the real page from a convincing one:
-the decision falls back to reading a domain name, which
-Section~\ref{sec:indicators} gives reason to doubt. This is not an argument
-against the platform. It is an argument for the signed, offline-verifiable
-credential proposed in Section~\ref{sec:verifygov}, whose whole point is that
-the reader's device can answer the question without asking a server.
+That is not a drafting accident, and the remedy is not an exception. A rule with
+a carve-out for official verification codes is a rule the public cannot apply,
+for the reason given above: nobody can tell, before scanning, whether the code
+in front of them is the official kind. And the public half is falsified in
+practice long before it is falsified in logic --- a citizen who scans a diploma
+and gets a website has been taught, correctly, that government QR codes open
+websites, which is precisely the lesson an attacker needs them to have learned.
+The remedy is the composition of Section~\ref{sec:verifygov}: put the signed
+credential in the code, and reach the online record, if at all, by some route
+that is not the scanned payload.
 
 The same phrasing leaves legitimate URL codes outside the regulated perimeter
 uncontradicted. A
