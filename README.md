@@ -25,7 +25,7 @@ The rest of this document says exactly what that means, problem by problem.
 
 ## 1. The problems that exist now
 
-Cambodian QR fraud is not one problem. It is at least eight, and they fail in
+Cambodian QR fraud is not one problem. It is at least nine, and they fail in
 different places. Conflating them is how a scheme gets sold as solving more than
 it does.
 
@@ -38,8 +38,8 @@ it does.
 | **P5** | **Registration abuse** | A criminal registers a merchant account with genuine or purchased identity documents and receives a genuine key. Their codes are authentic. |
 | **P6** | **Counterfeit verifier** | A fake wallet application that displays a green tick for anything. |
 | **P7** | **Transplanted credential** | A genuine QR photographed from a real certificate and printed onto a forged one. The signature still verifies; nothing about the paper is signed. |
-| **P9** | **Currency substitution** | A genuine code from the genuine payee for the genuinely agreed number — charged in the wrong currency. A fare agreed at 7,200 riel collected as 7,200 dollars. Cambodia circulates both at roughly 4,000:1, so three characters carry the whole loss. |
 | **P8** | **Mule cash-out** | Funds arrive in a real account and are forwarded within minutes. Push payments are final; there is no chargeback. |
+| **P9** | **Currency substitution** | A genuine code from the genuine payee for the genuinely agreed number — charged in the wrong currency. A fare agreed at 7,200 riel collected as 7,200 dollars. Cambodia circulates both at roughly 4,000:1, so three characters carry the whole loss. |
 
 Two structural facts make these hard:
 
