@@ -38,6 +38,7 @@ it does.
 | **P5** | **Registration abuse** | A criminal registers a merchant account with genuine or purchased identity documents and receives a genuine key. Their codes are authentic. |
 | **P6** | **Counterfeit verifier** | A fake wallet application that displays a green tick for anything. |
 | **P7** | **Transplanted credential** | A genuine QR photographed from a real certificate and printed onto a forged one. The signature still verifies; nothing about the paper is signed. |
+| **P9** | **Currency substitution** | A genuine code from the genuine payee for the genuinely agreed number — charged in the wrong currency. A fare agreed at 7,200 riel collected as 7,200 dollars. Cambodia circulates both at roughly 4,000:1, so three characters carry the whole loss. |
 | **P8** | **Mule cash-out** | Funds arrive in a real account and are forwarded within minutes. Push payments are final; there is no chargeback. |
 
 Two structural facts make these hard:
@@ -112,6 +113,40 @@ payer. This is why [§4.4 screening](#44-screen-at-the-moment-of-payment--built)
 reaches *part* of P4 rather than none of it, and why **time-to-list**, not
 detection accuracy, is the metric. We claim nothing about how large that subset
 is in Cambodia; [nobody publishes the data](#41-publish-incident-data--first-because-everything-else-depends-on-it).
+
+### P9 — Currency substitution · **partly addressed, and we had missed it**
+
+A tuk-tuk driver in Phnom Penh was arrested in October 2025 after giving foreign
+passengers QR codes that charged the agreed fare in dollars instead of riel —
+7,200 dollars against an agreed 7,200 riel.
+
+*Why this one is different:* **the signature makes it worse.** Everywhere else
+in this document, a signature simply fails to help. Here it actively assists the
+attacker. The amount and the currency are inside the signed prefix, so a
+conforming verifier confirms them both — and a wallet that reduces the result to
+a green tick has now shown the payer the wrong number, marked *checked*. Every
+other field is correct: the payee really is the driver, the merchant name
+matches, the account is his own.
+
+*What we changed:* the specification used to say a verifier must make the
+disclosure *available* and *should* display it. Too weak for this field. Now:
+
+- amount **and** currency together **MUST** be displayed before authorisation;
+- the currency **MUST** be an ISO 4217 alphabetic code (`KHR`) or an
+  unambiguous name — **never** the numeric code from tag `53` (`116`), and never
+  a bare `$` where that symbol is ambiguous;
+- `payeeDisclosure.currencyAlpha` returns `null` rather than guessing, so an
+  interface that cannot name the currency has to say so instead of implying the
+  local one.
+
+*Why we think the field is genuinely overlooked, not just overlookable:*
+Cambodia's largest bank tells customers to "always verify the merchant's name on
+your screen before authorizing a payment." That is correct advice, and it names
+the one field in this attack that was never wrong. Currency is not mentioned.
+
+*What remains:* an interface can be obliged to show the currency. A passenger
+who has already agreed a price out loud cannot be obliged to read it. The change
+removes our excuse, not the attack.
 
 ### P5 — Registration abuse · **not addressed**
 

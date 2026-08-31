@@ -418,9 +418,44 @@ dropped.
    country, amount, currency, payee class, account identifiers — available to
    the interface, and an interface intended for a payer SHOULD display it before
    authorisation.
-3. A Profile B verifier MUST require the caller to handle the printed-document
+3. Where the payload carries an amount (tag `54`), an interface intended for a
+   payer MUST display that amount **and its currency together** before
+   authorisation. This is a MUST where clause 2 is a SHOULD, and §8.1 says why.
+4. The currency MUST be displayed as the ISO 4217 alphabetic code
+   (`payeeDisclosure.currencyAlpha`) or an unambiguous localised name. An
+   implementation MUST NOT display the ISO 4217 numeric code from tag `53` to a
+   human, and MUST NOT display a currency symbol alone where that symbol is
+   ambiguous in the deployment's locale. Where `currencyAlpha` is `null` — the
+   numeric code is outside the mapping — the interface MUST indicate that the
+   currency is unrecognised and MUST NOT imply the local one.
+5. A Profile B verifier MUST require the caller to handle the printed-document
    comparison fields (§3.3).
-4. An implementation MUST NOT log payload contents.
+6. An implementation MUST NOT log payload contents.
+
+### 8.1 Why clauses 3 and 4 are MUST
+
+A code whose payee is the intended payee and whose amount is authentic, but
+whose currency the payer misreads, is the one case in which a valid signature
+actively assists the attacker. The signature attests the very field carrying the
+deception, and an interface that reduces verification to a tick presents the
+wrong number as confirmed.
+
+This is not hypothetical. In October 2025 a Cambodian tuk-tuk driver was
+arrested after presenting passengers with codes that charged an agreed fare in
+US dollars rather than in riel. Cambodia circulates both currencies at a rate
+around four thousand riel to the dollar, so one three-character field carried
+the entire loss.
+
+Two properties of this specification make these clauses necessary rather than
+merely prudent. The amount and currency sit *inside* the signed prefix, so a
+conforming verifier confirms them. And every other field in the disclosure is
+correct — the payee really is the person the payer means to pay, the merchant
+name matches, `payeeClass` is right — so nothing else gives the payer a reason
+to look. Only showing the currency does.
+
+Clause 4 exists separately from clause 3 because showing a currency badly is a
+way of not showing it. Tag `53` holds `116`, not `KHR`; a payer shown `116`
+learns nothing, and a payer shown `$` in Cambodia learns something false.
 
 ## 9. What this specification does not achieve
 
@@ -438,6 +473,10 @@ still encounter it.
 - **Registration abuse.** A fraudster who registers a merchant account with
   genuine documents receives a genuine key and signs genuine codes. The
   signature then attests a real identity that is real and fraudulent.
+- **Currency and amount deception.** §8 clauses 3 and 4 reduce this; they do not
+  remove it. They oblige an interface to show the currency. They cannot oblige a
+  payer to read it, and a payer who has already agreed a price out loud has
+  formed the expectation that the display would have to overturn.
 - **Counterfeit verifiers.** A fake wallet application that displays a tick for
   anything. The application trust list helps a diligent user and does nothing
   for one who installed the application from a link.

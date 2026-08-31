@@ -636,6 +636,25 @@ control is enforced on the instrument; the deception is created in the
 interaction. One cannot govern the other because they are not the same kind of
 object.
 
+\paragraph{The pretext need not be about the payment at all.}
+The variant most often described in Cambodian reporting does not lie about why
+money is owed; it lies about who is asking. An account belonging to a relative
+or friend is taken over, the contact list is worked through in turn, and each
+person is asked for urgent help by someone they have every reason to
+trust; a QR code is supplied to receive the money, and reporting notes that the
+code presented resembles the account holder's own \citep{kiripost2024scams}.
+
+This is worth separating because it defeats the one mitigation we offer against
+this category. Surfacing the payee name to the payer assumes the payer has an
+expectation to compare it against. Here the expectation is supplied by the
+attacker and is wrong: a payer helping a relative in trouble may have never seen
+that relative's payee string, may expect a name they cannot spell in Latin
+script, or may reasonably accept a near-match as the relative's own account. The
+verifier is entirely correct, the display is entirely correct, and the control
+still does nothing, because the payer's model of who they are paying was
+constructed before the code was ever scanned. We record this as a limit on the
+mitigation, not as a limit on the evidence.
+
 \paragraph{One subset of it is reachable, and the difference is not in the lie.}
 This category divides on a property that has nothing to do with the deception:
 whether the payee account is presented to one victim or to many. A pretext built
@@ -666,7 +685,70 @@ Our specification makes both normative. We do not claim they are sufficient, and
 Section~\ref{sec:indicators} explains why we expect them to be less effective
 than they appear.
 
+\subsection{The authentic code that means something else}
+\label{sec:currency}
+
+In October 2025 the Ministry of Interior's Department of Countering Technology
+Crime arrested a tuk-tuk driver in Phnom Penh who had presented foreign
+passengers with QR codes for their fares. The code was his. The account was his,
+correctly registered. The amount was the number the parties had agreed. The
+currency was not: a fare agreed at 7,200 riel was collected as 7,200 US dollars
+\citep{khmertimes2025qrcurrency}.
+
+We had not enumerated this case, and it is not any of the four already listed.
+It is not forgery, because nothing was forged. It is not authorised push payment
+fraud in the ordinary sense, because the pretext was true --- there really was a
+fare, owed to really that driver, who really did provide the ride. It is not
+registration abuse, because the account was a legitimate account being used for
+its actual purpose. Every field in the payee disclosure is correct, including
+the merchant name that our interface obligations exist to surface. The deception
+is carried entirely by tag~\texttt{53}, three characters wide, and by the payer's
+assumption about what the number beside it meant.
+
+\paragraph{The signature makes it worse.} This is the sharpest instance in this
+paper of its own thesis, and it inverts the usual direction of the argument.
+Elsewhere we say a signature does not help against deception. Here it assists
+it. The amount and the currency lie inside the signed prefix, so a conforming
+verifier confirms them both; an interface that reduces the result to a tick has
+then presented the wrong number to the payer as \emph{checked}. Authentication
+applied to a field the payer does not read does not leave them where they
+started. It moves them backwards.
+
+\paragraph{Dollarisation is what makes it expensive.} A currency confusion in a
+single-currency economy is a rounding error. Cambodia circulates riel and US
+dollars together at a rate of roughly four thousand to one --- ACLEDA Bank
+published a buying rate of 4{,}042 riel to the dollar on the day this section was
+written \citep{acleda2026tips} --- so the same three characters carry a factor of
+four thousand. The vulnerability is not in the payload format, which is EMVCo's
+and is correct. It is in the substrate, in exactly the sense of
+Section~\ref{sec:degrees}: a property of the monetary environment that a
+designer does not choose but must design around.
+
+\paragraph{What we changed, and what we did not.} The specification previously
+required the payee disclosure to be \emph{available} to the interface and only
+recommended displaying it. That was too weak for this field, so amount and
+currency together are now a MUST before authorisation, the currency must be
+shown as an alphabetic code or an unambiguous name, and the numeric code from
+tag~\texttt{53} must never be shown to a human. The library now resolves the
+numeric code to an alphabetic one and returns \texttt{null} rather than guessing
+when it cannot, so that an interface which cannot name the currency is obliged
+to say so instead of implying the local one.
+
+That the field is genuinely overlooked rather than merely overlookable has
+independent support. Cambodia's largest commercial bank tells customers, in its
+own published security guidance, to ``always verify the merchant's name on your
+screen before authorizing a payment'' \citep{acleda2026tips}. That is the right
+instruction, and it names the one field in this attack that was never wrong.
+Currency is not mentioned.
+
+We do not claim the change fixes the case. It obliges an interface to show the
+currency; it cannot oblige a passenger to read it, and a passenger who has
+agreed a price out loud has already formed the expectation that the display
+would have to overturn. What the change does is remove our excuse. The prior
+specification permitted a conforming wallet in which this attack was invisible.
+
 \subsection{Registration abuse}
+\label{sec:registration}
 
 A fraudster registers a merchant account using genuine documents --- their own, or
 a coerced or purchased identity --- and receives a genuine key. The codes they
@@ -680,6 +762,19 @@ property computable from the payload distinguishes a genuine merchant from a
 genuine criminal who completed the same registration process. The defence is
 know-your-customer quality and post-hoc detection, both of which live at layer~3
 and neither of which is cryptography.
+
+\textbf{And the identity is more often borrowed than bought.} We wrote
+``coerced or purchased'' above because that is the standard framing. The
+Cambodian case discussed in Section~\ref{sec:integrity} suggests a more ordinary
+mechanism: collection accounts opened in the names of a brother, a son, a
+daughter and an associate, alongside two national identity cards held by the
+principal \citep{cambodianess2026kohkong}. Those are real people with real
+documents presenting themselves in person. No onboarding check separates a
+genuine relative from a genuine relative acting as a nominee, because at the
+moment of registration there is nothing to separate. What distinguishes them is
+the later pattern of use, which is visible across institutions and not within
+one --- so the burden falls back on dissemination
+(Section~\ref{sec:ttl}) rather than on the registration desk.
 
 \subsection{Counterfeit verifiers}
 \label{sec:indicators}
@@ -966,6 +1061,34 @@ evaluation the advice calls for is precisely the one the construct exists to
 prevent. These are not poorly worded instructions. They are instructions for a
 task that cannot be performed.
 
+\paragraph{The message degrades as it travels, and quickly.}
+Ten days after the warning, a national newspaper published a follow-up
+explaining the threat to a business readership, drawing on named
+industry and academic sources \citep{khmertimes2024counter}. It defines quishing
+as ``a form of phishing that specifically utilizes phone calls or voice
+communications''. That is vishing. Quishing is phishing carried by a QR code,
+which is the subject of both the warning and the article containing the
+sentence.
+
+We note this without any interest in the individuals quoted, because the point
+is not that somebody was wrong. It is that the definition inverted inside ten
+days, in print, in the country's English-language business paper, in an article
+whose purpose was to explain the threat. A control whose mechanism is public
+understanding has to survive that transmission channel, and this is what the
+channel does.
+
+The article's remedies are the second half of the observation. They are
+encryption, biometric authentication, security audits, strong and unique
+passwords, two-factor authentication, updated antivirus software, and manually
+typing website addresses instead of clicking links. Every item is sound general
+security advice and not one of them touches the mechanism: a QR code carries no
+password, and encryption is a confidentiality property, whereas the failure
+here --- a sticker over a merchant's code, an unsigned payload, a currency the
+payer never sees --- is an \emph{authenticity} failure end to end. Nothing in the
+list would have prevented any Cambodian case discussed in this paper. That is
+the substantive argument for a control that lives in the payload and in the
+verifier, where the property in question actually is.
+
 \paragraph{The interval matters more than any single campaign.}
 Between that warning and the awareness material still being published in
 mid-2026 lies about thirty-one months of the same instrument. We draw no
@@ -1079,6 +1202,16 @@ rule is evaluated after the scan, on what is now visible, and requires no
 classification at all. In a population with low general technology literacy this
 is not a matter of preference: a rule with an exception is a rule that cannot be
 applied.
+
+The structural argument does not rest on any literacy figure, and we would make
+it in a country with universal digital skills. It is nonetheless the condition
+Cambodian reporting describes: near-universal social media use alongside UNESCO
+figures, reported second-hand and relating to 2020, in which a minority of the
+population had basic digital access and a very small fraction had skills beyond
+it \citep{kiripost2024scams}. We have not verified those figures against
+UNESCO's own publication and nothing here depends on their exact values. They
+are cited to say that the gap between adoption and competence is documented
+rather than assumed.
 
 Stating the rule in terms of the \emph{action} rather than the code --- do not
 pay, do not authenticate --- keeps it categorical while leaving it uncontradicted
@@ -1197,6 +1330,39 @@ read leaves a window in which a just-listed account still reads clear, and that
 window is exactly when the account is being drained. The implementation
 therefore routes reads and writes for each account through a serialising object,
 with a durable database as the authority.
+
+\paragraph{Rotation is real, and it is bounded.}
+The interval is set by the adversary, and one Cambodian case lets it be
+estimated rather than assumed. An Anti-Corruption Unit prosecution announced in
+March 2026 concerned a deputy chief of customs at a checkpoint on National Road
+48 who collected payments from transporters over roughly two years, and who is
+reported to have rotated QR codes and receiving accounts deliberately to avoid
+detection, using forty-one accounts across six institutions
+\citep{cambodianess2026kohkong}. Set against a reported figure of about three
+thousand collections, that is on the order of seventy per account: rotation, but
+nothing like rotation per payment.
+
+Two things follow, and they pull in opposite directions. Rotation bounds what
+any register can achieve, because a list populated more slowly than the
+adversary rotates never binds at all. But rotation does not defeat one, because
+each new account costs an identity and the reuse interval is therefore finite
+and, on this evidence, not small. The race is between dissemination latency and
+rotation interval, and both are measurable quantities rather than matters of
+opinion.
+
+The second observation is the sharper one. Forty-one accounts spread across six
+institutions is the case against per-institution detection stated as an
+observation rather than as a design preference: each institution saw a fraction
+of a pattern that was legible only in aggregate, and no single one of them was
+in a position to see the whole of it. A register shared between institutions is
+not a convenience. It is the only vantage point from which the pattern exists.
+
+\paragraph{What that case is not.} It is extortion collected over the payment
+rail, not fraud committed with a QR code: the transporters knew exactly who they
+were paying, and that was the problem. We use it for two structural facts --- the
+rotation interval and the cross-institution spread --- and for nothing else. It
+supports no estimate of QR fraud prevalence, which remains unavailable
+(Section~\ref{sec:data}).
 
 \subsection{Screening: the checkpoint the list exists for}
 \label{sec:screening}
@@ -1433,6 +1599,63 @@ above a threshold is refused \emph{and} recorded as an incident rather than
 merely throttled. An institution listing thousands of accounts in an hour is
 compromised or misconfigured; neither condition is a reason to act on its
 assertions.
+
+\subsection{The institutional layer is a power, and powers are held by people}
+\label{sec:integrity}
+
+Everything proposed in this section moves discretion towards institutions and
+the officials inside them: a listing that restricts an account, a hold that
+delays a payment, an exit control that decides when value becomes cash. We have
+argued so far about whether those controls reach the harm. There is a second
+question, which is what happens when the control is held badly, and a design
+that does not answer it is assuming an honest operator in the same way the
+specification was assuming an uncompromised verifier
+(Section~\ref{sec:device}).
+
+The same prosecution answers it. The official is reported to have held two
+national identity cards, to have registered collection accounts in the names of
+close relatives and an associate, and to have paid sums of between one hundred
+and twenty-five hundred dollars to have specific reports removed or not
+broadcast \citep{cambodianess2026kohkong}. That last detail is the one that
+matters here: the capability being described is not fraud but the suppression of
+its record, exercised by a person holding an official position.
+
+Three consequences. All three are already in the implementation, and we would
+defend none of them as sufficient.
+
+\paragraph{The audit record exists for this, not for tidiness.} A hash-chained,
+append-only log naming the individual officer behind every write, exportable as
+a file whose interior integrity is checkable without trusting the database that
+produced it, is not defensive engineering against a hypothetical insider. Its
+purpose is that a listing made for a reason other than the stated one leaves a
+record the person who made it cannot afterwards revise. Corrections are new rows
+for the same reason. An append-only log that the operator can rewrite is a log
+of what the operator wishes had happened.
+
+\paragraph{The right to contest is a control on the lister, not a courtesy to
+the listed.} Section~\ref{sec:appeal} presents the appeal path as due process,
+which it is. It is also the only mechanism in the design by which a listing made
+in bad faith is surfaced by somebody with an interest in surfacing it. This is
+why the appeal deadline is evaluated at read time and lapses in the subject's
+favour: an institution that simply declines to answer must not thereby win,
+because declining to answer is precisely what a bad-faith lister would do.
+
+\paragraph{And it is a reason for the hold to be short.} A restriction that
+expires in seventy-two hours unless a second officer renews it is a weaker
+instrument against fraud than an indefinite one. It is also a far weaker
+instrument against a merchant who declined to pay somebody. We accept the first
+cost in order to bound the second, and we record the reasoning here because
+otherwise the short expiry reads as timidity rather than as a choice.
+
+\paragraph{What we are not claiming.} Not that this design resists a determined
+insider --- an officer who can list can still list wrongly, and the audit record
+establishes only that they did. Not that the case above is representative of
+anything; it is one prosecution, and the fact that it was prosecuted and
+announced is itself evidence of a functioning integrity mechanism. The claim is
+narrower and, we think, unavoidable: an institutional control layer proposed for
+this environment must be designed as though some of the people operating it will
+misuse it, because a case in which exactly that happened is a matter of public
+record.
 
 \subsection{Liability allocation}
 \label{sec:liability}

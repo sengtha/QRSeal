@@ -225,7 +225,20 @@ export interface PayeeDisclosure {
   readonly merchantCity: string | null;
   readonly countryCode: string | null;
   readonly amount: string | null;
+  /** ISO 4217 *numeric* code, as it appears in tag 53. Never show this to a human. */
   readonly currencyCode: string | null;
+  /**
+   * The ISO 4217 alphabetic code for `currencyCode`, or null if the numeric
+   * code is outside the table below.
+   *
+   * This exists because a payer cannot read "116", and because a code whose
+   * amount is authentic and whose currency is misread is the one attack in
+   * which a valid signature actively assists the attacker. In a dual-currency
+   * economy the two live codes differ by roughly four thousand times, so the
+   * failure is not cosmetic. SPEC.md section 8 clause 2 makes displaying this
+   * alongside the amount a MUST, not a SHOULD.
+   */
+  readonly currencyAlpha: string | null;
   readonly payeeClass: PayeeClass;
   /** Account identifiers from templates 26-51, in payload order. */
   readonly accounts: readonly { readonly tag: string; readonly value: string }[];
@@ -349,6 +362,21 @@ function readTemplate(template: DataObject, payload: string): TemplateFields {
   };
 }
 
+/**
+ * ISO 4217 numeric to alphabetic, restricted to the currencies this scheme
+ * actually carries. Deliberately not a complete table: an incomplete mapping
+ * that returns null is safe, because a verifier that cannot name the currency
+ * must refuse to imply one.
+ */
+const CURRENCY_ALPHA: ReadonlyMap<string, string> = new Map([
+  ['116', 'KHR'],
+  ['840', 'USD'],
+]);
+
+function currencyAlpha(numeric: string | null): string | null {
+  return numeric === null ? null : (CURRENCY_ALPHA.get(numeric) ?? null);
+}
+
 function disclose(objects: readonly DataObject[], payeeClass: PayeeClass): PayeeDisclosure {
   const text = (tag: string): string | null => findObject(objects, tag)?.value ?? null;
   const accounts = objects
@@ -360,6 +388,7 @@ function disclose(objects: readonly DataObject[], payeeClass: PayeeClass): Payee
     countryCode: text('58'),
     amount: text(AMOUNT_TAG),
     currencyCode: text('53'),
+    currencyAlpha: currencyAlpha(text('53')),
     payeeClass,
     accounts,
   };

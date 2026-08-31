@@ -48,6 +48,7 @@ describe('Profile A verification result', () => {
       countryCode: 'KH',
       amount: '25000',
       currencyCode: '116',
+      currencyAlpha: 'KHR',
       payeeClass: 'M',
       accounts: [{ tag: '30', value: '0011abaakhppxxx0112855012345678' }],
     });
@@ -109,5 +110,50 @@ describe('Profile A signatures are randomised', () => {
         verifyProfileA({ payload: signed.payload, trustAnchor, now: suite.time.nowValid }),
       ).resolves.toBeDefined();
     }
+  });
+});
+
+describe('currency disclosure', () => {
+  const signWithCurrency = async (numeric: string) => {
+    // DYNAMIC_BASE carries 5303116. Swap the value in place; the length byte is
+    // unchanged because every ISO 4217 numeric code is three digits.
+    const base = DYNAMIC_BASE.replace('5303116', `5303${numeric}`);
+    expect(base).toContain(`5303${numeric}`);
+    const key = await keyPairFromScalar(suite.keys['issuer']!.scalar);
+    const signed = await signProfileA({
+      payload: base,
+      privateKey: key.privateKey,
+      kid: key.kid,
+      issuedAt: suite.time.issuedAt,
+      expiresAt: suite.time.expiresAt,
+      payeeClass: 'M' as const,
+    });
+    return verifyProfileA({
+      payload: signed.payload,
+      trustAnchor: await anchorFor(published.state),
+      now: suite.time.nowValid,
+    });
+  };
+
+  it('resolves the ISO 4217 numeric code to an alphabetic one', async () => {
+    // A payer shown "116" learns nothing, and an amount shown without a
+    // currency in a dual-currency economy is worse than nothing: the two live
+    // codes differ by roughly four thousand times.
+    const khr = await signWithCurrency('116');
+    expect(khr.payeeDisclosure.currencyCode).toBe('116');
+    expect(khr.payeeDisclosure.currencyAlpha).toBe('KHR');
+
+    const usd = await signWithCurrency('840');
+    expect(usd.payeeDisclosure.currencyCode).toBe('840');
+    expect(usd.payeeDisclosure.currencyAlpha).toBe('USD');
+  });
+
+  it('reports null rather than guessing for a currency it cannot name', async () => {
+    // An incomplete mapping must fail closed: a verifier that cannot name the
+    // currency has to say so, not imply the local one. 978 is EUR, which this
+    // scheme does not carry.
+    const eur = await signWithCurrency('978');
+    expect(eur.payeeDisclosure.currencyCode).toBe('978');
+    expect(eur.payeeDisclosure.currencyAlpha).toBeNull();
   });
 });
