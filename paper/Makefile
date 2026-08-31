@@ -1,15 +1,21 @@
-# Build the preprint.  Requires texlive-latex-base, -recommended, -extra and
-# latexmk.  `make` produces main.pdf.
+# Single column (canonical) and two column, from one source.
+.PHONY: all onecol twocol clean
 
-.PHONY: all clean watch
+all: onecol twocol
 
-all: main.pdf
+onecol:
+	pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null
+	bibtex main >/dev/null
+	pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null
+	pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null
+	@grep -c "LaTeX Warning: Reference" main.log | sed 's/^/unresolved refs: /'
 
-main.pdf: main.tex references.bib
-	latexmk -pdf -interaction=nonstopmode main.tex
-
-watch:
-	latexmk -pdf -pvc main.tex
+twocol:
+	pdflatex -interaction=nonstopmode -halt-on-error -jobname=main-twocol "\def\twocol{}\input{main.tex}" >/dev/null
+	bibtex main-twocol >/dev/null
+	pdflatex -interaction=nonstopmode -halt-on-error -jobname=main-twocol "\def\twocol{}\input{main.tex}" >/dev/null
+	pdflatex -interaction=nonstopmode -halt-on-error -jobname=main-twocol "\def\twocol{}\input{main.tex}" >/dev/null
+	@grep -c "LaTeX Warning: Reference" main-twocol.log | sed 's/^/unresolved refs: /'
 
 clean:
-	latexmk -C
+	rm -f main.aux main.bbl main.blg main.log main.out main-twocol.*

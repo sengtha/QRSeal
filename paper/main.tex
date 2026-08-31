@@ -5,18 +5,43 @@
 %
 % Build:  latexmk -pdf main.tex
 %
-\documentclass[11pt,a4paper]{article}
+% Two builds from one source. Single column is the default:
+%   latexmk -pdf main.tex
+% Two column:
+%   pdflatex "\def\twocol{}\input{main.tex}"
+% or: make -C paper twocol
+\ifdefined\twocol
+  \documentclass[10pt,a4paper,twocolumn]{article}
+\else
+  \documentclass[11pt,a4paper]{article}
+\fi
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=1in]{geometry}
+\ifdefined\twocol
+  \usepackage[margin=0.85in]{geometry}
+  \setlength{\columnsep}{20pt}
+\else
+  \usepackage[margin=1in]{geometry}
+\fi
 \usepackage[protrusion=true,expansion=false]{microtype}
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{amsmath}
 \usepackage{enumitem}
+\usepackage[hyphens]{url}
 \usepackage[hidelinks,breaklinks]{hyperref}
+
+% Reference URLs are long article slugs. Without this they overrun the measure,
+% badly in two columns and visibly even in one.
+\makeatletter
+\g@addto@macro\UrlBreaks{%
+  \do\a\do\b\do\c\do\d\do\e\do\f\do\g\do\h\do\i\do\j\do\k\do\l\do\m%
+  \do\n\do\o\do\p\do\q\do\r\do\s\do\t\do\u\do\v\do\w\do\x\do\y\do\z%
+  \do\0\do\1\do\2\do\3\do\4\do\5\do\6\do\7\do\8\do\9\do\-\do\.\do\=\do\&\do\?}
+\makeatother
+\Urlmuskip=0mu plus 1mu
 
 \hypersetup{
   pdftitle={Signing the Instrument, Not the Transaction},
@@ -25,6 +50,24 @@
 }
 
 \newcommand{\code}[1]{\texttt{\small #1}}
+
+% Every table in this paper is wider than a two-column measure, so they span
+% the page there and behave as ordinary floats in single column.
+\ifdefined\twocol
+  \newenvironment{widetable}{\begin{table*}[t]}{\end{table*}}
+  \setlength{\emergencystretch}{3em}
+  \tolerance=1200
+\else
+  \newenvironment{widetable}{\begin{table}[t]}{\end{table}}
+\fi
+
+% Three inline reference tables sit in the running text rather than floating.
+% Left alignment fits a full-width measure; a two-column measure needs wrapping.
+\ifdefined\twocol
+  \newcommand{\threecol}{@{}p{0.19\columnwidth}p{0.36\columnwidth}p{0.37\columnwidth}@{}}
+\else
+  \newcommand{\threecol}{@{}lll@{}}
+\fi
 
 \title{\textbf{Signing the Instrument, Not the Transaction}\\[0.4em]
   \large Layered trust failure in national QR payment systems,\\
@@ -35,9 +78,7 @@ Correspondence: \texttt{sengtha@gmail.com}.}}
 
 \date{August 2026\\[0.5em]\normalsize\emph{Preprint. Comments welcome.}}
 
-\begin{document}
-\maketitle
-
+\newcommand{\frontmatterblock}{%
 \begin{abstract}
 \noindent
 Cambodia's KHQR, the national EMVCo-based payment QR operated on the National
@@ -83,7 +124,18 @@ vendor figures.
 
 \medskip
 \noindent\textbf{Keywords:} QR payments, authorised push payment fraud, digital
-signatures, trust boundaries, EMVCo, Cambodia, layered security.
+signatures, trust boundaries, EMVCo, Cambodia, layered security.}
+
+\begin{document}
+
+\ifdefined\twocol
+  \makeatletter
+  \twocolumn[\begin{@twocolumnfalse}\maketitle\frontmatterblock\vspace{1.5em}\end{@twocolumnfalse}]
+  \makeatother
+\else
+  \maketitle
+  \frontmatterblock
+\fi
 
 \section{Introduction}
 
@@ -243,7 +295,7 @@ We decompose the trust question into four layers. The decomposition is not
 merely descriptive: each layer's residual risk is what motivates the next, and
 the boundary between the second and third is the subject of the paper.
 
-\begin{table}[t]
+\begin{widetable}
 \centering
 \small
 \begin{tabular}{@{}p{0.13\linewidth}p{0.24\linewidth}p{0.26\linewidth}p{0.28\linewidth}@{}}
@@ -271,7 +323,7 @@ the boundary between the second and third is the subject of the paper.
 \caption{Four layers of QR payment trust. Cryptography is decisive at layers~1
 and~2 and silent at layers~3 and~4.}
 \label{tab:layers}
-\end{table}
+\end{widetable}
 
 \paragraph{Layer 1 --- code authenticity.}
 Solvable, and solved by the design in Section~\ref{sec:design}. A signature over
@@ -365,11 +417,11 @@ figure the merchant did not choose.
 \subsection{Profile B: credential}
 
 Profile B signs a document attestation as a standalone payload:
-\[
-\text{claims (CBOR)} \rightarrow \text{COSE\_Sign1 (ES256)} \rightarrow
-\text{deflate (zlib)} \rightarrow \text{base45} \rightarrow \text{prefix
-\code{KH1:}}
-\]
+\begin{gather*}
+\text{claims (CBOR)} \rightarrow \text{COSE\_Sign1 (ES256)} \rightarrow{} \\
+\text{deflate (zlib)} \rightarrow \text{base45} \rightarrow
+\text{prefix \code{KH1:}}
+\end{gather*}
 
 The pipeline is the EU Digital COVID Certificate's, with a different prefix and
 claim set \citep{eudcc2021,rfc9052,rfc9053,rfc8949,rfc1950,rfc1951,rfc9285}. We
@@ -418,7 +470,7 @@ Service Award, and has been adopted by Timor-Leste
 here --- little technical documentation is public, and a comparison built on
 inference would not be worth reading. One architectural fact is enough, and it
 is settled from an artefact rather than from prose: the code on an issued degree
-carries a URL of the shape \code{https://verify.gov.kh/verify/}$\langle$64
+carries a URL of the shape \code{https://\allowbreak verify.gov.kh/\allowbreak verify/}$\langle$64
 hex$\rangle$\code{?key=}$\langle$64 hex$\rangle$, with no signature and nothing a
 verifier could check offline.\footnote{We did not resolve the URL, which
 addresses a named individual's record, and we record its structure only.}
@@ -613,7 +665,7 @@ Table~\ref{tab:qr} reports measured QR symbol requirements at error-correction
 level M. The measurements are generated by a script in the repository rather
 than transcribed.
 
-\begin{table}[t]
+\begin{widetable}
 \centering
 \small
 \begin{tabular}{@{}lrrlp{0.3\linewidth}@{}}
@@ -631,7 +683,7 @@ Profile A, uppercase acquirer id & 317 & 10 & $57\times57$ & numeric + alphanume
 \caption{Measured QR symbol requirements, error-correction level M
 \citep{iso18004}. Generated by \code{tools/measure-qr.ts}.}
 \label{tab:qr}
-\end{table}
+\end{widetable}
 
 Signing takes a merchant payment code from version~5 to version~10: a 54 per
 cent increase in linear dimension and 2.4 times the module count. The cost is
@@ -1380,7 +1432,7 @@ judgement to be made \emph{before or during} the scan, which is precisely the
 judgement the population cannot make; or it requires control over software the
 state does not have.
 
-\begin{table}[htbp]
+\begin{widetable}
 \centering
 \small
 \begin{tabular}{@{}p{0.22\linewidth}p{0.26\linewidth}p{0.10\linewidth}p{0.32\linewidth}@{}}
@@ -1416,7 +1468,7 @@ Confirmation of payee &
 \caption{Alternatives to the categorical rule, and the decision point at which
 each one fails.}
 \label{tab:alternatives}
-\end{table}
+\end{widetable}
 
 The categorical rule is the only intervention in
 Table~\ref{tab:alternatives} evaluated \emph{after} the scan, on an observation
@@ -1542,7 +1594,7 @@ another releases is not a national scheme. The mapping is normative:
 
 \begin{center}
 \small
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{\threecol}
 \toprule
 \textbf{Status} & \textbf{Action} & \textbf{Character} \\
 \midrule
@@ -1862,7 +1914,7 @@ remain, and we can identify only four. Each acts at a different point in the
 causal chain: before the meaning is created, on the transfer once it is made, on
 the value once it arrives, or on who bears the loss at the end.
 
-\begin{table}[htbp]
+\begin{widetable}
 \centering
 \small
 \begin{tabular}{@{}p{0.17\linewidth}p{0.13\linewidth}p{0.31\linewidth}p{0.29\linewidth}@{}}
@@ -1896,7 +1948,7 @@ Reallocate the loss &
 harm is created. The four moves act at successive points of the causal chain:
 meaning, transfer, value, loss.}
 \label{tab:degrees}
-\end{table}
+\end{widetable}
 
 The middle two moves are the ones worth dwelling on, because neither contradicts
 the layer result --- both sidestep it. Neither governs meaning at all. One governs
@@ -1981,7 +2033,7 @@ useful step:
 
 \begin{center}
 \small
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{\threecol}
 \toprule
  & \textbf{Finality of the transfer} & \textbf{Liquidity of the output} \\
 \midrule
@@ -2054,7 +2106,7 @@ The correspondence is exact:
 
 \begin{center}
 \small
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{\threecol}
 \toprule
  & \textbf{Regulated DeFi} \citep{sengtha2026csb} & \textbf{QR payments (this work)} \\
 \midrule
