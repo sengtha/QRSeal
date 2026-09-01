@@ -39,7 +39,9 @@ both corrections are reflected in the paper.
 | Published key material, `kid` and PEM re-derive correctly | `tools/keys.ts`, `tools/generate-vectors.ts` | `pnpm vectors:generate` — the generator aborts if the derived `kid` is not `27403764C95F4F5B` |
 | The published 317-character Profile A payload verifies; CRC is `CB0C` | `vectors/vectors.json`, case `A-accept-published-reference` | `pnpm test` |
 | The published 381-character Profile B payload decodes and verifies | case `B-accept-published-reference` | `pnpm test` |
-| Forty conformance cases, thirty-one negative | `vectors/vectors.json` | `pnpm test`; also `kh-sqr run-vectors` |
+| Forty-four conformance cases, thirty-three negative, across encoding versions 1 and 2 | `vectors/vectors.json` | `pnpm test`; also `kh-sqr run-vectors` |
+| Encoding v2 is walkable by a strict EMVCo parser: two-digit lengths throughout, GUID at sub-tag `00`, CRC reachable | `packages/core/test/profileA2.test.ts` | `pnpm test` — the tests parse with a two-digit-only walker rather than trusting the encoder |
+| Encoding v2 costs 64 characters and one QR symbol version | `tools/measure-qr.ts`, `docs/qr-measurements.json` | `pnpm measure:qr` |
 | QR symbol versions and modules (Table 2) | `tools/measure-qr.ts`, `docs/qr-measurements.json` | `pnpm measure:qr` |
 | Profile A's import graph reaches no CBOR or stream code | `tools/check-profile-a-isolation.ts` | `pnpm check:profile-a-isolation` |
 | No Worker holds or uses a signing key | `tools/check-no-signing-keys.ts` | `pnpm check:no-signing-keys` |

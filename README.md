@@ -720,7 +720,8 @@ packages/core/         isomorphic library. Web Crypto only. What a wallet embeds
   src/cose.ts          COSE_Sign1 over ES256
   src/emvco.ts         TLV parse/serialise, CRC-16/CCITT-FALSE
   src/kid.ts           key identifier derivation
-  src/profileA.ts      payment: sign, verify
+  src/profileA.ts      payment: sign, verify (encoding v1, frozen)
+  src/profileA2.ts     payment: sign, verify (encoding v2, EMVCo-conformant)
   src/profileB.ts      credential: sign, verify
   src/trustlist.ts     list validation, timestamp statement, rollback + staleness
   src/errors.ts        one class per normative rejection reason
@@ -958,12 +959,28 @@ governance failure. `trustlist-edge` is the **primary**, not a conforming mirror
 set. **No conformance to §4.4 is claimed**, and the service's health endpoint
 says so.
 
-**Legacy transparency.** `SPEC.md` §2.4 records two deviations from EMVCo:
-template `85` carries 201 characters where EMVCo length fields hold at most 99,
-so three-digit lengths are used; and EMVCo requires a Globally Unique Identifier
-at sub-tag `00`, where KH-SQR puts a format version. A strict legacy parser will
-therefore *fail* on a signed payload rather than ignoring it. Deployment must
-upgrade parsers, not merely signers.
+**Legacy transparency — fixed in encoding v2, still true of v1.** `SPEC.md`
+§2.4 records two deviations from EMVCo in the original encoding: template `85`
+carries 201 characters where EMVCo length fields hold at most 99, so three-digit
+lengths were used; and EMVCo requires a Globally Unique Identifier at sub-tag
+`00`, where v1 puts a format version. A strict legacy parser *fails* on a v1
+payload rather than ignoring it.
+
+**[`SPEC.md` §2.9 defines encoding version 2](SPEC.md), which removes both.**
+Every length is two digits ≤ 99, each unreserved template carries the scheme
+GUID at sub-tag `00`, and the signature is split at 64 characters across
+templates `86` and `87` — 128 characters cannot fit in one template whatever
+else is done. Templates `85`, `86`, `87` must be the last three objects before
+the CRC, which is what stops an attacker appending data while the signed prefix
+stays byte-identical.
+
+*Cost, measured not estimated:* **317 → 381 characters, QR version 10 → 11**
+(57×57 → 61×61 modules at ECC M). Run `pnpm measure:qr` for both side by side.
+
+*Status:* v1 is **frozen and deprecated for new issuance**, not withdrawn — its
+vectors are published and printed codes must keep verifying. A verifier must
+support both and dispatch on the encoding rather than try one with the other's
+rules.
 
 ## 11. Reproducing the reference vectors
 
@@ -989,7 +1006,8 @@ pnpm test           # core: 97 tests including the 41-case conformance suite
 pnpm --filter @kh-sqr/risklist-api test   # workers run in workerd, not a shim
 ```
 
-The conformance suite is 40 cases, 31 of them negative. Negative cases are the
+The conformance suite is 44 cases, 33 of them negative, spanning both container
+encodings. Negative cases are the
 point: an implementation that accepts a well-formed payload has demonstrated very
 little; one that rejects each malformation for the right stated reason has
 demonstrated most of the specification.

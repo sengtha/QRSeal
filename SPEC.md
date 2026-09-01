@@ -89,7 +89,15 @@ Equivalently: the signature is the 128 characters immediately preceding the
 eight-character CRC object, and `99128` is the five characters immediately
 preceding those.
 
-### 2.4 Two deviations from EMVCo, and what they cost
+### 2.4 Encoding version 1: two deviations from EMVCo, and what they cost
+
+> **Status.** Encoding version 1 is **frozen and deprecated for new issuance.**
+> It is retained because its reference vectors are published and cited, and
+> because deployed verifiers must keep reading codes already in circulation.
+> New issuance SHOULD use encoding version 2 (§2.9), which does not deviate
+> from EMVCo. A verifier MUST support version 1 for as long as version 1 codes
+> may be presented to it, and MUST dispatch on the encoding rather than
+> attempting to read one with the other's rules.
 
 Template `85` departs from the EMVCo merchant-presented QR specification in two
 ways. Both are recorded here rather than in a footnote, because together they
@@ -111,10 +119,11 @@ prescribes. In practice this means a conforming EMVCo parser that reached
 template `85` would not be able to establish what the template is, even if the
 length encoding permitted it to parse the template at all.
 
-A future revision SHOULD place a globally unique identifier
-(for example `KH.GOV.NBC.SQR`) at sub-tag `00` and move the format version to a
-free sub-tag. That is a wire-format change and is out of scope for version 1.0,
-whose published reference vectors this document preserves.
+Both are fixed in encoding version 2 (§2.9), which places a globally unique
+identifier at sub-tag `00`, moves the format version to a free sub-tag, and
+keeps every length inside EMVCo's two digits by splitting the signature across
+templates. §2.9 is the recommended encoding; this section describes what
+version 1 does and why a verifier must still tolerate it.
 
 **These deviations have a cost that must be stated rather than glossed.** A
 strict legacy EMVCo parser reads tag `85`,
@@ -197,6 +206,75 @@ rejection reason is the most diagnostic one available:
 
 Signature before expiry is deliberate: a payload that has been tampered with
 should report tampering, not staleness.
+
+### 2.9 Encoding version 2 — EMVCo-conformant
+
+Version 2 encodes the same claims as version 1 without deviating from EMVCo.
+It exists because §2.4's deviations are not cosmetic: they cost the payload its
+readability by a conforming parser, which was the property the unreserved-
+template design was chosen for in the first place.
+
+**Layout.**
+
+```
+  ...payload data objects...
+  85 LL   00 LL GUID          Globally Unique Identifier
+          01 LL "02"          encoding version
+          02 LL kid           16 uppercase hex
+          03 LL "ES256"
+          04 LL issuedAt      10 digits
+          05 LL expiresAt     10 digits, dynamic codes only
+          06 LL payeeClass    "M" or "I"
+  86 LL   00 LL GUID
+          01 64 <signature characters 0..63>
+  87 LL   00 LL GUID
+          01 64 <signature characters 64..127>
+  63 04   CRC
+```
+
+**Rules.**
+
+1. Every length field MUST be exactly two decimal digits with a value of at
+   most 99. There is no extended-length form in version 2.
+2. Templates `85`, `86` and `87` MUST each carry the scheme's Globally Unique
+   Identifier at sub-tag `00`. A verifier MUST reject a payload whose GUID is
+   not this scheme's; the presence of *a* GUID is not sufficient.
+3. The GUID for this scheme is `KH.GOV.NBC.SQR`. It is part of the wire format.
+   A national deployment MUST settle this value with the scheme operator before
+   issuance, because changing it later is a further version.
+4. The signature MUST be split at exactly 64 characters: the first half in
+   template `86`, the second in `87`, both at sub-tag `01`, both 64 uppercase
+   hexadecimal characters.
+5. Templates `85`, `86` and `87` MUST be the final three data objects before
+   the CRC, in that order. This is what prevents an attacker appending data
+   while leaving the signed prefix byte-identical, and a verifier MUST reject a
+   payload whose tail is anything else.
+6. The signing input is the payload from position 0 to the first character of
+   template `86`. A verifier MUST recover it by substring from the received
+   payload, never by re-serialising parsed objects — the §2.3 rule, unchanged.
+7. All semantic rules in §2.5 apply unaltered.
+
+**What version 2 buys.** A strict EMVCo 1.1 parser walks the payload, tiles it
+exactly, reaches tag `63`, and validates the CRC. It will not understand
+templates `85`–`87`, which is correct and expected: they are unreserved, it
+ignores them, and the payment fields it does understand are intact. That is the
+legacy transparency version 1 claimed and did not have.
+
+**What it costs, measured.** The reference dynamic payload grows from 317 to
+381 characters, and the QR symbol from version 10 to version 11 — 57×57 to
+61×61 modules at error-correction level M. `tools/measure-qr.ts` reports both
+encodings side by side. The cost is the three repeated GUIDs and the second
+template header; it is the price of being readable by a parser that was never
+told about this scheme.
+
+**Migration.** Signers and verifiers are separate populations and move at
+different speeds. The order that works is: verifiers accept both encodings;
+then issuance switches to version 2; then version 1 issuance stops; and version
+1 verification is retired only when no version 1 code can still be presented,
+which for a printed static sticker is a matter of years, not weeks. §9's
+statement that a deployment must upgrade parsers rather than only signers
+remains true, and version 2 is what makes the upgraded parser an *EMVCo* parser
+rather than a scheme-specific one.
 
 ## 3. Profile B — credential
 
@@ -491,10 +569,13 @@ still encounter it.
 - **Foreign and platform codes.** Codes from systems outside the trust
   hierarchy cannot be verified, and a verifier that shows "unverified" for the
   majority of what people scan trains them to ignore the indicator.
-- **Legacy transparency.** As §2.4 records, template `85` is not transparent to
-  a strict EMVCo parser: its length encoding is not EMVCo's, and it does not
-  carry the Globally Unique Identifier EMVCo requires of an unreserved
-  template. A deployment must upgrade parsers, not merely signers.
+- **Legacy transparency, in encoding version 1.** As §2.4 records, template
+  `85` is not transparent to a strict EMVCo parser under version 1: its length
+  encoding is not EMVCo's, and it does not carry the Globally Unique Identifier
+  EMVCo requires of an unreserved template. **Encoding version 2 (§2.9) removes
+  both deviations**, and a strict parser walks a version 2 payload and reaches
+  its CRC. The limitation persists only for as long as version 1 codes remain
+  in circulation, which for printed static codes is years.
 
 ## 10. Conformance
 
