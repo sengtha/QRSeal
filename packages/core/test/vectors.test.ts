@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import { KhSqrError } from '../src/errors.js';
 import { signProfileA, verifyProfileA } from '../src/profileA.js';
+import { verifyProfileA2 } from '../src/profileA2.js';
 import { signProfileB, verifyProfileB, type CredentialClaims } from '../src/profileB.js';
 import { keyPairFromScalar } from '../../../tools/keys.ts';
 import { anchorFor, suite, type VectorCase } from './support/anchors.js';
@@ -15,9 +16,14 @@ import { anchorFor, suite, type VectorCase } from './support/anchors.js';
 async function runVerify(vector: VectorCase): Promise<unknown> {
   const trustAnchor = await anchorFor(vector.state);
   const payload = vector.input['payload'] as string;
-  return vector.profile === 'A'
-    ? verifyProfileA({ payload, trustAnchor, now: vector.state.now })
-    : verifyProfileB({ payload, trustAnchor, now: vector.state.now });
+  if (vector.profile !== 'A') {
+    return verifyProfileB({ payload, trustAnchor, now: vector.state.now });
+  }
+  // Encoding version 2 is a different wire format, not a variant of version 1:
+  // a v1 verifier must not be asked to read it, and does not.
+  return vector.input['encodingVersion'] === 2
+    ? verifyProfileA2({ payload, trustAnchor, now: vector.state.now })
+    : verifyProfileA({ payload, trustAnchor, now: vector.state.now });
 }
 
 async function runRoundtrip(vector: VectorCase): Promise<unknown> {

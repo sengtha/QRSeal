@@ -21,6 +21,8 @@ import {
   encodeBase45,
   encodeCoseSign1,
   signProfileA,
+  signProfileA2,
+  V2_GUID,
   signProfileB,
   stripCrc,
   type CredentialClaims,
@@ -278,6 +280,38 @@ async function main(): Promise<void> {
     payeeClass: 'I',
   });
 
+  // Encoding version 2: EMVCo-conformant lengths, GUID at sub-tag 00, the
+  // signature split across templates 86 and 87.
+  const v2Dynamic = await signProfileA2({
+    payload: DYNAMIC_BASE,
+    privateKey: issuer.privateKey,
+    kid: issuer.kid,
+    issuedAt: ISSUED_AT,
+    expiresAt: EXPIRES_AT,
+    payeeClass: 'M',
+  });
+
+  const v2Static = await signProfileA2({
+    payload: STATIC_BASE,
+    privateKey: issuer.privateKey,
+    kid: issuer.kid,
+    issuedAt: ISSUED_AT,
+    payeeClass: 'I',
+  });
+
+  // Append a data object after template 87. The signed prefix is untouched, so
+  // only the tail-order rule rejects this.
+  const v2Appended = (() => {
+    const body = stripCrc(v2Dynamic.payload) + '6204ABCD';
+    return appendCrc(body);
+  })();
+
+  // Replace the GUID in template 85 with a foreign one of the same length.
+  const v2ForeignGuid = (() => {
+    const body = stripCrc(v2Dynamic.payload).replace(V2_GUID, 'XX.XXX.XXX.XXX');
+    return appendCrc(body);
+  })();
+
   const revokedPayload = await forgeProfileA({ base: DYNAMIC_BASE, key: revoked, expiresAt: EXPIRES_AT });
   const strangerPayload = await forgeProfileA({ base: DYNAMIC_BASE, key: stranger, expiresAt: EXPIRES_AT });
 
@@ -418,6 +452,60 @@ async function main(): Promise<void> {
       expect: 'accept',
       reason: null,
       accepted: { kid: issuer.kid, codeKind: 'dynamic', payeeClass: 'M', declaredLengthConsistent: false },
+    },
+    {
+      id: 'A2-accept-dynamic',
+      profile: 'A',
+      type: 'verify',
+      description:
+        'Encoding version 2. Every length field is two digits with a value of at most 99, every ' +
+        'unreserved template carries a GUID at sub-tag 00, and the signature is split across ' +
+        'templates 86 and 87. A strict EMVCo 1.1 parser walks this payload and reaches the CRC, ' +
+        'which it cannot do for version 1. See SPEC.md, "Encoding version 2".',
+      input: { payload: v2Dynamic.payload, encodingVersion: 2 },
+      state: DEFAULT_STATE,
+      expect: 'accept',
+      reason: null,
+      accepted: { kid: issuer.kid, codeKind: 'dynamic', payeeClass: 'M', encodingVersion: 2 },
+    },
+    {
+      id: 'A2-accept-static',
+      profile: 'A',
+      type: 'verify',
+      description: 'Encoding version 2, static code, payee class I. No amount, no expiry.',
+      input: { payload: v2Static.payload, encodingVersion: 2 },
+      state: DEFAULT_STATE,
+      expect: 'accept',
+      reason: null,
+      accepted: { kid: issuer.kid, codeKind: 'static', payeeClass: 'I', encodingVersion: 2 },
+    },
+    {
+      id: 'A2-reject-appended-after-signature',
+      profile: 'A',
+      type: 'verify',
+      description:
+        'A data object appended after template 87, with the CRC repaired. The signed prefix is ' +
+        'byte-identical, so only the rule that templates 85, 86 and 87 are the final three data ' +
+        'objects rejects it.',
+      input: { payload: v2Appended, encodingVersion: 2 },
+      state: DEFAULT_STATE,
+      expect: 'reject',
+      reason: 'SIGNATURE_TEMPLATE_NOT_LAST',
+      accepted: null,
+    },
+    {
+      id: 'A2-reject-foreign-guid',
+      profile: 'A',
+      type: 'verify',
+      description:
+        'The Globally Unique Identifier in template 85 replaced with a foreign value of the same ' +
+        'length. EMVCo requires a GUID at sub-tag 00; a verifier must check that it is this ' +
+        "scheme's, not merely that one is present.",
+      input: { payload: v2ForeignGuid, encodingVersion: 2 },
+      state: DEFAULT_STATE,
+      expect: 'reject',
+      reason: 'SIGNATURE_SUBTAG_MALFORMED',
+      accepted: null,
     },
     {
       id: 'A-accept-canonical-dynamic',

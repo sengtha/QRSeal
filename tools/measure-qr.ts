@@ -58,11 +58,13 @@ const payloadOf = (id: string): string =>
 const UNSIGNED = '00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH63048620';
 
 const profileA = payloadOf('A-accept-published-reference');
+const profileA2 = payloadOf('A2-accept-dynamic');
 const profileB = payloadOf('B-accept-published-reference');
 
 const measurements: Measurement[] = [
   measure('Unsigned KHQR baseline', UNSIGNED),
-  measure('Profile A signed', profileA),
+  measure('Profile A signed, encoding v1', profileA, 'not walkable by a strict EMVCo parser'),
+  measure('Profile A signed, encoding v2', profileA2, 'EMVCo two-digit lengths throughout'),
   measure('Profile B credential', profileB),
 ];
 
@@ -74,10 +76,12 @@ const measurements: Measurement[] = [
  */
 const upperUnsigned = UNSIGNED.replace('abaakhppxxx', 'ABAAKHPPXXX');
 const upperA = profileA.replace('abaakhppxxx', 'ABAAKHPPXXX');
+const upperA2 = profileA2.replace('abaakhppxxx', 'ABAAKHPPXXX');
 
 const variants: Measurement[] = [
   measure('Unsigned baseline, uppercase acquirer id', upperUnsigned, 'alphanumeric mode throughout'),
-  measure('Profile A signed, uppercase acquirer id', upperA, 'alphanumeric mode throughout'),
+  measure('Profile A v1, uppercase acquirer id', upperA, 'alphanumeric mode throughout'),
+  measure('Profile A v2, uppercase acquirer id', upperA2, 'alphanumeric mode throughout'),
 ];
 
 const allAlphanumeric = (payload: string): boolean => ALPHANUMERIC.test(payload);

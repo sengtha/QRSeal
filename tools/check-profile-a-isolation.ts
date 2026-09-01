@@ -12,7 +12,15 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const ENTRY = join(ROOT, 'packages', 'core', 'src', 'profileA.ts');
+/**
+ * Both encodings are checked. v2 is the one a new wallet would embed, so
+ * letting it drift into CBOR or a stream API would lose the property this
+ * check exists to protect, while v1 stayed clean and the build stayed green.
+ */
+const ENTRIES = [
+  join(ROOT, 'packages', 'core', 'src', 'profileA.ts'),
+  join(ROOT, 'packages', 'core', 'src', 'profileA2.ts'),
+];
 
 /** Modules Profile A must never reach, directly or transitively. */
 const FORBIDDEN_MODULES = ['cbor.ts', 'cose.ts', 'profileB.ts', 'base45.ts'];
@@ -88,7 +96,7 @@ function walk(file: string, chain: readonly string[]): void {
   }
 }
 
-walk(ENTRY, []);
+for (const entry of ENTRIES) walk(entry, []);
 
 const reached = [...visited].map((f) => relative(ROOT, f)).sort();
 if (failures.length > 0) {

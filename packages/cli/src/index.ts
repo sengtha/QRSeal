@@ -16,6 +16,7 @@ import {
   signProfileA,
   signProfileB,
   verifyProfileA,
+  verifyProfileA2,
   verifyProfileB,
   type CredentialClaims,
   type PayeeClass,
@@ -309,7 +310,11 @@ async function commandRunVectors(values: Record<string, string | boolean | undef
         ...(state.fetchedAt === undefined ? {} : { fetchedAt: state.fetchedAt }),
       });
       const payload = vector.input['payload'] as string;
-      if (vector.profile === 'A') await verifyProfileA({ payload, trustAnchor, now: state.now });
+      if (vector.profile === 'A') {
+        await (vector.input['encodingVersion'] === 2
+          ? verifyProfileA2({ payload, trustAnchor, now: state.now })
+          : verifyProfileA({ payload, trustAnchor, now: state.now }));
+      }
       else await verifyProfileB({ payload, trustAnchor, now: state.now });
       outcome = { accepted: true, reason: null };
     } catch (error) {

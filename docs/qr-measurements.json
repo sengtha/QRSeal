@@ -12,12 +12,20 @@
       "note": ""
     },
     {
-      "label": "Profile A signed",
+      "label": "Profile A signed, encoding v1",
       "characters": 317,
       "version": 10,
       "modules": 57,
       "mode": "Numeric+Byte+Alphanumeric",
-      "note": ""
+      "note": "not walkable by a strict EMVCo parser"
+    },
+    {
+      "label": "Profile A signed, encoding v2",
+      "characters": 381,
+      "version": 11,
+      "modules": 61,
+      "mode": "Numeric+Byte+Alphanumeric",
+      "note": "EMVCo two-digit lengths throughout"
     },
     {
       "label": "Profile B credential",
@@ -36,10 +44,18 @@
       "note": "alphanumeric mode throughout"
     },
     {
-      "label": "Profile A signed, uppercase acquirer id",
+      "label": "Profile A v1, uppercase acquirer id",
       "characters": 317,
       "version": 10,
       "modules": 57,
+      "mode": "Numeric+Alphanumeric",
+      "note": "alphanumeric mode throughout"
+    },
+    {
+      "label": "Profile A v2, uppercase acquirer id",
+      "characters": 381,
+      "version": 11,
+      "modules": 61,
       "mode": "Numeric+Alphanumeric",
       "note": "alphanumeric mode throughout"
     }

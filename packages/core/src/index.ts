@@ -13,6 +13,7 @@ export * from './emvco.js';
 export * from './kid.js';
 export * from './trustlist.js';
 export * from './profileA.js';
+export * from './profileA2.js';
 export * from './base45.js';
 export * from './cbor.js';
 export * from './cose.js';
