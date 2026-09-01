@@ -2203,9 +2203,21 @@ patent rights, which is the main reason the format became universal
 \citep{meti2026cashless}. It does not have Cambodia's QR fraud shape, and the
 reason is not better cryptography.
 
-Japanese code payments are predominantly operator-mediated stored value: the
-scan spends a balance funded in advance, or authorises a linked card, and
-settlement to the merchant occurs afterwards across the operator's own books.
+Japanese code payments are commonly operator-mediated stored value: the scan
+spends a balance funded in advance, or authorises a linked card, and settlement
+to the merchant occurs afterwards across the operator's own books. A major
+operator documents exactly this arrangement, including the boundary that makes
+part of the balance non-withdrawable \citep{paypaybalance}, and the statute
+behind that boundary is public \citep{jpsa}.
+
+We do not claim this is how \emph{most} Japanese code payments work. We have not
+audited the market operator by operator, and the argument does not need us to:
+what Section~\ref{sec:degrees} requires from Japan is an \emph{existence proof}
+--- that a national-scale code-payment scheme can run on a substrate whose
+output is not withdrawable money --- and one operator's own documentation
+establishes that. A prevalence claim would carry no additional weight for the
+argument and would be the one part of this section we could not support.
+
 Cambodia's arrangement is the opposite. The scan \emph{is} the settlement
 instruction, and the transfer is interbank, immediate and final.
 
