@@ -156,15 +156,12 @@ front of a printed square in a market.
 
 Cambodia is an unusually clear case of what follows. KHQR, the national
 merchant-presented payment standard operated on the National Bank of Cambodia's
-Bakong system, has succeeded on a scale that is easy to understate: the NBC
-reports 608.32 million Bakong transactions in 2024 \citep{nbc2024annual}, against
-a population of about seventeen million. We deliberately quote no
-acceptance-point or registration figure: the published summaries we could reach
-disagree about what the widely repeated ``4.5 million'' counts --- merchant
-acceptance points, registered accounts, or app users are different objects with
-very different implications --- and no argument here depends on the number. Payment by QR is not a niche
-behaviour in Cambodia; for a large part of the population it is simply what
-paying is.
+Bakong system, has succeeded on a scale that is easy to understate. The
+NBC reports approximately 1{,}325.65 million Bakong transactions in 2025, a
+factor of 1.2 over the previous year, and around 18.9 million e-wallet accounts
+\citep{nbc2025annual} --- in a country of roughly seventeen million people.
+Payment by QR is not a niche behaviour in Cambodia; for a large part of the
+population it is simply what paying is.
 
 That success has a second-order effect which is the subject of this paper. When
 a single visual form becomes synonymous with a single action, the form stops
@@ -267,7 +264,7 @@ Section~\ref{sec:design} and, uncomfortably for us, to
 Section~\ref{sec:container}.
 
 Bakong is the settlement layer beneath it. Its scale is documented in the NBC's
-annual reporting \citep{nbc2024annual}; the property that matters for this
+annual reporting \citep{nbc2025annual}; the property that matters for this
 paper is not scale but \emph{finality}. A KHQR payment is a push payment: the
 payer initiates and authorises a transfer to a payee, and once made it is
 final. There is no chargeback rail comparable to card networks'.
@@ -939,7 +936,14 @@ single-currency economy is a rounding error. Cambodia circulates riel and US
 dollars together at a rate of roughly four thousand to one --- ACLEDA Bank
 published a buying rate of 4{,}042 riel to the dollar on the day this section was
 written \citep{acleda2026tips} --- so the same three characters carry a factor of
-four thousand. The vulnerability is not in the payload format, which is EMVCo's
+four thousand.
+
+That both currencies are live on the same rail is not an inference. Of the
+Bakong transactions the NBC reports for 2025, 771.2 million were in riel and
+554.5 million in US dollars \citep{nbc2025annual}: a split of roughly 58 to 42.
+Tag~\texttt{53} is therefore not a field that is almost always the same value
+and occasionally otherwise --- it is a field that genuinely varies, on a rail
+where getting it wrong costs three orders of magnitude and change. The vulnerability is not in the payload format, which is EMVCo's
 and is correct. It is in the substrate, in exactly the sense of
 Section~\ref{sec:degrees}: a property of the monetary environment that a
 designer does not choose but must design around.
@@ -2366,8 +2370,29 @@ statistics. It is what happens in the space an official series would occupy, and
 it is why the recommendation below is about publication rather than about
 collection.
 
+\paragraph{The absence is narrower, and more fixable, than ``no data''.} It
+would be wrong to say nothing is collected or published. The NBC reports that it
+received 721 customer complaints through its hotline in 2025, of which 683 were
+resolved, 12 remained in progress and 26 were before the courts
+\citep{nbc2025annual}. That is a complaints channel, a count, and a resolution
+status, published in the central bank's own annual report.
+
+What it does not carry is a breakdown by category. Nobody reading it can say how
+many of the 721 concerned fraud rather than fees, service or account access ---
+let alone how many concerned a QR code. The same is true of the Kapea Scams
+intake discussed below. So the gap is not collection and not even publication in
+the abstract; it is that the published aggregate is undisaggregated, and an
+undisaggregated total cannot prioritise anything. Adding a category dimension to
+a count that is already gathered and already published is a smaller ask than any
+new system, and it is the ask that would change what this section could report.
+
+We should also be plain that 721 hotline complaints is not a national fraud
+figure and we do not treat it as one. It is what one channel at one institution
+recorded. Its value here is as evidence that the reporting machinery exists and
+that the missing element is a field, not an apparatus.
+
 The absence itself is a finding. A payment system at the scale the NBC reports
-\citep{nbc2024annual} without public incident statistics cannot support
+\citep{nbc2025annual} without public incident statistics cannot support
 evidence-based prioritisation: no party can demonstrate that forgery is rarer
 than deception, which is the very claim this paper argues on structural grounds
 and would prefer to argue on data. Establishing mandatory incident reporting for
