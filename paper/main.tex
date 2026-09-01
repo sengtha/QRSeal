@@ -147,9 +147,12 @@ front of a printed square in a market.
 Cambodia is an unusually clear case of what follows. KHQR, the national
 merchant-presented payment standard operated on the National Bank of Cambodia's
 Bakong system, has succeeded on a scale that is easy to understate: the NBC
-reports 608.32 million Bakong transactions in 2024, and roughly 4.5 million
-accounts registered for KHQR payments by the end of that year, a 36.4 per cent
-increase over 2023 \citep{nbc2024annual}. Payment by QR is not a niche
+reports 608.32 million Bakong transactions in 2024 \citep{nbc2024annual}, against
+a population of about seventeen million. We deliberately quote no
+acceptance-point or registration figure: the published summaries we could reach
+disagree about what the widely repeated ``4.5 million'' counts --- merchant
+acceptance points, registered accounts, or app users are different objects with
+very different implications --- and no argument here depends on the number. Payment by QR is not a niche
 behaviour in Cambodia; for a large part of the population it is simply what
 paying is.
 
@@ -309,7 +312,8 @@ the boundary between the second and third is the subject of the paper.
 2. Verifier authenticity &
   Is the application making the claim genuine? &
   Application trust list; platform distribution; attestation &
-  A genuine verifier faithfully reports a genuine code paid to a criminal \\[0.4em]
+  A counterfeit verifier the user installed and trusts reports whatever its
+  author chose \\[0.4em]
 3. Payee legitimacy &
   \emph{Should} this money go to this account? &
   Registration controls; account risk lists; behavioural analytics &
@@ -331,6 +335,15 @@ the payload, verified against a trust list rooted in an offline key, establishes
 that a registered issuer produced exactly these bytes. Within the standard
 cryptographic threat model this is complete: an attacker cannot forge a
 signature, and any modification invalidates one.
+
+That model should be stated where the claim is made rather than corrected later.
+``Complete'' means complete \emph{inside a conforming verifier running on an
+uncompromised device}. A counterfeit verifier (layer~2), a code the handset's
+camera opens without reaching any verifier at all
+(Section~\ref{sec:scanpath}), and a device the operator controls
+(Section~\ref{sec:device}) each void the guarantee without touching the
+mathematics. The forgery result is unconditional about bytes and conditional on
+everything that reads them.
 
 \paragraph{Layer 2 --- verifier authenticity.}
 Partially solvable. A signature is only as useful as the software reporting it,
@@ -394,6 +407,14 @@ step in which to have a bug. This is the single most important structural
 decision in the design, and it is a deliberate rejection of the pattern --- parse,
 normalise, re-serialise, verify --- that has produced a long history of signature
 bypasses in XML, JSON and JWT processing.
+
+The suite pins the two ways an attacker might exploit a prefix rule.
+\code{A-reject-mutation-outside-signed-region} appends or alters data after the
+signature and must still be rejected, because the CRC covers the whole payload
+even though the signature does not; \code{A-reject-template-not-last} and
+\code{A-reject-subtag-not-last} reject a payload in which the signature template
+is not final, which is what would otherwise let an attacker extend the payload
+while keeping the signed prefix intact.
 
 \paragraph{Raw signatures, not DER.}
 Signatures are the P1363 concatenation $r \Vert s$, 64 bytes, rendered as 128
@@ -1748,6 +1769,29 @@ reconstructable from the append-only change feed. We note this because a
 transaction-screening service is exactly the kind of infrastructure that
 acquires surveillance functions by accident, one reasonable-sounding field at a
 time.
+
+\paragraph{What happens when the register is unreachable.} Everything else in
+this design fails closed: an unverifiable code is refused, a stale trust list is
+refused, a missing timestamp statement is treated as hostile. Screening cannot
+inherit that rule, and the difference is worth stating rather than leaving to an
+implementer.
+
+A verifier that refuses to pay when the risk-list service is unreachable has
+converted an availability failure at one national service into a national outage
+of retail payment, and has handed any attacker who can degrade that service the
+ability to stop the country paying. So screening in the payment path must fail
+\emph{open}: on timeout the payment proceeds, the decision is recorded as
+\code{unscreened} rather than \code{clear}, and the distinction is preserved in
+the record so that an institution can see afterwards which payments were never
+checked and reconcile them against listings made in the interval.
+
+This is a real weakening and we do not disguise it. An adversary who can cause
+timeouts can pass payments through unscreened, which makes availability of the
+register a security property and not merely an operational one --- an argument
+for the serialising-object design in this section, and for the delta endpoint
+that lets an institution hold a recent local copy rather than depending on a
+live call for every payment. The residue is bounded by how long an institution
+tolerates operating unscreened, which is a policy parameter we do not set here.
 
 \paragraph{What screening does not do.}
 It stops payments to accounts that are \emph{already listed}. The victims of a
