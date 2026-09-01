@@ -103,7 +103,7 @@ enforcement point.
 The contribution is fourfold: a four-layer decomposition of QR payment trust
 that locates precisely where cryptographic assurance ends; a working,
 MIT-licensed reference implementation with a language-neutral conformance suite
-of forty cases, thirty-one of them negative; an explicit account of what the
+of forty-four cases, thirty-three of them negative; an explicit account of what the
 design does not achieve and why each residual risk is unreachable from the code
 layer; and a constructive corollary --- that where a control cannot be enforced
 below the harm, four moves remain, acting at successive points of the causal
@@ -116,10 +116,20 @@ designed, to identify the properties of the payment substrate --- not the
 strength of any cryptography --- as what governs exposure. We report that the gap between institutional control and public
 credulity widens structurally, and that this design widens the part of it the
 design cannot close: a code that visibly verifies manufactures the confidence
-the unaddressed attack depends on. We report two respects in which our own
-deployment and container fail to meet the specification's stated requirements, and we treat the absence of
+the unaddressed attack depends on. We report where our own work fell short of its
+specification: the reference deployment does not meet the mirror-independence
+requirement, and the first container encoding was not readable by a conforming
+EMVCo parser --- a defect we have since corrected in a second encoding, at a cost
+of sixty-four characters and one QR symbol version. And we treat the absence of
 Cambodia-specific incident data as a finding rather than a gap to be filled with
 vendor figures.
+
+The institutional proposals are offered as reference designs, not as evaluated
+interventions. None has been trialled, their costs are unquantified, and we say
+throughout which claims rest on structure and which would need measurement this
+paper does not have. What we do claim is narrower and, we think, sufficient: the
+problem is present now, its trajectory is upward for reasons that do not
+reverse, and asking the public to be more careful cannot reach it.
 \end{abstract}
 
 \medskip
