@@ -1817,7 +1817,18 @@ another static code has been stuck over the installed one; and instruct
 merchants to make a payment themselves from time to time to confirm the code is
 still theirs \citep{jpqrmpm}.\footnote{Translations from the Japanese are ours.}
 
-Two things are worth taking from this. None of the three is cryptographic --- a
+The guideline also states, in the same passage, why it stops where it does:
+``because the same static QR code is anticipated to be used multiple times,
+anti-forgery measures such as one-time tokens cannot be performed''
+\citep{jpqrmpm}. That sentence is exact, and it is the gap this paper's Profile~A
+occupies. Freshness cannot protect a reusable artefact --- a one-time token is
+consumed, and a printed code is not. A signature is the anti-forgery measure
+that does not require freshness: it is verifiable on every scan of the same
+sticker for as long as the key is trusted, precisely because it attests
+provenance rather than novelty. A national scheme identified the property that
+rules out the obvious defence, and did not go on to the one that survives it.
+
+Two things are worth taking from the three remedies. None is cryptographic --- a
 scheme with a national mandate reached the same attack this paper's Profile~A
 addresses and answered it with stock, inspection and spot-checks. And all three
 are directed at the \emph{merchant} rather than the customer, which is a better
@@ -1826,23 +1837,34 @@ sees the same code every day, and who can therefore notice a change that no
 customer could. Where vigilance is the instrument, pointing it at the party with
 the standing incentive is the strongest available version of it.
 
-There is a fourth measure, and it is structural rather than behavioural. The
-scheme does not leave merchants to produce their own codes: a merchant adopting
-the merchant-presented mode obtains a business identification code and uses the
-scheme council's own application-acceptance system and its printing-and-delivery
-service \citep{jpqrsite}. Printing is therefore centralised at the scheme, which
-is what makes ``print on stock that is difficult to duplicate'' an enforceable
-instruction rather than advice --- the scheme controls the stock because it
-controls the press.
+There is a fourth measure, and it is structural rather than behavioural. A
+payment service provider participating in the scheme must enrol merchants
+through the council's application-acceptance system and distribute codes through
+its printing-and-delivery service, which produces the code mount and stickers to
+a common design and ships them to the merchant
+\citep{jpqrsite,jpqrmpm}.
 
-That is an instrument this paper had not considered, and it belongs in the same
-family as the rest of Section~\ref{sec:institutional}: it acts on the
-\emph{provenance of the physical artefact} rather than on anyone's vigilance. It
-is, in effect, a trust list for paper. A code obtained through the scheme's own
-print service has a chain of custody; a sticker does not, and the difference is
-one an inspecting merchant can be trained to see because the genuine article has
-a consistent physical form. Cambodia has no equivalent, and a merchant there may
-print a KHQR code on anything.
+We should be careful about what that does and does not make binding, because the
+guideline is careful. Printing on hard-to-duplicate panels or special stock is
+offered as an example of a measure that is ``conceivable'', not as a
+requirement; there is no mandated tamper-evident substrate. What \emph{is}
+mandatory is uniformity. The code's design is fixed by the council; minimum cell
+size is 0.33\,mm with 0.5\,mm recommended, and printing must be at four dots per
+cell or more; and operators ``must not perform any processing, modification,
+alteration'' of the design, must tell merchants they may not either, and on
+finding a merchant who has, must ``immediately cause said act to cease and
+instruct them to use the original'' \citep{jpqrmpm}.
+
+That combination is the instrument, and it is not the one we first took it for.
+Centralised production plus enforced visual uniformity means the genuine
+artefact has a single known appearance, arriving through a single known channel.
+It does not make a counterfeit hard to manufacture. It makes one \emph{easier to
+notice}, because there is a fixed reference to notice a deviation from --- and it
+gives the merchant, who is the party the guideline's inspection advice is aimed
+at, something definite to compare against. It acts on the provenance and the
+appearance of the physical artefact rather than on the payload. Cambodia has no
+equivalent: a merchant there may print a KHQR code on anything, at any size, in
+any layout, which leaves an inspecting merchant nothing to compare against.
 
 So the options against overlay forgery are three rather than two, and they can
 be ordered by what they demand. Centralised printing changes the artefact's
@@ -2259,6 +2281,25 @@ where the cheapest available control is, and that a scheme which leaves the
 entire loss with the payer has by construction allocated it to the party with
 the least ability to prevent it.
 
+\paragraph{One scheme wrote these rules and did not publish them.} Japan's
+guidelines on code-payment fraud are detailed and public, and they contain no
+allocation of loss at all: nothing on who bears an unauthorised transaction as
+between cardholder, merchant, acquirer, operator and issuer
+\citep{jpqrfraud,jpqrcard}. That is not an oversight. The association's own
+announcement records that responsibility-sharing and compensation for
+unauthorised transactions were placed in a separate document, distributed to
+council members and not made public.
+
+We draw a narrow conclusion. The technical guidance for a national scheme can be
+published in full while the question of who pays is settled privately among the
+firms that would pay --- and a merchant deciding whether to accept, or a
+regulator assessing where risk sits, cannot read the part that determines the
+answer. The UK approach cited above is not better because its cap is
+right; it is better because it is a published rule that a party can plan
+against. Where liability is unpublished, Section~\ref{sec:data}'s problem
+recurs in a different form: the thing that would let anyone evaluate the
+arrangement is the thing not disclosed.
+
 We have not implemented anything at this layer. It is policy, and it is named
 here because a threat decomposition that stopped at layer~3 would misrepresent
 where the residual risk finally settles.
@@ -2614,6 +2655,22 @@ of the publication, which was profiling an entrepreneur rather than reporting
 statistics. It is what happens in the space an official series would occupy, and
 it is why the recommendation below is about publication rather than about
 collection.
+
+\paragraph{And the absence is not Cambodia's alone.} We checked whether a
+better-resourced scheme does better. Across Japan's merchant-presented and
+consumer-presented guidelines, both fraud-prevention guidelines, the summary
+deck and the operator bylaws --- and across the scheme's own site and the
+association's publication index --- there is no incident count, no fraud rate and
+no loss figure for code payments \citep{jpqrmpm,jpqrfraud,jpqrcard}. The
+documents describe attack mechanisms qualitatively and quantify none of them.
+
+This matters for how the finding should be read. It is not that Cambodia has
+fallen behind a standard others meet. A scheme with a national mandate, a
+standards body, published technical guidelines and a decade of operation
+publishes no more incident data than one without. The gap is structural to how
+payment schemes are governed, which makes it harder to fix by comparison and
+easier to fix by rule --- nobody has to be caught up with, and a publication duty
+would put its holder in front rather than behind.
 
 \paragraph{The absence is narrower, and more fixable, than ``no data''.} It
 would be wrong to say nothing is collected or published. The NBC reports that it
