@@ -1299,6 +1299,31 @@ age equally, and the difference is systematic.
 towards the substrate and away from detection. We record this as a consequence
 of the argument rather than as a recommendation we can support with measurement.
 
+\paragraph{Who ends up bearing it, if nothing at the substrate changes.}
+One consequence of a rising trajectory is distributional, and it is already
+visible rather than projected. Where a rail supplies no reversibility, somebody
+sells it: Section~\ref{sec:degrees} describes a Cambodian firm that interposes
+itself between buyers and overseas sellers and guarantees against non-delivery,
+which is an escrow, priced per transaction.
+
+That is a market answering a demand the substrate declines to meet, and its
+incidence is regressive by construction. Reversibility bought privately reaches
+whoever can pay for it and transacts through an intermediary that offers it. It
+does not reach the market seller taking a domestic KHQR payment, the tuk-tuk
+driver, or the micro-merchant for whom the fee is a material fraction of the
+margin --- who are also the people least able to absorb an irrecoverable loss,
+and who therefore carry the unmitigated irrevocability that better-resourced
+users have bought their way out of.
+
+If the interventions of Section~\ref{sec:institutional} are not taken and the
+trajectory continues, this is the equilibrium: safety becomes a product rather
+than a property of the rail, and the distribution of exposure inverts the
+distribution of capacity to bear it. A substrate-level control has the opposite
+incidence, because it applies to everyone on the rail at once and cannot be
+bought out of. That is a further reason for the sequencing above, and it is an
+argument from structure --- we have no data on how many Cambodians already pay
+for intermediated safety, and we do not claim to.
+
 \paragraph{What kind of claim this is.}
 It is a mechanism argument, not a forecast. Each item above is structural and
 one-directional, and we can say which way the gap moves. We cannot say how fast,
@@ -2274,6 +2299,35 @@ what Section~\ref{sec:degrees} requires from Japan is an \emph{existence proof}
 output is not withdrawable money --- and one operator's own documentation
 establishes that. A prevalence claim would carry no additional weight for the
 argument and would be the one part of this section we could not support.
+
+\paragraph{The symbology is not the substrate, and EMVCo is silent on the
+difference.} It is worth being precise about which layer the contrast lives at,
+because the two systems are not distinguished by their codes. EMVCo's
+merchant-presented specification standardises a payload: identifiers, lengths, a
+CRC, an amount field and a currency field \citep{emvco2017mpm}. It says nothing
+whatever about what happens to the money afterwards --- whether a ledger is
+interposed, who holds it, whether an entry can be reversed, or whether what
+arrives can be withdrawn. Two national schemes can therefore share a symbology,
+share a specification, and share very nearly a byte layout, while differing
+completely in the exposure a payer carries when they scan.
+
+That has a consequence for interlinked schemes which follows from the
+architecture rather than from any particular arrangement. Where two schemes
+interoperate, the same printed symbol may be resolved by different wallets onto
+different rails; and since the substrate governs reversibility and
+convertibility, the exposure attaching to that one symbol is a property of
+\emph{which rail resolved it}, not of the code. A payer scanning onto an
+operator-held prepaid ledger and a payer scanning onto an immediate interbank
+push are not running the same risk, and nothing in the symbol distinguishes
+their situations --- nor could anything, since the difference is not encoded
+there.
+
+We state this structurally and stop, because the alternative is to describe a
+specific linkage we have not verified. The general form is the point: format
+convergence between national schemes does not produce risk convergence, and a
+policymaker who reads shared EMVCo conformance as shared exposure has confused
+the instrument with the substrate --- which is this paper's thesis, arriving from
+the direction of interoperability rather than of cryptography.
 
 Cambodia's arrangement is the opposite. The scan \emph{is} the settlement
 instruction, and the transfer is interbank, immediate and final.
