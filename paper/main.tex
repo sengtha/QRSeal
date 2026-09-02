@@ -148,7 +148,6 @@ signatures, trust boundaries, EMVCo, Cambodia, layered security.}
 \fi
 
 \section{Introduction}
-\label{sec:introduction}
 
 A QR code is a picture of some bytes. Nothing about the picture indicates who
 produced it, and nothing about the act of scanning it indicates why. Both facts
@@ -1875,51 +1874,22 @@ appearance of the physical artefact rather than on the payload. Cambodia has no
 equivalent: a merchant there may print a KHQR code on anything, at any size, in
 any layout, which leaves an inspecting merchant nothing to compare against.
 
-\paragraph{The scheme that mandated uniformity did not achieve coverage.} We
-should not recommend an instrument without reporting how its own scheme fared,
-and JPQR fared badly. The nationwide rollout began in July 2020, after a
-four-prefecture pilot, with a stated target of a hundred thousand within the
-fiscal year \citep{jpqrtarget}. In September 2021 the trade press put adoption
-at 1.5 per cent, and attributed the shortfall to the largest operator's fee
-differential --- merchants paid less by taking that operator's own code than by
-taking the unified one \citep{jpqradoption}. The standard was not defeated on
-its technical merits. It was defeated by an incumbent's interest in not being
-interchangeable, which is the ordinary fate of a voluntary unification laid over
-schemes that already have the merchants.
-
-Two things follow, and they point in opposite directions.
-
-The first is that the obstacle is one Cambodia does not have. JPQR was an
-overlay on a competitive market: adoption was voluntary, the operators whose
-codes it would unify were commercial rivals, and the body promoting it was a
-ministry rather than a party to the payments. KHQR is not an overlay. It is the
-national scheme itself; there is no rival domestic code for an operator to
-prefer, and the institution that would mandate a uniform artefact is the same
-one that operates the rail. The precondition JPQR lacked --- that the scheme
-can require the thing rather than commend it, and that no participant profits
-from refusing --- is the one Cambodia has. We put it no more strongly than
-that: we have no figure for how many Cambodian merchants accept KHQR, and the
-scale reported in Section~\ref{sec:introduction} is payer-side. This is the reason we
-think the instrument transfers even though the scheme that produced it did not
-spread.
-
-The second is a constraint on this paper's own proposal, and it is the harder
-of the two. Uniformity and signatures are both \emph{provenance} instruments,
-and a provenance instrument is only as informative as its coverage, because
-what it ultimately asks a person to notice is an \emph{absence}: a code that
-does not match the fixed design, a payload that carries no signature. Below
-saturation that absence means nothing --- an unsigned KHQR code during a
-rollout is far more likely to be an unenrolled merchant than a forgery, and a
-merchant or verifier that learns this learns to proceed. This is the
-indicator-decay mechanism of Section~\ref{sec:foreign} arriving from the
-domestic direction rather than the cross-border one, and it is worse here,
-because during a rollout the benign explanation is not merely common but
-correct. A partial deployment of Profile~A is therefore not a proportionate
-fraction of its value; for the interval in which coverage is partial it is
-close to none, and the design should be judged on whether it can reach
-saturation rather than on what it does at the margin. Section~\ref{sec:limits}
-records this as a deployment precondition rather than a solved problem.
-
+\paragraph{But an absence is only legible once it is unusual.} That is the
+limit on uniformity, and it applies equally to this paper's own instrument.
+Uniformity and signatures are both \emph{provenance} devices, and what each
+finally asks a person to act on is an absence: a code that does not match the
+fixed design, a payload that carries no signature. Below saturation, the
+absence carries no information. An unsigned KHQR code during a rollout is far
+more likely to mean a merchant not yet enrolled than a forgery, and a merchant
+or a verifier that learns this learns to proceed. This is the indicator-decay
+mechanism of Section~\ref{sec:foreign} arriving from the domestic direction
+rather than the cross-border one, and it is worse here, because during a
+rollout the benign reading is not merely the common one but the correct one. A
+partial deployment of Profile~A is therefore not a proportionate fraction of
+its value; for as long as coverage is partial it is close to none, and the
+design should be judged on whether it can reach saturation rather than on what
+it does at the margin. Section~\ref{sec:limits} records this as an unaddressed
+deployment precondition.
 
 So the options against overlay forgery are three rather than two, and they can
 be ordered by what they demand. Centralised printing changes the artefact's
@@ -2545,15 +2515,6 @@ only that the exposure question is direction-dependent, and that the direction
 which would place a Japanese payer on Cambodia's irrevocable rail is the one not
 yet in production.
 
-One clarification, since Section~\ref{sec:display} reports that JPQR reached 1.5
-per cent domestic adoption in 2021 \citep{jpqradoption}. That figure is about
-the unified standard's penetration of the Japanese merchant base four years
-before this launch, and we do not carry it forward: the Expo deployment is a
-site-specific acceptance arrangement, and we have no figure for either JPQR's
-current domestic footprint or JPQR Global's. Nothing in this subsection depends
-on scale. The argument is that format convergence does not converge exposure,
-and that holds at one acceptance point as it does at a hundred thousand.
-
 The general form is the point. Format convergence between national schemes does
 not produce risk convergence, and a policymaker who reads shared EMVCo
 conformance --- or a shared acceptance mark --- as shared exposure has confused
@@ -2810,19 +2771,14 @@ verified fail on deliberately introduced violations.
     reachable.} A signature is a provenance instrument, and what it asks a
     verifier to act on is the \emph{absence} of one. Below saturation that
     absence is uninformative, because an unsigned code is far more likely to be
-    an unenrolled merchant than a forgery; the value of a partial deployment is
-    therefore not a fraction of the whole but close to nothing until coverage is
-    near-complete (Sections~\ref{sec:foreign} and~\ref{sec:display}). JPQR is the
-    cautionary instance: a national unified standard reached 1.5 per cent
-    adoption against a hundred-thousand target, defeated by an incumbent's
-    commercial interest in not being interchangeable \citep{jpqrtarget,
-    jpqradoption}. We argue Cambodia's position differs in the respect that
-    matters --- KHQR is the scheme rather than an overlay on rival schemes, and
-    the mandating institution operates the rail --- but that is an argument, not
-    evidence. We have no enrolment model, no cost estimate for issuing keyed
-    codes to the merchant base, and no account of what a verifier should display
-    during the interval in which coverage is partial. That interval is the
-    period in which the scheme is most exposed, and we do not address it.
+    a merchant not yet enrolled than a forgery; the value of a partial
+    deployment is therefore not a fraction of the whole but close to nothing
+    until coverage is near-complete (Sections~\ref{sec:foreign}
+    and~\ref{sec:display}). We have no enrolment model, no cost estimate for
+    issuing keyed codes across the merchant base, and no account of what a
+    verifier should display during the interval in which coverage is partial.
+    That interval is the period in which the scheme is most exposed, and we do
+    not address it.
 
   \item \textbf{Mirror independence is unmet.} Section~\ref{sec:mirrors}. The
     implementation does not satisfy a requirement its own specification states.
