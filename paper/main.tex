@@ -1070,6 +1070,14 @@ wallet holds no Cambodian trust list, cannot resolve the key identifier, and so
 pays against an unchecked signature --- while displaying nothing wrong, because
 from its point of view nothing is wrong.
 
+Cross-scheme linkage sharpens this rather than softening it. Where two schemes
+interoperate through an acquirer and a switching operator
+(Section~\ref{sec:japan}), the assurances that exist run between those
+intermediaries. They are not carried in the payload, not checkable by the
+payer's wallet, and not visible to the payer at all --- so the payer's evidence
+about a cross-border payment is strictly weaker than about a domestic one, at
+the moment when they are furthest from any recourse.
+
 Legibility and verifiability are different properties and only the first is a
 wire-format question. The second needs trust-list federation between schemes,
 which this work does not attempt and which our Limitations place out of scope.
@@ -2322,12 +2330,48 @@ push are not running the same risk, and nothing in the symbol distinguishes
 their situations --- nor could anything, since the difference is not encoded
 there.
 
-We state this structurally and stop, because the alternative is to describe a
-specific linkage we have not verified. The general form is the point: format
-convergence between national schemes does not produce risk convergence, and a
-policymaker who reads shared EMVCo conformance as shared exposure has confused
-the instrument with the substrate --- which is this paper's thesis, arriving from
-the direction of interoperability rather than of cryptography.
+This is not hypothetical, and Cambodia is the case. JPQR is Japan's unified
+QR-payment standard, established in 2019. JPQR Global, promoted by Japan's
+Ministry of Economy, Trade and Industry and developed with the Payments Japan
+Association, coordinates JPQR with other countries' unified standards so that a
+visitor can pay in Japan with their own national service. It launched at the
+Expo 2025 site on 5 July 2025, and \emph{KHQR was the first foreign standard it
+supported} --- Cambodian users paying at the Cambodia Pavilion, official stores
+and other outlets, with Indonesia named as the next addition
+\citep{expo2025jpqr}.
+
+So the two substrates this section contrasts are now joined, and the joint is
+instructive in three ways.
+
+\emph{First, the convergence is at the instrument layer only.} What
+interoperates is the code and the routing. Nothing in the arrangement alters
+what either rail does with the money: a Japanese user paying through a domestic
+operator remains on that operator's ledger, and a Cambodian user paying through
+Bakong remains on an immediate interbank push. The same merchant acceptance
+point can therefore serve two payers carrying materially different exposure, and
+the difference is invisible in the symbol because it is not encoded there.
+
+\emph{Second, the linkage is intermediated, and the intermediaries are not
+visible to the payer.} The published operator list names a scheme body for
+planning and operation, an acquirer, and a separate switching-system operator
+\citep{expo2025jpqr}. Whatever assurances exist run between those parties. A
+payer's wallet cannot check them from the code, and is not shown them.
+
+\emph{Third, the direction matters and is asymmetric today.} What launched is
+outbound: a Cambodian paying in Japan. Enabling Japanese services to be used
+with overseas unified systems is described as an aim rather than a shipped
+service \citep{expo2025jpqr}. We take no position on when that reverses; we note
+only that the exposure question is direction-dependent, and that the direction
+which would place a Japanese payer on Cambodia's irrevocable rail is the one not
+yet in production.
+
+The general form is the point. Format convergence between national schemes does
+not produce risk convergence, and a policymaker who reads shared EMVCo
+conformance --- or a shared acceptance mark --- as shared exposure has confused
+the instrument with the substrate. That is this paper's thesis arriving from the
+direction of interoperability rather than of cryptography, and it is the
+strongest reason to state the layer boundary in terms a payments official can
+act on.
 
 Cambodia's arrangement is the opposite. The scan \emph{is} the settlement
 instruction, and the transfer is interbank, immediate and final.
