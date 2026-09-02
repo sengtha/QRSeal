@@ -359,6 +359,17 @@ camera opens without reaching any verifier at all
 mathematics. The forgery result is unconditional about bytes and conditional on
 everything that reads them.
 
+\paragraph{The layer is empty in practice, and not only in Cambodia.} It is
+worth establishing that this is a gap rather than a solved problem others have
+addressed. Japan's unified merchant-presented guideline, which governs a
+national scheme of comparable ambition and derives from the same EMVCo
+specification, defines \emph{no} signature, message authentication code or
+cryptographic integrity mechanism over the payload: integrity is the CRC at
+ID~\code{63} and nothing further \citep{jpqrmpm}. A CRC detects accidental
+corruption and is trivially recomputed by anyone who alters a payload
+deliberately, which is what makes it a checksum rather than a control. Two
+national schemes, two guidelines, the same absence.
+
 \paragraph{Layer 2 --- verifier authenticity.}
 Partially solvable. A signature is only as useful as the software reporting it,
 and a counterfeit wallet that draws a green tick for every code defeats layer~1
@@ -1456,6 +1467,28 @@ the same state that issued it --- which is precisely the decay mechanism
 Section~\ref{sec:indicators} describes, arriving from the direction nobody
 guards against.
 
+\paragraph{A comparison worth making about where the obligation sits.} Japan
+published a guideline in 2020 on preventing the fraudulent linking of bank
+accounts to code-payment accounts \citep{jpqrfraud}. It addresses a different
+problem from this section's --- account and funding-source abuse rather than
+deception at the point of payment --- so we draw no conclusion about relative
+effectiveness. What transfers is the \emph{addressee}. Its controls are
+obligations on the operator at each stage: what identity information to collect
+at account creation, reconciling attributes against the financial institution's
+own records, preventing accounts in several names from being linked to one bank
+account, capping how many accounts one bank account may be linked to, limiting
+top-up and payment amounts, and standing monitoring and incident-response
+arrangements.
+
+Not one of them asks the public to be more careful. Section~\ref{sec:categorical}
+argues that a rule the public must apply has to be categorical to be usable at
+all; this is the complementary observation, that most of the work in a
+comparable scheme was not given to the public in the first place. It also bears
+on registration abuse (Section~\ref{sec:registration}), which we describe as
+reachable only through know-your-customer quality: capping accounts per funding
+source and blocking rapid re-linking are structural controls on the same attack,
+and they do not depend on an onboarding officer's judgement.
+
 \paragraph{The model has a witness against it.} Every instrument described
 above asks the public to be more careful. The clearest evidence we have found
 against that model comes from somebody with no interest in making the argument.
@@ -1772,6 +1805,30 @@ right form is a phased obligation on merchants above a turnover threshold,
 paired with provision for those below it, but we are naming a design question
 rather than answering it: the distributional analysis it needs is beyond what
 this paper can support.
+
+\paragraph{Another national scheme reached the same attack and answered it
+differently.} Japan's guideline addresses static-code replacement directly, in
+the security part added in its 2022 revision. It observes that because a static
+code is printed and installed by the merchant in advance, ``if the installed
+static QR code is fraudulently replaced or forged, normal payment will not
+occur''. Its remedies are three: print the code on panels or special stock that
+is difficult to duplicate; instruct merchants to check periodically whether
+another static code has been stuck over the installed one; and instruct
+merchants to make a payment themselves from time to time to confirm the code is
+still theirs \citep{jpqrmpm}.\footnote{Translations from the Japanese are ours.}
+
+Two things are worth taking from this. None of the three is cryptographic --- a
+scheme with a national mandate reached the same attack this paper's Profile~A
+addresses and answered it with stock, inspection and spot-checks. And all three
+are directed at the \emph{merchant} rather than the customer, which is a better
+choice than it may look: the merchant is the party who loses the payment, who
+sees the same code every day, and who can therefore notice a change that no
+customer could. Where vigilance is the instrument, pointing it at the party with
+the standing incentive is the strongest available version of it.
+
+It is also, precisely, the burden the rule proposed here removes. A code rendered
+for one transaction cannot be covered by one printed in advance, so there is
+nothing to inspect periodically and no spot-check to remember.
 
 \paragraph{What it does not reach.} Not authorised push payment fraud, which
 uses a genuine code the criminal is entitled to display, on a screen as readily
@@ -2657,18 +2714,20 @@ verified fail on deliberately introduced violations.
     authenticity is named as a mitigation and not built. Cross-border trust-list
     federation is out of scope entirely.
 
-  \item \textbf{The template identifiers are unverified against other schemes.}
-    Encoding version~2 occupies unreserved templates \code{85}, \code{86} and
-    \code{87}. EMVCo reserves the range \code{80}--\code{99} but allocates
-    nothing within it, so two schemes may independently choose the same
-    identifier for different content, and neither would be non-conformant. We
-    have not checked these three against Cambodia's own merchant-presented
-    guideline, nor against the guideline of any scheme KHQR is linked to for
-    cross-border acceptance --- a check that matters more since that linkage
-    exists (Section~\ref{sec:japan}). No mechanism in this specification would
-    detect a collision: each parser would read the other's template as its own
-    and both would be behaving correctly. We record it as a deployment
-    precondition we did not satisfy.
+  \item \textbf{The template identifiers are only partly verified against other
+    schemes.} Encoding version~2 occupies unreserved templates \code{85},
+    \code{86} and \code{87}. EMVCo reserves \code{80}--\code{99} but allocates
+    nothing inside it, so two schemes may independently choose the same
+    identifier for different content and neither would be non-conformant; no
+    mechanism in this specification would detect that, because each parser would
+    read the other's template as its own and both would be behaving correctly.
+    We have checked one of the two schemes that matter. Japan's unified
+    merchant-presented guideline allocates \code{80} --- in its local-tax
+    profile, as a fixed 85-character extension area --- and mentions no
+    identifier between \code{81} and \code{99} anywhere
+    \citep{jpqrmpm}. Our three are therefore clear of JPQR. They remain
+    unchecked against Cambodia's own guideline, which is the check that matters
+    most and which we could not obtain.
 
   \item \textbf{Truncated key identifiers.} Eight bytes is a size choice, not a
     collision-resistance claim. The specification requires verifiers to treat
