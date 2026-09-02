@@ -242,6 +242,17 @@ template design was chosen for in the first place.
 3. The GUID for this scheme is `KH.GOV.NBC.SQR`. It is part of the wire format.
    A national deployment MUST settle this value with the scheme operator before
    issuance, because changing it later is a further version.
+3a. **The template identifiers `85`, `86` and `87` MUST be confirmed unused
+   before issuance** — against the national scheme's own merchant-presented
+   guideline, and against the guideline of every scheme it is linked to for
+   cross-border acceptance. EMVCo reserves `80`–`99` for unreserved templates
+   but does not allocate within that range, so two schemes may independently
+   choose the same identifier for different content. A collision would not be
+   caught by any check in this specification: a foreign parser would read our
+   template as theirs, or the reverse, and both would be conformant. We have
+   **not** performed this check. It is a deployment precondition, not an
+   implementation detail, and it became more pressing once KHQR and JPQR were
+   linked for cross-border acceptance.
 4. The signature MUST be split at exactly 64 characters: the first half in
    template `86`, the second in `87`, both at sub-tag `01`, both 64 uppercase
    hexadecimal characters.

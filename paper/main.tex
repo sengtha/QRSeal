@@ -2657,6 +2657,19 @@ verified fail on deliberately introduced violations.
     authenticity is named as a mitigation and not built. Cross-border trust-list
     federation is out of scope entirely.
 
+  \item \textbf{The template identifiers are unverified against other schemes.}
+    Encoding version~2 occupies unreserved templates \code{85}, \code{86} and
+    \code{87}. EMVCo reserves the range \code{80}--\code{99} but allocates
+    nothing within it, so two schemes may independently choose the same
+    identifier for different content, and neither would be non-conformant. We
+    have not checked these three against Cambodia's own merchant-presented
+    guideline, nor against the guideline of any scheme KHQR is linked to for
+    cross-border acceptance --- a check that matters more since that linkage
+    exists (Section~\ref{sec:japan}). No mechanism in this specification would
+    detect a collision: each parser would read the other's template as its own
+    and both would be behaving correctly. We record it as a deployment
+    precondition we did not satisfy.
+
   \item \textbf{Truncated key identifiers.} Eight bytes is a size choice, not a
     collision-resistance claim. The specification requires verifiers to treat
     the identifier as a hint and to try every candidate, which contains the
