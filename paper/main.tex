@@ -956,6 +956,15 @@ published a buying rate of 4{,}042 riel to the dollar on the day this section wa
 written \citep{acleda2026tips} --- so the same three characters carry a factor of
 four thousand.
 
+And the dual circulation is structural rather than incidental. The National Bank
+reports foreign-currency deposits at 84.4 per cent of broad money and 90.7 per
+cent of total deposits for 2025, a ratio that has moved only between 83.0 and
+85.1 per cent over six years \citep{chay2026stages}. A payer at a Cambodian
+counter is therefore not choosing between a normal currency and an exotic one.
+Both are ordinary, which is what makes the substituted code unremarkable to look
+at and what rules out the defence a designer would otherwise reach for --- that
+an unexpected currency is itself a signal.
+
 That both currencies are live on the same rail is not an inference. Of the
 Bakong transactions the NBC reports for 2025, 771.2 million were in riel and
 554.5 million in US dollars \citep{nbc2025annual}: a split of roughly 58 to 42.
@@ -1017,6 +1026,20 @@ moment of registration there is nothing to separate. What distinguishes them is
 the later pattern of use, which is visible across institutions and not within
 one --- so the burden falls back on dissemination
 (Section~\ref{sec:ttl}) rather than on the registration desk.
+
+\paragraph{And one identity anchor is weaker than it is usually assumed to be.}
+The Global Findex 2025 survey reports that 60.1 per cent of Cambodian phone
+owners say the SIM in their phone is registered in their own name
+\citep{chay2026stages}: for roughly two adults in five, the handset is not
+identity-bound. We draw a conditional consequence rather than a general one,
+because we have not established how any particular Cambodian institution
+enrols. To whatever extent an account, a recovery path or a step-up
+authentication is anchored to a mobile number, that anchor inherits the
+registration status of the SIM rather than establishing anything on its own, and
+a nominee arrangement of the kind above needs no forgery to exploit it. This is
+not a defect the registration desk can inspect for either, and it points the
+same way as the paragraph before it: at the pattern of use, across institutions,
+after the fact.
 
 \subsection{Counterfeit verifiers}
 \label{sec:counterfeit}
@@ -1806,6 +1829,26 @@ right form is a phased obligation on merchants above a turnover threshold,
 paired with provision for those below it, but we are naming a design question
 rather than answering it: the distributional analysis it needs is beyond what
 this paper can support.
+
+\paragraph{One part of that analysis does exist, and it narrows the objection
+without dissolving it.} The Global Findex 2025 survey of Cambodia, fielded in
+2024, puts mobile phone ownership at 81.3 per cent of adults against account
+ownership at 39.0 per cent --- a national gap of 42.3 points --- and, within the
+survey's own strata, device ownership at parity (81.2 against 81.4 per cent)
+while account ownership differs by 31.2 points \citep{chay2026stages}. The
+binding constraint on Cambodian financial participation is the account, not the
+handset, and the handset is not the thing that is unevenly distributed.
+
+That is a real qualification of the paragraph above, and we state it against our
+own argument. But it does not settle the question, for two reasons we cannot
+resolve from these figures. A phone is not a device that renders a fresh code
+per transaction: the survey counts handsets, not smartphones with a merchant
+application, power and a working data connection at the moment of sale. And
+adults are not merchants --- a market seller's personal phone is not evidence
+about the till. What the figures establish is narrower and still useful: the
+objection to a display rule cannot rest on the assumption that devices are
+scarce or rurally absent, and must be made, if it is to be made, about the
+device's fitness at the point of sale and about who pays for it.
 
 \paragraph{Another national scheme reached the same attack and answered it
 differently.} Japan's guideline addresses static-code replacement directly, in
@@ -2619,6 +2662,28 @@ not secure \emph{exposure} to it, because the derivative claim conveying that
 exposure was minted one layer above the enforcement point. The identity control
 was correct and did what it said; the harm simply happened somewhere it did not
 reach.
+
+That result has since been restated in a fuller form, with live-chain evidence
+and against a different question \citep{chay2026stages}. Two unmodified
+production protocols were deployed inside the perimeter; the regulated asset
+never reached an unattested address, and yet an interest-bearing deposit receipt
+carrying the full economic exposure transferred to one and was enrolled by the
+lending market as a collateralised borrower, accruing on the shared index while
+nobody transacted. The general statement offered there is the one this section
+is an instance of: \emph{code fails outward, and statute fails late}. Code
+determines what can happen and does not travel to claims minted above it;
+statute determines what counts and operates after the fact. Neither failure is
+repaired by more of the same instrument, and each is repaired by the other
+applied where the first cannot reach.
+
+That is the same division of labour Section~\ref{sec:degrees} arrives at from
+the payments side. A signature is code and fails outward, which is why
+Sections~\ref{sec:categorical} to~\ref{sec:liability} are statutory and
+institutional rather than cryptographic. It also says why those proposals must
+not be read as the safer half of the pair: a rule that operates after the money
+has moved is protection contingent on detection and enforcement rather than on
+incapacity, which is precisely the failure mode this paper's Limitations
+concede about screening, exit controls and liability alike.
 
 The correspondence is exact:
 
