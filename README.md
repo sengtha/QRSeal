@@ -774,6 +774,8 @@ change and are cached immutably; `/trustlist/current` carries
 `mirrorIndependence: "not satisfied by this deployment"` — one provider, one
 account, one governance failure. See [§10](#10-where-this-repository-does-not-conform-to-its-own-specification).
 
+Developer guide: [`workers/trustlist-edge/DEVELOPMENT.md`](workers/trustlist-edge/DEVELOPMENT.md).
+
 #### `registry-api` — CSR intake for an offline ceremony
 
 `POST /csr` accepts a certificate signing request (≤8 KiB, PEM-shaped, checked
@@ -783,8 +785,8 @@ Putting the portal online and the Root offline is the whole design: compromise
 yields the ability to enqueue rubbish and read the queue, never to mint an
 issuer.
 
-Routes: `POST /csr`, `GET /queue`, `POST /requests/:id/{approve,reject}`,
-`GET /requests/:id`, `GET /audit/export`.
+Routes: `POST /csr`, `GET /queue`, `GET /csr/:id`, `POST /csr/:id/decision`,
+`GET /audit/export`. Developer guide: [`workers/registry-api/DEVELOPMENT.md`](workers/registry-api/DEVELOPMENT.md).
 
 #### `risklist-api` — Annex C: screening, listing, appeals
 
@@ -824,6 +826,8 @@ Routes: `POST /screen`, `POST /listings`, `POST /removals`,
 `POST /proposals/:id/approve`, `POST|GET /appeals`, `POST /appeals/:id/resolve`,
 `GET /accounts/:id/status`, `GET /delta`, `GET /audit/export`.
 
+Developer guide: [`workers/risklist-api/DEVELOPMENT.md`](workers/risklist-api/DEVELOPMENT.md).
+
 #### The audit log (`src/audit.ts` + `migrations/*.sql`, in both write services)
 
 Append-only and hash-chained, **enforced by SQLite triggers rather than by
@@ -839,6 +843,20 @@ This is not defensive engineering against a hypothetical insider. It is why a
 listing made for a reason other than the stated one leaves a record its author
 cannot quietly revise — see the paper's §7.11 on who ends up holding these
 powers.
+
+#### Developer guides
+
+Each Worker has a guide covering its test loop, local development, routes,
+migrations, officer enrolment and the invariants CI enforces:
+
+- [`workers/trustlist-edge/DEVELOPMENT.md`](workers/trustlist-edge/DEVELOPMENT.md)
+- [`workers/registry-api/DEVELOPMENT.md`](workers/registry-api/DEVELOPMENT.md)
+- [`workers/risklist-api/DEVELOPMENT.md`](workers/risklist-api/DEVELOPMENT.md)
+
+Worth knowing before you start on either authenticated service: `wrangler dev`
+cannot terminate mutual TLS, so only `/health` is reachable locally and **the
+test suite is the development loop**. `pnpm test:workers` runs all 64 Worker
+tests; `pnpm check:all` does not include them.
 
 #### Deploying
 

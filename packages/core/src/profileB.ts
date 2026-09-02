@@ -263,7 +263,7 @@ export class CredentialAssertion {
    * and much blunter thing: it invalidates everything an issuer ever signed,
    * which is right for a compromised key and wrong for one withdrawn diploma.
    */
-  public readonly credentialStatus: 'unchecked' = 'unchecked';
+  public readonly credentialStatus = 'unchecked' as const;
 
   public constructor(kid: string, claims: CredentialClaims) {
     this.kid = kid;

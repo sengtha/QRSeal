@@ -13,7 +13,7 @@
     "typecheck": "tsc -b --force",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:workers": "pnpm -r --filter ./workers/** run test",
+    "test:workers": "pnpm -r --filter \"./workers/*\" run test",
     "vectors:generate": "node --experimental-strip-types tools/generate-vectors.ts",
     "vectors:check": "node --experimental-strip-types tools/generate-vectors.ts --check",
     "measure:qr": "node --experimental-strip-types tools/measure-qr.ts",
