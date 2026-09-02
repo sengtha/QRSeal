@@ -434,10 +434,10 @@ normalise, re-serialise, verify --- that has produced a long history of signatur
 bypasses in XML, JSON and JWT processing.
 
 The suite pins the two ways an attacker might exploit a prefix rule.
-\code{A-reject-mutation-outside-signed-region} appends or alters data after the
+\code{A-reject-\allowbreak mutation-\allowbreak outside-\allowbreak signed-\allowbreak region} appends or alters data after the
 signature and must still be rejected, because the CRC covers the whole payload
-even though the signature does not; \code{A-reject-template-not-last} and
-\code{A-reject-subtag-not-last} reject a payload in which the signature template
+even though the signature does not; \code{A-reject-\allowbreak template-\allowbreak not-last} and
+\code{A-reject-\allowbreak subtag-\allowbreak not-last} reject a payload in which the signature template
 is not final, which is what would otherwise let an attacker extend the payload
 while keeping the signed prefix intact.
 
@@ -660,7 +660,7 @@ Cloudflare Workers. It is MIT licensed \citep{khsqr2026repo}.
 
 \subsection{Dependency isolation}
 
-Profile A's transitive import graph reaches six modules and depends on nothing
+Profile A's transitive import graph reaches seven modules and depends on nothing
 beyond Web Crypto: no CBOR, no stream APIs, no packages. The intent is
 embeddability --- a mobile wallet should be able to take payment verification and
 nothing else, with no polyfill. Profile B additionally uses CBOR and
@@ -2945,8 +2945,8 @@ can contain is an accurate statement of its own limits.
 
 \paragraph{Data and code availability.} The reference implementation,
 conformance vectors, measurement scripts and specification are available at
-\url{https://github.com/sengtha/qrseal} under the MIT licence, cited at tag
-\texttt{v1.0.0} \citep{khsqr2026repo}. The published test key material is
+\url{https://github.com/sengtha/qrseal} under the MIT licence
+\citep{khsqr2026repo}. The published test key material is
 deliberately public and protects nothing. All tables and quantitative claims in
 this paper are reproducible from that repository.
 
