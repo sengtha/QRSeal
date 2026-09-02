@@ -444,9 +444,14 @@ async function main(): Promise<void> {
       profile: 'A',
       type: 'verify',
       description:
-        'The published 317-character reference payload. Its template 85 declares length 200 while its ' +
-        'content is 201 characters; a conforming verifier does not consult that field, because the ' +
-        'fixed-offset rule locates the signature by position. See SPEC.md, "Length encoding".',
+        'HISTORICAL, ENCODING VERSION 1, WITH A KNOWN-BAD LENGTH DECLARATION. The published ' +
+        '317-character reference payload. Its template 85 declares length 200 while its content is ' +
+        '201 characters. It is retained unchanged because it is published and cited, and because a ' +
+        'conforming verifier accepts it: the fixed-offset rule locates the signature by position and ' +
+        'does not consult that field. DO NOT COPY THIS PAYLOAD AS A MODEL FOR A SIGNER. A signer ' +
+        'emitting encoding version 1 must declare 201; case A-accept-canonical-dynamic is the ' +
+        'self-consistent version 1 vector. New issuance should use encoding version 2 ' +
+        '(A2-accept-dynamic). See SPEC.md sections 2.4 and 2.9.',
       input: { payload: PUBLISHED_A },
       state: DEFAULT_STATE,
       expect: 'accept',

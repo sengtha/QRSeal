@@ -232,10 +232,16 @@ substantive section --- to make that reading difficult.
     it requires a judgement before or during the scan --- and that the rule must
     not be scoped, because scoping it would require the user to classify a code
     before it is readable.
-  \item Two honest negative results about our own work: the reference deployment
-    does not satisfy the mirror-independence requirement the specification
-    itself states, and the signature container is not transparent to a strict
-    EMVCo parser as the design's premise assumed.
+  \item Two honest negative results about our own work. The reference deployment
+    does not satisfy the mirror-independence requirement the specification itself
+    states. And our first container encoding was not transparent to a strict
+    EMVCo parser, contrary to the design's premise for choosing the unreserved
+    template range --- a defect we repaired rather than annotated, by specifying
+    and implementing a second encoding (Section~\ref{sec:container}) that stays
+    within EMVCo at a cost of 64 characters and one QR symbol version. Encoding
+    version~1 is frozen for new issuance and still verified, so a conforming
+    verifier must support both and dispatch on the encoding rather than attempt
+    either with the other's rules.
 \end{enumerate}
 
 \paragraph{On evidence.}
@@ -664,7 +670,8 @@ integration.
 \subsection{Conformance suite}
 
 The conformance suite is the artefact we expect to outlast the TypeScript. It is
-a single JSON file of forty cases, thirty-one of them negative, each carrying an
+a single JSON file of forty-four cases, thirty-three of them negative and
+spanning both container encodings, each carrying an
 identifier, a profile, a case type, an input, the trust state and time at which
 it is evaluated, the expected outcome and, for a rejection, the expected
 machine-readable reason. A Kotlin or Swift port can demonstrate conformance
@@ -1044,6 +1051,31 @@ browser certificate warnings ineffective. A national scheme that verifies only
 domestic codes may therefore leave users \emph{less} attentive than one that
 makes no claim at all --- a possibility we flag rather than resolve, since we have
 no data on it.
+
+\paragraph{This is current, not prospective, and it runs both ways.} KHQR is
+already linked to counterpart schemes in the region, so inbound foreign codes
+are not a future scenario: a merchant near a border or in a tourist district
+encounters them as ordinary traffic. A domestic-only trust list combined with
+inbound cross-border acceptance is therefore not a gap waiting to open. It is an
+indicator-decay machine already running, and the more successful the linkages
+are, the faster it runs.
+
+The outbound direction is the one worth separating, because
+Section~\ref{sec:container} can be misread as having solved it. Encoding
+version~2 makes a KH-SQR payload \emph{parseable} by a foreign wallet
+implementing EMVCo and nothing else: it walks the payload, reaches the CRC, and
+correctly ignores templates \code{85}--\code{87} as unreserved. That is exactly
+what we claimed and it is worth having. It is not verification. The foreign
+wallet holds no Cambodian trust list, cannot resolve the key identifier, and so
+pays against an unchecked signature --- while displaying nothing wrong, because
+from its point of view nothing is wrong.
+
+Legibility and verifiability are different properties and only the first is a
+wire-format question. The second needs trust-list federation between schemes,
+which this work does not attempt and which our Limitations place out of scope.
+Stating it plainly matters because the alternative reading --- that an
+EMVCo-conformant encoding extends the signature's protection across a border ---
+is both attractive and false.
 
 \subsection{Device compromise, and the assumption verification makes about the verifier}
 \label{sec:device}
@@ -1655,6 +1687,13 @@ distinction is the same one this paper insists on everywhere else.
 
 \subsection{A second categorical rule: a payment code is displayed, not printed}
 \label{sec:display}
+
+This section is a corollary of the move above, not a second national programme.
+It is shorter on institutional detail than Section~\ref{sec:categorical}
+deliberately: we specify no threshold, no device subsidy and no compliance
+obligation, because the distributional analysis those would need is beyond what
+this paper can support. Read it as an argument that the move is available and
+that its cost falls somewhere specific, not as a drafted instrument.
 
 The rule in Section~\ref{sec:categorical} empties the set of legitimate
 URL-bearing payment codes. The same move is available against overlay forgery,
