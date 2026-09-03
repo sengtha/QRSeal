@@ -795,6 +795,11 @@ and the paper's Limitations say.
 same listing and must share one consistency point: split them and a screen could
 read a status an appeal had already lapsed.
 
+**What each profile looks like in practice:**
+[`docs/USE-CASES.md`](docs/USE-CASES.md) walks every deployment shape for P1 and P2 —
+stall sticker, POS screen, degree, land title — with measured symbol sizes, the
+Worker involved, and the two cases the design does not cover.
+
 **Try it without deploying anything:** [`demo/qrseal-demo.html`](demo/qrseal-demo.html)
 is a single file that runs the real verifier in a browser — all 41 verification
 vectors, the currency-substitution pair, and live tampering. Built by
