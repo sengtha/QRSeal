@@ -43,6 +43,51 @@ whoever controls the network, who at a market stall is not a trustworthy party.
 So: both Workers are required to **establish and maintain** cross-verification.
 Neither is required to **perform** it.
 
+### Both profiles, one registry, one list
+
+The same two Workers serve P1 and P2. There is no separate credential registry
+and no second trust list. `registry-api` accepts a `profiles` field on the CSR
+matching `^[AB](,[AB])*$`, each trust-list record carries the profiles its key
+is authorised for, and the resolver enforces it:
+
+```ts
+if (!record.profiles.includes(profile)) { sawWrongProfile = true; continue; }
+// ... throw new KeyProfileMismatchError()   →  KEY_PROFILE_MISMATCH
+```
+
+That scoping is a control rather than a convention. A university key enrolled
+for `B` alone cannot sign a payment code; a bank key for `A` alone cannot sign a
+diploma. The check happens at verification and has its own reason code.
+
+### Where the shared mechanism stops: archival verification
+
+For verification *today*, P1 and P2 are identical — same ceremony, same
+registry, same list, same distribution. For a credential at its stated horizon
+they are not, and the difference is easy to miss.
+
+A verifier needs a trust list at most 30 days old and a timestamp statement
+valid for seven days. In 2050 there may be no `trustlist-edge`, no ceremony and
+no scheme. The paper's answer for that horizon is different in kind — *the
+relying party needs the issuer's archived public key and nothing else* — and
+that is not the trust-list mechanism. It is an assertion about what a verifier
+could do in principle with an archived key, and **the specification does not
+say how a 2050 verifier obtains that key, establishes it was the issuer's, or
+determines that the signature was made while it was valid.** The last of those
+is the `KEY_EXPIRED` question below.
+
+So the accurate statement is:
+
+- **P1 and P2, contemporary cross-verification:** both Workers, one list, one
+  mechanism. Identical.
+- **P2 at archival horizons:** neither Worker, and no specified mechanism.
+
+There is also a cadence difference worth planning for. A payment app refreshes
+its trust list invisibly, because it is used daily. An HR system that checks two
+diplomas a year will find its list stale every time and must fetch on demand —
+so "offline verification" means offline *at the moment of checking*, not offline
+*ever*. A credential verifier that is genuinely disconnected — a border post, a
+rural registry — needs its list refreshed on a schedule someone owns.
+
 ---
 
 ## The one rule that generates every P1 case
