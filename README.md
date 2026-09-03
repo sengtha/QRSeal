@@ -795,6 +795,12 @@ and the paper's Limitations say.
 same listing and must share one consistency point: split them and a screen could
 read a status an appeal had already lapsed.
 
+**Which deployments are exposed, and to what:**
+[`docs/EXPOSURE.md`](docs/EXPOSURE.md) maps five common deployment patterns against
+P1–P9, says which KH-SQR closes and which it does not, and which patterns to
+replace. It names patterns rather than products, so it applies outside Cambodia
+too.
+
 **What each profile looks like in practice:**
 [`docs/USE-CASES.md`](docs/USE-CASES.md) walks every deployment shape for P1 and P2 —
 stall sticker, POS screen, degree, land title — with measured symbol sizes, the
