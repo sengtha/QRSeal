@@ -12,8 +12,36 @@ attempting to sign them.
 - **P2** — forged official codes: a printed code on a fake notice or certificate,
   claiming to prove the document genuine. Answered by **Profile B**.
 
-Throughout: `registry-api` enrols the issuer's key, `trustlist-edge` distributes
-the trust list every verifier needs. Neither is in the payment path.
+---
+
+## What cross-verification actually requires
+
+A code signed in bank A's app verifies in bank B's app. That is the point of a
+trust list rather than bilateral agreements — but it takes **four** things, and
+only two of them are Workers.
+
+| | What it does | When |
+|---|---|---|
+| **Offline Root ceremony** | Produces the Root-signed trust list carrying every enrolled issuer's public key | Not a Worker. Air-gapped, periodic |
+| **`registry-api`** | Gets bank A's key *into* the ceremony's input — CSR intake, queue, published certificate | Issuance path |
+| **`trustlist-edge`** | Gets the list *out* to bank B — read-only distribution | Fetch path |
+| **Root key pinned in bank B's app** | The anchor everything else chains to | Not a Worker. Baked into the app build, out of band |
+
+Trust is not bilateral. Bank B never agrees anything with bank A: it pins the
+Root, fetches one list, and can then verify codes from every enrolled issuer.
+The `kid` in the payload selects the key; a key not on the list gives
+`UNKNOWN_KID`.
+
+**Neither Worker is in the moment-of-payment path.** Bank B's app verifies
+offline, against a trust list it fetched earlier — at most 30 days old — and a
+timestamp statement valid for seven days. If both Workers vanish, existing
+verifiers keep working until those windows lapse, and then stop rather than
+fall back on stale material. That is deliberate: §4 of the paper argues a
+verifier that fetched *during* verification could be stalled or steered by
+whoever controls the network, who at a market stall is not a trustworthy party.
+
+So: both Workers are required to **establish and maintain** cross-verification.
+Neither is required to **perform** it.
 
 ---
 
@@ -175,6 +203,71 @@ Reference credential: **381 characters, version 12, 65 × 65**.
 Verification returns `mustMatchPrintedDocument` — subject name, document id,
 issuing organisation, issue date — and offers no boolean. A caller cannot reach
 a verdict without performing the comparison.
+
+---
+
+## P2 · Who can be the verifier
+
+**Anyone.** That is the architectural answer, and it is the sharpest difference
+between carrying a credential and carrying a reference to one.
+
+The trust list is public and verification is offline, so there is no gatekeeper
+and no permission to obtain. A relying party needs the issuer's public key and
+the document in hand:
+
+- an employer checking a job applicant's degree
+- a foreign university checking a Cambodian transcript
+- a bank checking a land title before lending against it
+- a notary, a registry clerk, a border officer
+- the holder themselves, confirming their own document still verifies
+
+### Against the reference model
+
+Cambodia operates `verify.gov.kh`, which places QR codes on diplomas, medical
+licences, certificates of incorporation, land titles and civil status documents.
+The code on an issued degree carries a URL — no signature, nothing checkable
+offline. The two models put the verifier in different places:
+
+| | Reference (lookup) | Credential (Profile B) |
+|---|---|---|
+| What the code carries | a URL and a key | the signed credential itself |
+| To verify | ask the platform's server | check a signature against a public list |
+| Who can verify | the platform. Everyone else is its **client** | **anyone** holding the trust list |
+| Needs network | yes, at the moment of checking | no |
+| Works in 2050 | only while that service answers at that name | yes, with the archived public key |
+| Who learns you checked | the platform | **nobody** |
+
+That last row is worth dwelling on, because it is a cost of the lookup model
+that is easy to miss. Every verification is a request, and a request is a
+record: that this employer checked this candidate's degree on this date, that
+this bank checked this land title the week before a loan. Offline verification
+generates no such record, because there is no request. The paper names this
+*reader privacy* alongside archival longevity and offline operation.
+
+**The paper does not propose replacing the platform.** A service already holding
+the authoritative record could emit a signed credential *alongside* its lookup
+code at no cost to the lookup path — gaining longevity, offline operation and
+reader privacy, and able to report three states rather than two: current,
+withdrawn, or *signature valid, standing unknown*.
+
+### The catch, and it is the same property
+
+If anyone can verify, anyone can also *claim* to verify. That is **P6**, the
+counterfeit verifier: an application that displays a satisfying tick for
+anything at all. `trustlist-edge` serves an application trust list for this, and
+the paper is blunt that it is weak — it helps a person who checks what they
+installed, and does nothing for a person who installed from a link in a message.
+Schechter et al. found that 23 of 25 participants entered passwords after their
+own chosen site-authentication image was removed: people do not reliably notice
+a missing positive indicator.
+
+So the practical recommendation is about *where* the verifier lives rather than
+who is permitted to build one. Put verification inside an application the
+relying party already has a reason to trust — the bank's app for a land title,
+a ministry's own app, an HR system, a registry's terminal. A standalone
+"document checker" app is exactly the shape a counterfeit imitates most easily,
+and it asks the user to make a trust decision about the checker before they can
+make one about the document.
 
 ---
 
