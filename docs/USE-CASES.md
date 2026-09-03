@@ -236,6 +236,110 @@ document does not propose one.
 
 ---
 
+## P1 · Worked example — the National University of Management
+
+A single institution, spanning three of the cases above and running into the
+fourth. Every figure below was produced by signing a payload built from NUM's
+details; the account identifier is the published test one, not a real account.
+
+NUM appears in **both profiles**: it takes payments (A) and it issues diplomas
+(B). Those should be **two keys, not one**. The scheme permits a single key
+enrolled for `"A,B"`, but separating them separates custody and rotation — the
+finance office holds the payment key, the registrar holds the credential key,
+and compromising one does not invalidate the other's artefacts. Given that
+revocation is per key and absolute, that separation is worth the second
+enrolment.
+
+### First question: who signs NUM's payment codes?
+
+This is the P1 counterpart of the credential-issuance question, and the answer
+is usually *not the merchant*.
+
+**Model 1 — the acquiring bank signs.** NUM is a merchant like any other. Its
+bank holds the Profile A key, signs NUM's payload at enrolment, and hands over
+the printed artefact. NUM does nothing cryptographic and holds no key. This is
+what a canteen stall must do, and what most merchants would do.
+
+**Model 2 — NUM signs its own.** NUM enrols its own key through `registry-api`
+with `profiles: "A"` and signs at its own cashier desks. Worth it only if NUM
+issues many per-transaction codes and does not want a live dependency on the
+bank at each one. It also means NUM now holds a payment-signing key, with
+everything that implies.
+
+The choice does not change what a payer's app does. Either way the `kid` in the
+payload resolves against the same trust list.
+
+### The three artefacts
+
+**Canteen stall — printed sticker, no amount**
+
+```
+static · 367 characters · QR version 11, 61 × 61
+```
+
+Signed once at enrolment, printed once, verifies on every scan for the life of
+the key. A stall has no device and needs none.
+
+**Cashier desk — screen, tuition of 1,200,000 KHR**
+
+```
+dynamic · 392 characters · QR version 12, 65 × 65 · valid 300 seconds
+```
+
+Signed per transaction. The amount and currency are inside the signature, so a
+student's app shows `1,200,000 KHR` as attested rather than as typed — which is
+the P9 currency-substitution defence, and the reason the amount belongs in the
+signed region rather than in the cashier's spoken instruction.
+
+Note the cost: the amount and the longer merchant name push this to **version
+12, 65 × 65**, one version above the reference payload in Table 1.
+
+**Fee notice posted to a student — printed, carrying the amount**
+
+```
+as static  ->  STATIC_CODE_WITH_AMOUNT
+as dynamic, 14-day life  ->  EXPIRY_WINDOW_TOO_LONG
+```
+
+**Cannot be signed.** NUM prints a fee notice with 1,200,000 KHR on it and gives
+the student two weeks to pay. That is the A6 gap, in NUM's own numbers: static
+forbids the amount, dynamic caps life at five minutes.
+
+What NUM can do today is print the *canteen-style* code — payee authenticated,
+no amount — and have the student key in 1,200,000 themselves. The payee is then
+genuine and the number is not attested, which is the half that matters if
+someone substitutes a currency or a digit.
+
+### What the overlay attack looks like here
+
+Someone pastes their own sticker over the canteen's. Under QRSeal the student's
+app resolves the `kid` on the attacker's code against the trust list and finds
+nothing: **`UNKNOWN_KID`**. The attacker cannot instead alter NUM's genuine
+sticker, because a single changed character breaks the signature —
+`SIGNATURE_INVALID`.
+
+What it does *not* stop: someone messaging students "pay your fees here" with a
+genuine code for their own account. That code verifies. It is
+[P4](../README.md#p4--authorised-push-payment-fraud--not-addressed-at-all), it is
+what the ministry-impersonation incident in the paper's §3 actually was, and no
+signature reaches it.
+
+### What NUM has to run
+
+| Model 1 — bank signs | Model 2 — NUM signs |
+|---|---|
+| Nothing. Enrol as a merchant, receive printed codes | Generate and protect a Profile A key |
+| | Run signing at each cashier desk |
+| | Re-enrol and reprint on key rotation |
+| Bank's key rotates → bank reissues NUM's codes | NUM's key compromised → every NUM code invalid at once |
+
+For the canteen stall, Model 1 is obviously right. For a university cashier
+running hundreds of per-transaction codes a day, Model 2 may be — and that is
+the same devolution-of-key-custody question that Profile B raises for the
+registrar, arriving from the payments side.
+
+---
+
 ## P2 · The asymmetry that shapes every credential case
 
 The display rule that answers P1 **does not transfer**. A screen cannot be
