@@ -24,4 +24,12 @@ enabled = true
 [vars]
 # Mirrors under distinct operational control. A single-provider deployment does
 # NOT satisfy the specification's mirror-independence requirement; see README.
-MIRROR_HINTS = "https://trustlist.nbc.gov.kh/,https://kh-sqr-mirror.example.org/"
+#
+# These are placeholders and MUST be replaced before deployment. They MUST NOT
+# name an institution that has not agreed to operate a mirror: this value is
+# echoed verbatim at /health and in the x-kh-sqr-mirrors header on every
+# response, so it tells the world where to fetch an authoritative trust list.
+# An earlier default named a National Bank of Cambodia host, which asserted an
+# operator that has not agreed to be one — the same error as the scheme GUID
+# that once read KH.GOV.NBC.SQR.
+MIRROR_HINTS = "https://trustlist.example.kh/,https://mirror.example.org/"

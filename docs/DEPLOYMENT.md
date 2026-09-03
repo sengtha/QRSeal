@@ -49,6 +49,57 @@ under S5. Same node label, different meaning, different diagram.
 
 ---
 
+## Which of these can be exposed publicly
+
+Only one, and the difference is structural rather than a matter of caution.
+
+| Worker | Public? | Why |
+|---|---|---|
+| `trustlist-edge` | **Yes** | No authentication by design — the trust list is *meant* to be fetchable by anyone. Read-only: every mutating method is refused before routing. Holds no key. Full compromise yields withholding, which the verifier already treats as hostile. |
+| `registry-api` | **No** | Every route but `/health` requires a client certificate. Without API Shield mTLS configured, `cf.tlsClientAuth` is absent and everything returns 401. Safe, but a public tester reaches exactly one endpoint. |
+| `risklist-api` | **Never** | Same gate, plus one officer can restrict a real account for 72 hours. Public write access means strangers freezing account identifiers. |
+
+Exposing the two authenticated services is not blocked by caution but by
+arithmetic: to let someone use them you must issue them a client certificate,
+which is onboarding, not public testing.
+
+### If you publish `trustlist-edge` as a demo
+
+Three things to get right, because this project is about people trusting
+artefacts that do not deserve it.
+
+1. **Label it.** A demo list is signed by the repository's published test Root
+   key, whose private half is public and protects nothing. Say so at the
+   hostname, or you have built the exact artefact this paper warns about: a
+   thing that verifies and should not be believed.
+2. **Set `MIRROR_HINTS` to hosts you actually operate.** It is echoed verbatim
+   at `/health` and in `x-kh-sqr-mirrors` on every response, so it tells the
+   world where to fetch an authoritative list. Never name an institution that
+   has not agreed to operate a mirror.
+3. **`workers_dev = false` is deliberate** — these should answer at an
+   operational hostname, not a `workers.dev` subdomain nobody watches. Flipping
+   it to `true` for a throwaway demo is reasonable; leaving it flipped for
+   anything else is not.
+
+### The better public test needs no server at all
+
+Verification performs no network access — a test poisons every network global
+and verifies both reference payloads anyway. So the whole Profile A story is
+testable by anyone, offline, with no attack surface:
+
+```sh
+kh-sqr run-vectors --file vectors/vectors.json   # 44 cases, 33 negative
+kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
+  --root-keys @root-keys.json --timestamp @timestamp-1.json
+```
+
+Profile A reaches seven modules and depends on nothing beyond Web Crypto, so
+the same verification runs unmodified in a browser. A static page plus a
+published `trustlist-edge` demonstrates the entire signing and verification
+path with nothing writable exposed.
+
+---
+
 ## Before you start
 
 You need, and this repository does not provide:
