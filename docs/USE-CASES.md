@@ -251,6 +251,87 @@ a verdict without performing the comparison.
 
 ---
 
+## P2 · The issuance flow, next to the lookup flow
+
+The two models put the same university in very different positions. This is the
+part that matters operationally, more than any cryptographic difference.
+
+### The lookup flow
+
+1. The platform operator holds the authoritative record for every certificate.
+2. The university **submits each graduate's data** to the platform.
+3. The platform returns a code; the university prints it on the certificate.
+4. Anyone verifies by visiting the platform in a browser.
+
+Every certificate passes through the centre. The centre can therefore revoke
+one, correct one, and see them all.
+
+### The QRSeal flow
+
+**Once per university — enrolment, not per certificate:**
+
+1. The university generates a key pair **on its own hardware**. The private key
+   never leaves, and is never transmitted anywhere.
+2. It submits a certificate signing request to `registry-api`:
+   `POST /csr` with `csrPem` and `profiles: "B"`. **That is the entire payload** —
+   a public key and which profiles it may sign for.
+3. The offline Root ceremony issues the certificate; the university's public key
+   joins the trust list.
+4. `trustlist-edge` publishes the list.
+
+**Per certificate — entirely inside the university:**
+
+5. The university assembles the claims: subject name, document identifier,
+   issuing organisation, issue date.
+6. It signs locally — `kh-sqr sign-b --claims @claims.json --key <its own key>`.
+7. It prints the resulting code on the certificate.
+
+**No graduate data leaves the university. Ever.** `registry-api` has three
+tables — `officers`, `csr_queue`, `audit_log` — and none of them holds a
+credential. The registry enrols *keys*, not certificates. It could not produce a
+list of who graduated if compelled to, because it has never been told.
+
+**Verification (§ below):** anyone with the trust list, offline.
+
+### What actually changed
+
+| | Lookup | QRSeal |
+|---|---|---|
+| Who holds graduate data | the platform operator | **the university only** |
+| Who signs | the platform, implicitly, by holding the record | **the university, with its own key** |
+| Central interaction per certificate | one submission each | **none** |
+| What the centre needs from a university | every record | one public key, once |
+| What a university needs from the centre | the platform, permanently | the trust list |
+| Centre can revoke one certificate | **yes** | no |
+| Centre can correct one certificate | **yes** | no |
+| Centre sees who verified whom | yes | **nothing to see** |
+
+### The trade, stated plainly
+
+QRSeal moves the work *and the risk* from the centre to the issuer.
+
+The university gains autonomy and data sovereignty: it is not dependent on a
+central service at issuance time, and no graduate record is centralised. What it
+takes on is real:
+
+- It must generate and protect a signing key, ideally in an HSM.
+- It must run signing software as part of its graduation process.
+- If its key is compromised, **every diploma it has ever signed** is invalidated
+  at once, because revocation is per key and not per credential.
+- It cannot withdraw a single rescinded degree — `credentialStatus` is always
+  `unchecked`.
+
+Under the lookup model the platform operator carries all four, and the
+university types data into a form.
+
+For a large university with an IT department, that is a good trade. For a small
+provincial institution it may not be one, and a national deployment would have
+to answer whether every issuer can hold a key properly — or whether some should
+sign through a shared service, which reintroduces exactly the central dependency
+the design removes. This paper does not answer that question.
+
+---
+
 ## P2 · Who can be the verifier
 
 **Anyone.** That is the architectural answer, and it is the sharpest difference
