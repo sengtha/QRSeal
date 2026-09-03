@@ -13,7 +13,7 @@ Signed QR codes for Cambodia, and the institutional measures around them.
 
 The split is the argument. A signature closes forgery completely and does not
 touch the dominant attack, so the project cannot be only a specification —
-[§3](#3-what-qrseal-cannot-solve) is why, and [§4](#4-how-to-solve-what-qrseal-cannot)
+[§3](#3-what-kh-sqr-cannot-solve) is why, and [§4](#4-how-to-solve-what-kh-sqr-cannot)
 is what remains.
 
 **Neither name designates a standard.** KH-SQR is proposed here, not adopted
@@ -31,7 +31,7 @@ TypeScript, Web Crypto only, Cloudflare Workers. MIT licensed.
 
 ## Read this first
 
-**QRSeal addresses forgery. It does not prevent authorised push payment fraud,
+**KH-SQR addresses forgery. It does not prevent authorised push payment fraud,
 which is the dominant vector, and nothing built on it should suggest otherwise.**
 
 A verified signature is not a reason to pay. The API is built so that this is
@@ -72,7 +72,7 @@ Two structural facts make these hard:
 
 ---
 
-## 2. What QRSeal solves
+## 2. What KH-SQR solves
 
 | Problem | Status | How |
 |---|---|---|
@@ -85,7 +85,7 @@ standard cryptographic threat model, forgery of the *artefact* is closed. It say
 nothing about the layers above it — see **P6**, where a counterfeit verifier
 defeats all of this without breaking any cryptography.
 
-**A benefit that is easy to miss.** After QRSeal, an overlay attack that
+**A benefit that is easy to miss.** After KH-SQR, an overlay attack that
 *verifies* requires a registered merchant account. That means an identity went
 through onboarding, an account number is embedded in the code, the account can be
 listed within minutes, and the funds are traceable and freezable. The attack does
@@ -95,14 +95,14 @@ That attribution is what the institutional layer (§4) runs on.
 **And a cost that is easy to miss.** Every signed code a person scans
 successfully teaches them that *the system checks these for me*. That raises
 what the public is willing to trust. It does not extend what anyone actually
-controls, because P4 is untouched by any of it. **Deploying QRSeal should be
+controls, because P4 is untouched by any of it. **Deploying KH-SQR alone should be
 expected to reduce forgery and to increase exposure to authorised push payment
 fraud** — and with no incident data, nobody will learn the sign of the sum. See
 §3.9.
 
 ---
 
-## 3. What QRSeal cannot solve
+## 3. What KH-SQR cannot solve
 
 For each, the reason it is unreachable from the code layer — not merely that it
 is.
@@ -178,8 +178,8 @@ onboarding.
 
 ### P3 — URL quishing · **partly addressed, and this is the weaker half**
 
-QRSeal rejects `http`/`https` payloads, and exposes that check for use on *every*
-scanned code, not only KH-SQR ones.
+KH-SQR rejects `http`/`https` payloads, and exposes that check for use on *every*
+scanned code, not only its own.
 
 *Why that is not enough:* a code scanned with the handset's native camera
 application never reaches any verifier, and that is how a great many codes are
@@ -234,7 +234,7 @@ mechanisms, each running one way only:
    the output (§4.3) are fixed unless deliberately changed, so loss per incident
    stays at maximum.
 
-**QRSeal contributes to the fifth column of that ledger.** A measure that
+**KH-SQR contributes to the fifth column of that ledger.** A measure that
 manufactures precisely the confidence the dominant attack feeds on is not a
 neutral addition. This is the SiteKey result (P6) in dynamic form: users do not
 reliably notice an indicator that is *absent*, and they do generalise from one
@@ -266,7 +266,7 @@ currently observed. No number is predicted here, and one should be distrusted.
 
 ---
 
-## 4. How to solve what QRSeal cannot
+## 4. How to solve what KH-SQR cannot
 
 Ranked by expected effect. Note how little of it is cryptography.
 
@@ -488,7 +488,7 @@ vendors, who control the scan path and cannot be bound by Cambodian rule.
 
 | Solution | Mandates | Operates | Complies | Bears the outcome |
 |---|---|---|---|---|
-| **S0** QRSeal signing | NBC | Root ceremony, `trustlist-edge`, `registry-api` | Banks/PSPs, ministries, merchants, wallet developers | Payers, document verifiers |
+| **S0** KH-SQR signing | NBC | Root ceremony, `trustlist-edge`, `registry-api` | Banks/PSPs, ministries, merchants, wallet developers | Payers, document verifiers |
 | **S1** Incident reporting | NBC, MPTC | NBC statistics function | Banks/PSPs, telcos | Public, researchers, policy |
 | **S2** URL prohibition | NBC + MPTC + line ministries | Named regulator (audit) | Banks/PSPs, ministries, telcos, wallet developers | Public |
 | **S6** Exit controls | NBC (licensing + account tiers) | Account-holding institutions | Banks/PSPs, wallet operators | Account holders, small traders |
@@ -496,7 +496,7 @@ vendors, who control the scan path and cannot be bound by Cambodian rule.
 | **S4** Right to contest | NBC | `risklist-api` | Account-holding and listing institutions | Account holders |
 | **S5** Liability allocation | NBC / regulator | Dispute or ombudsman body | Sending and receiving PSPs | Victims |
 
-### S0 — QRSeal signing (solves P1, P2, P7)
+### S0 — KH-SQR signing (solves P1, P2, P7)
 
 ```mermaid
 flowchart LR
@@ -779,8 +779,8 @@ running code, and these are it:
 
 | Solution | Worker | Role |
 |---|---|---|
-| **S0** — QRSeal signing | `registry-api` | queues issuer CSRs for the offline ceremony; cannot issue |
-| **S0** — QRSeal signing | `trustlist-edge` | serves the trust list and timestamp a verifier needs |
+| **S0** — KH-SQR signing | `registry-api` | queues issuer CSRs for the offline ceremony; cannot issue |
+| **S0** — KH-SQR signing | `trustlist-edge` | serves the trust list and timestamp a verifier needs |
 | **S3** — Screening at payment | `risklist-api` | `POST /screen` → allow / warn / hold / block |
 | **S4** — Right to contest | `risklist-api` | `POST /appeals`, the deadline, and the lapse |
 

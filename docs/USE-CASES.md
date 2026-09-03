@@ -610,5 +610,5 @@ resolutions is a policy decision about whether revocation or longevity wins.
 **And in none of these cases does verification tell anyone the payment is one
 they should make.** Every case above closes forgery of the artefact. The
 dominant Cambodian attack — a genuine code presented with a lie — passes through
-all of them untouched, which is what [README §3](../README.md#3-what-qrseal-cannot-solve)
+all of them untouched, which is what [README §3](../README.md#3-what-kh-sqr-cannot-solve)
 and the paper's §3 are about.
