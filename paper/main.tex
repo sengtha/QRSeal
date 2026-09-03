@@ -863,6 +863,7 @@ reason it is unreachable from the code layer, not merely the observation that it
 is.
 
 \subsection{Authorised push payment fraud}
+\label{sec:app}
 
 A criminal shows a victim a genuine KHQR --- their own, correctly registered,
 correctly signed --- with a false story: a refund to be released, a parcel to be
@@ -1997,6 +1998,69 @@ where it cannot afford the second, and the first is the option we had missed.
 It is also, precisely, the burden the display rule removes. A code rendered for
 one transaction cannot be covered by one printed in advance, so there is nothing
 to inspect periodically and no spot-check to remember.
+
+\paragraph{A fourth option exists, costs nothing, and is worse than nothing.}
+A reader reaching the end of that list will notice that all three options cost
+money, and that a fourth appears to be free: tell the public not to trust
+printed payment codes. It requires no printing channel, no devices and no
+cryptography, and it can be issued tomorrow. We think it is the one intervention
+in this paper that should be rejected outright rather than ranked, and the
+reasons are worth stating because the option is attractive in exactly the
+circumstances --- no budget, visible harm, pressure to act --- where it will be
+proposed.
+
+\emph{A payer cannot execute it.} Nobody can distinguish a code the merchant
+installed from one pasted over it; that indistinguishability is the whole of
+the attack. So the instruction reduces in practice to \emph{do not pay by code
+at a small merchant}, which is either ignored, because at the stall there is no
+alternative, or obeyed, in which case the market seller and the tuk-tuk driver
+lose the payment channel that reached them. It fails in both directions, and
+the direction in which it succeeds is the one that removes payment access from
+the merchants least able to replace it.
+
+\emph{It points the duty at the party who cannot discharge it.} This is the
+observation of the three Japanese remedies, run backwards. Those are addressed
+to the merchant --- who loses the payment, sees the same code daily, and can
+therefore notice a change no customer could --- and that is the strongest
+available form of a vigilance instrument. A public warning moves the same duty
+onto the customer, who has none of those three properties.
+
+\emph{And it damages the control it is meant to support.} A public taught that
+printed codes are untrustworthy has been taught that a \emph{signed} printed
+code is untrustworthy, because nothing visible separates them. The message
+therefore trains people out of the category that Section~\ref{sec:profileA}
+exists to rehabilitate --- the indicator decay of Section~\ref{sec:foreign},
+self-inflicted and aimed at one's own scheme.
+
+The sequencing is what makes the difference, and it is the coverage argument
+again. Before saturation the message cannot be targeted: it condemns the
+genuine artefact and the forged one together, because there is no property
+distinguishing them that a payer can see. After saturation it is no longer
+needed in that form, because it collapses into something narrower and true ---
+\emph{an unsigned code is anomalous} --- which is a statement about an absence
+that has by then become rare enough to mean something. A public warning is
+therefore not a cheap substitute for the three options. It is a consequence of
+having completed them, and issuing it first buys the cost without the benefit.
+
+\paragraph{What is worth saying to a payer, today.} One thing, and it is not
+about the medium: \textbf{read the payee name and the amount, with its currency,
+before authorising}. Section~\ref{sec:currency} makes both a MUST rather than a
+recommendation for this reason. It asks the payer to read a disclosure rather
+than to judge a printed square, which is the difference between an instruction
+that can be followed and one that cannot.
+
+We are careful about what that buys. It is not a defence; it is the only
+instruction in this paper a payer can actually execute. Its limit is stated
+plainly in Section~\ref{sec:app}: reading the payee name works when the payer
+holds an expectation to compare it against, and both the strongest Cambodian
+cases we have --- the taken-over relative's account, and the ministry letter
+whose code named a private individual --- are cases where the expectation was
+either supplied by the attacker or contradicted the code and was not acted on
+anyway. A payer who reads the disclosure will catch a currency substitution and
+some impersonations. They will not catch a pretext built for them. Saying so is
+part of issuing the advice honestly, and it is the reason the advice is a
+supplement to the institutional measures of Section~\ref{sec:degrees} rather
+than an alternative to them.
 
 \paragraph{What it does not reach.} Not authorised push payment fraud, which
 uses a genuine code the criminal is entitled to display, on a screen as readily
