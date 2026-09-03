@@ -1,0 +1,602 @@
+<title>Scan, Verify, Then What</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root {
+    --ground: #F5F7FA;
+    --surface: #FFFFFF;
+    --sunk: #EDF0F5;
+    --ink: #141821;
+    --muted: #5C6577;
+    --faint: #8A93A6;
+    --line: #DDE2EB;
+    --line-strong: #C3CBD9;
+    --accent: #2E4B8F;
+    --accent-soft: #E4EAF7;
+    --reject: #A03325;
+    --reject-soft: #F8E7E4;
+    --caution: #8A5B18;
+    --caution-soft: #FBF0DC;
+    --shadow: 0 1px 2px rgba(20, 24, 33, .06), 0 8px 24px -12px rgba(20, 24, 33, .18);
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1319; --surface: #171C24; --sunk: #1E242E;
+      --ink: #E7EBF2; --muted: #99A2B4; --faint: #6E7789;
+      --line: #2A313D; --line-strong: #3A4352;
+      --accent: #89A8E8; --accent-soft: #1C2739;
+      --reject: #E28577; --reject-soft: #331E1A;
+      --caution: #DFAE68; --caution-soft: #2E2416;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0F1319; --surface: #171C24; --sunk: #1E242E;
+    --ink: #E7EBF2; --muted: #99A2B4; --faint: #6E7789;
+    --line: #2A313D; --line-strong: #3A4352;
+    --accent: #89A8E8; --accent-soft: #1C2739;
+    --reject: #E28577; --reject-soft: #331E1A;
+    --caution: #DFAE68; --caution-soft: #2E2416;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 72px; }
+
+  /* ---------- header ---------- */
+  header { border-bottom: 1px solid var(--line); background: var(--surface); }
+  .head-inner {
+    max-width: 1120px; margin: 0 auto; padding: 28px 20px 24px;
+    display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-end;
+    justify-content: space-between;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 6px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: 30px;
+    line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -.01em;
+  }
+  .sub { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+  .head-meta {
+    font-family: var(--mono); font-size: 11.5px; color: var(--faint);
+    text-align: right; line-height: 1.7; white-space: nowrap;
+  }
+  .head-meta b { color: var(--muted); font-weight: 500; }
+
+  /* ---------- the standing caution ---------- */
+  .thesis {
+    margin: 22px 0 0; padding: 16px 18px; border-radius: 3px;
+    background: var(--caution-soft); border-left: 3px solid var(--caution);
+    display: grid; gap: 6px;
+  }
+  .thesis p { margin: 0; }
+  .thesis .lead { font-family: var(--serif); font-size: 17px; font-weight: 500; }
+  .thesis .rest { color: var(--muted); font-size: 14px; max-width: 78ch; }
+
+  /* ---------- section furniture ---------- */
+  section { margin-top: 40px; }
+  h2 {
+    font-family: var(--serif); font-size: 19px; font-weight: 600;
+    margin: 0 0 4px; letter-spacing: -.005em;
+  }
+  .section-note { margin: 0 0 16px; color: var(--muted); font-size: 14px; max-width: 74ch; }
+
+  /* ---------- workbench ---------- */
+  .bench { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+  .cases { display: grid; gap: 8px; }
+  .case {
+    display: grid; gap: 4px; width: 100%; text-align: left; cursor: pointer;
+    padding: 12px 13px; border-radius: 3px; background: var(--surface);
+    border: 1px solid var(--line); border-left: 3px solid var(--line-strong);
+    font: inherit; color: inherit; transition: border-color .12s, background .12s;
+  }
+  .case:hover { border-color: var(--line-strong); }
+  .case[aria-pressed="true"] { border-left-color: var(--accent); background: var(--accent-soft); }
+  .case-top { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+  .case-label { font-weight: 500; font-size: 14px; line-height: 1.35; }
+  .case-teaches { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+  .chip {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 2px;
+    white-space: nowrap; flex: none; font-weight: 500;
+  }
+  .chip.pass { background: var(--accent-soft); color: var(--accent); }
+  .chip.fail { background: var(--reject-soft); color: var(--reject); }
+
+  /* ---------- verdict ---------- */
+  .verdict {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 3px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .verdict-head {
+    padding: 16px 18px; border-bottom: 1px solid var(--line);
+    display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;
+  }
+  .outcome { font-family: var(--serif); font-size: 21px; font-weight: 600; }
+  .outcome.ok { color: var(--accent); }
+  .outcome.no { color: var(--reject); }
+  .reason-code {
+    font-family: var(--mono); font-size: 12px; padding: 3px 7px; border-radius: 2px;
+    background: var(--reject-soft); color: var(--reject);
+  }
+  .verdict-body { padding: 16px 18px; display: grid; gap: 16px; }
+
+  .disclosure { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 3px; }
+  .row {
+    display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 14px;
+    padding: 9px 13px; border-bottom: 1px solid var(--line); align-items: baseline;
+  }
+  .row:last-child { border-bottom: 0; }
+  .row dt {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .row dd { margin: 0; font-size: 14.5px; overflow-wrap: anywhere; }
+  .row dd.big { font-family: var(--serif); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row.hi { background: var(--caution-soft); }
+  .row.hi dt { color: var(--caution); }
+
+  .aside {
+    font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--line-strong);
+    padding-left: 12px; margin: 0;
+  }
+  .aside b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- payload ---------- */
+  .payload-wrap { display: grid; gap: 8px; }
+  .payload-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button.act {
+    font: 500 12.5px/1 var(--sans); padding: 8px 12px; border-radius: 3px;
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    cursor: pointer; transition: background .12s, border-color .12s;
+  }
+  button.act:hover { background: var(--sunk); border-color: var(--faint); }
+  button.act:focus-visible, .case:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .hint { font-size: 12.5px; color: var(--faint); }
+
+  textarea {
+    width: 100%; min-height: 108px; resize: vertical; padding: 12px 13px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+    color: var(--ink); background: var(--sunk);
+    border: 1px solid var(--line); border-radius: 3px; overflow-wrap: anywhere;
+  }
+
+  .tlv {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.9;
+    background: var(--sunk); border: 1px solid var(--line); border-radius: 3px;
+    padding: 12px 13px; overflow-wrap: anywhere;
+  }
+  .tlv .tag { color: var(--accent); font-weight: 600; }
+  .tlv .len { color: var(--faint); }
+  .tlv .val { color: var(--ink); }
+  .tlv .seg { padding: 1px 0; }
+  .tlv .seg.mark { background: var(--caution-soft); outline: 1px solid var(--caution); border-radius: 2px; }
+  .tlv .seg.sig { color: var(--muted); }
+  .tlv-note { margin: 8px 0 0; font-size: 12.5px; color: var(--caution); }
+
+  /* ---------- currency pair ---------- */
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .pair-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+    padding: 16px 17px; display: grid; gap: 8px; align-content: start;
+  }
+  .pair-amount { font-family: var(--serif); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pair-tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .pair-tag mark { background: var(--caution-soft); color: var(--caution); padding: 1px 3px; border-radius: 2px; font-weight: 600; }
+  .pair-verdict { font-size: 13px; color: var(--accent); font-weight: 500; }
+
+  /* ---------- suite ---------- */
+  .suite-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }
+  .tally { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tally b { color: var(--ink); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 6px; }
+  .cell {
+    display: flex; gap: 8px; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 11.5px; padding: 7px 9px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 2px;
+  }
+  .cell .id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cell .mk { flex: none; font-weight: 600; }
+  .cell.ok .mk { color: var(--accent); }
+  .cell.bad { border-color: var(--reject); background: var(--reject-soft); }
+  .cell.bad .mk { color: var(--reject); }
+
+  /* ---------- closing ---------- */
+  .close { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .close h2 { margin-bottom: 10px; }
+  .close p { color: var(--muted); max-width: 72ch; margin: 0 0 12px; }
+  .close a { color: var(--accent); }
+  .note-strong { color: var(--ink); }
+  footer {
+    margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--faint); display: grid; gap: 6px;
+  }
+  footer code { font-family: var(--mono); font-size: 11.5px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div>
+      <p class="eyebrow">QRSeal · KH-SQR reference verifier</p>
+      <h1>Scan, verify, then what?</h1>
+      <p class="sub">
+        A signed Cambodian payment code, verified in your browser by the actual
+        KH-SQR library — no server, no network. Change anything and watch it fail.
+      </p>
+    </div>
+    <div class="head-meta">
+      <div><b>Profile A</b> · ECDSA P-256 · ES256</div>
+      <div><b>41</b> verification vectors</div>
+      <div><b>0</b> network requests</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="thesis">
+    <p class="lead">A verified signature is not a reason to pay.</p>
+    <p class="rest">
+      This page will never show you a green tick, because the library it runs
+      never returns one. Verification answers a narrow question — was this code
+      produced by a registered issuer and unaltered since — and says nothing
+      about whether the person who showed it to you is entitled to your money.
+      The most common QR fraud uses a perfectly genuine code.
+    </p>
+  </div>
+
+  <section>
+    <h2>Try a case</h2>
+    <p class="section-note">
+      Each runs the real verifier against the real trust list. The first two both
+      succeed, and that is the point of putting them next to each other.
+    </p>
+    <div class="bench">
+      <div class="cases" id="cases"></div>
+      <div>
+        <div class="verdict">
+          <div class="verdict-head">
+            <span class="outcome" id="outcome">—</span>
+            <span id="reason" hidden class="reason-code"></span>
+            <span style="flex:1"></span>
+            <span class="hint" id="timing"></span>
+          </div>
+          <div class="verdict-body">
+            <p class="aside" id="teaches"></p>
+            <dl class="disclosure" id="disclosure"></dl>
+            <div class="payload-wrap">
+              <div class="payload-tools">
+                <button class="act" id="btn-flip" type="button">Flip one character</button>
+                <button class="act" id="btn-reset" type="button">Reset</button>
+                <span class="hint">or edit the payload directly</span>
+              </div>
+              <textarea id="payload" spellcheck="false" aria-label="Payload"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the parser sees</h2>
+    <p class="section-note">
+      EMVCo payloads are tag, length, value, repeated. A strict parser reads two
+      length digits and walks. Currency sits at tag <code>53</code>, the amount at
+      <code>54</code>, and the signature in templates <code>85</code>–<code>87</code>.
+    </p>
+    <div class="tlv" id="tlv"></div>
+    <p class="tlv-note" id="tlv-note" hidden></p>
+  </section>
+
+  <section>
+    <h2>Three characters, four thousand times the money</h2>
+    <p class="section-note">
+      Both of these are genuine. Same payee, same account, same number, both
+      signed by the same registered issuer, both verify. Cambodia circulates riel
+      and US dollars side by side at roughly 4,000 to 1, and tag <code>53</code>
+      is the only thing that differs.
+    </p>
+    <div class="pair" id="pair"></div>
+    <p class="aside" style="margin-top:14px">
+      This is why the library resolves <b>116</b> to <b>KHR</b> and returns
+      <b>null</b> rather than guessing an unknown code, and why the specification
+      makes showing the amount <em>and</em> an alphabetic currency a MUST before
+      authorisation. A payer cannot read <code>116</code>. It is the one attack
+      in which a valid signature actively helps the attacker.
+    </p>
+  </section>
+
+  <section>
+    <h2>The whole conformance suite</h2>
+    <div class="suite-head">
+      <span class="tally" id="tally">Not run yet</span>
+      <button class="act" id="btn-suite" type="button">Run all vectors</button>
+    </div>
+    <p class="section-note">
+      The same file a Kotlin or Swift port would be checked against — all 41
+      verification cases from the published suite. The other three are roundtrip
+      cases, which need the issuer's private key, and a verifier has no business
+      loading one. Most cases are negative: what a verifier must <em>refuse</em> is the harder half of
+      the specification, and the easier half to get wrong.
+    </p>
+    <div class="grid" id="suite"></div>
+  </section>
+
+  <div class="close">
+    <h2>What this does not reach</h2>
+    <p>
+      QRSeal closes forgery at the code layer: without a registered key you cannot
+      produce a payment code that verifies, and you cannot alter a genuine one by
+      a single character. Everything above demonstrates that, and the demonstration
+      is worth exactly what it claims and no more.
+    </p>
+    <p>
+      It does not touch <span class="note-strong">authorised push payment fraud</span> —
+      a real, correctly registered, correctly signed code presented with a lie
+      (“scan to receive your refund”, “scan to release your parcel”). The victim
+      authorises the payment themselves. Nothing in the payload distinguishes that
+      from an ordinary purchase, and no amount of cryptography can, because the
+      deception happens one layer above the signature. That is the project's
+      argument, not a caveat to it: the specification is one half, and the
+      institutional measures — screening at the moment of payment, a right to
+      contest a listing, exit controls on cash-out — are the other.
+    </p>
+    <footer>
+      <div>
+        <b>This is a demonstration.</b> The trust list here is signed by the
+        repository's <em>published test keys</em>, whose private halves are public
+        and protect nothing. Nothing on this page is issued by, endorsed by, or
+        agreed with the National Bank of Cambodia or any other authority. KH-SQR
+        is proposed, not adopted.
+      </div>
+      <div>
+        Everything runs locally: <code>packages/core</code> compiled to
+        <code>/*__BUILD_DATE__*/</code>, Web Crypto only. Source and specification at
+        <a href="https://github.com/sengtha/qrseal">github.com/sengtha/qrseal</a>.
+      </div>
+    </footer>
+  </div>
+</div>
+
+<script>/*__KHSQR_BUNDLE__*/</script>
+<script>
+const DATA = /*__DEMO_DATA__*/;
+const { TrustAnchor, verifyProfileA, verifyProfileA2, verifyProfileB, KhSqrError } = KHSQR;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+async function anchorFor(state) {
+  return TrustAnchor.open({
+    trustList: DATA.trustLists[state.trustList],
+    ...(state.timestamp == null ? {} : { timestamp: DATA.timestamps[state.timestamp] }),
+    rootKeys: DATA.pinned.rootKeys,
+    timestampKeys: DATA.pinned.timestampKeys,
+    now: state.now,
+    ...(state.heldVersion === undefined ? {} : { heldVersion: state.heldVersion }),
+    ...(state.fetchedAt === undefined ? {} : { fetchedAt: state.fetchedAt }),
+  });
+}
+
+/** Run the real verifier. Never returns a boolean on its own — the reason travels with it. */
+async function verify(payload, state, encodingVersion, profile = 'A') {
+  const t0 = performance.now();
+  try {
+    const trustAnchor = await anchorFor(state);
+    const fn = profile === 'B' ? verifyProfileB
+      : encodingVersion === 2 ? verifyProfileA2 : verifyProfileA;
+    const result = await fn({ payload, trustAnchor, now: state.now });
+    return { accepted: true, reason: null, result, ms: performance.now() - t0 };
+  } catch (error) {
+    if (!(error instanceof KhSqrError)) {
+      return { accepted: false, reason: 'MALFORMED', detail: String(error.message || error), ms: performance.now() - t0 };
+    }
+    return { accepted: false, reason: error.reason, detail: error.message, ms: performance.now() - t0 };
+  }
+}
+
+/* ---------- payload inspector ---------- */
+
+const MARKED = new Set(['53', '54']);
+const SIGTAGS = new Set(['85', '86', '87']);
+
+/**
+ * Walk with two-digit lengths only — exactly what a wallet implementing EMVCo
+ * 1.1 and nothing else would do. Encoding v1 does not tile under this walk, and
+ * saying so is the honest version of the v1-to-v2 story.
+ */
+function walk(payload) {
+  const out = [];
+  let i = 0;
+  while (i < payload.length) {
+    if (i + 4 > payload.length) return null;
+    const tag = payload.slice(i, i + 2);
+    const len = Number(payload.slice(i + 2, i + 4));
+    if (!/^\d{2}$/.test(payload.slice(i + 2, i + 4))) return null;
+    const end = i + 4 + len;
+    if (end > payload.length) return null;
+    out.push({ tag, len, value: payload.slice(i + 4, end) });
+    i = end;
+  }
+  return out;
+}
+
+function renderTlv(payload) {
+  const objects = walk(payload);
+  const note = $('tlv-note');
+  if (objects === null) {
+    $('tlv').innerHTML = `<span class="val">${esc(payload)}</span>`;
+    note.hidden = false;
+    note.textContent =
+      'A strict EMVCo parser cannot walk this payload — a length runs past the end. '
+      + 'That is encoding version 1, which declared a three-digit length where the standard allows two, '
+      + 'and it is the defect encoding version 2 exists to fix.';
+    return;
+  }
+  note.hidden = true;
+  $('tlv').innerHTML = objects.map((o) => {
+    const cls = MARKED.has(o.tag) ? 'seg mark' : SIGTAGS.has(o.tag) ? 'seg sig' : 'seg';
+    const shown = o.value.length > 74 ? o.value.slice(0, 60) + '…' + o.value.slice(-8) : o.value;
+    return `<span class="${cls}"><span class="tag">${o.tag}</span><span class="len">${String(o.len).padStart(2,'0')}</span><span class="val">${esc(shown)}</span></span> `;
+  }).join('');
+}
+
+/* ---------- verdict rendering ---------- */
+
+function row(label, value, opts = {}) {
+  if (value === null || value === undefined || value === '') return '';
+  return `<div class="row${opts.hi ? ' hi' : ''}"><dt>${esc(label)}</dt>`
+    + `<dd${opts.big ? ' class="big"' : ''}>${esc(value)}</dd></div>`;
+}
+
+function renderVerdict(outcome, scenario) {
+  const el = $('outcome'), rc = $('reason');
+  el.className = 'outcome ' + (outcome.accepted ? 'ok' : 'no');
+  el.textContent = outcome.accepted ? 'Signature verified' : 'Rejected';
+  rc.hidden = outcome.accepted;
+  if (!outcome.accepted) rc.textContent = outcome.reason || 'REJECTED';
+  $('timing').textContent = outcome.ms.toFixed(1) + ' ms, locally';
+  $('teaches').innerHTML = outcome.accepted
+    ? (scenario ? esc(scenario.teaches) : '')
+    : `<b>${esc(outcome.detail || 'The payload did not verify.')}</b>`;
+
+  const d = $('disclosure');
+  if (!outcome.accepted) {
+    d.innerHTML = row('Reason code', outcome.reason || '—')
+      + row('What it means', 'A conforming verifier refuses this payload. The reason code is stable and part of the specification.');
+    return;
+  }
+  const r = outcome.result, p = r.payeeDisclosure;
+  const money = p.amount === null ? null
+    : `${p.amount} ${p.currencyAlpha ?? '(unknown currency ' + p.currencyCode + ')'}`;
+  d.innerHTML =
+      row('Payee', p.merchantName)
+    + row('City', p.merchantCity)
+    + row('Amount', money, { big: true, hi: true })
+    + row('Payee class', p.payeeClass === 'M' ? 'M — merchant' : p.payeeClass)
+    + row('Code kind', r.codeKind)
+    + row('Encoding', r.encodingVersion === 2 ? 'v2 — EMVCo-conformant' : 'v1 — legacy')
+    + row('Signed by', r.kid)
+    + row('Credential status', 'unchecked')
+    + row('Is it safe to pay?', 'The library does not answer this, and neither does this page.');
+}
+
+/* ---------- state ---------- */
+
+let current = null;
+let currentPayload = '';
+
+function tamperName(payload) {
+  // Change one character inside the signed region. The CRC is not repaired,
+  // so this is what a careless overlay looks like rather than a careful one.
+  return payload.replace('SOK DARA', 'SOK DARB');
+}
+
+async function run(payload) {
+  currentPayload = payload;
+  $('payload').value = payload;
+  renderTlv(payload);
+  const outcome = await verify(payload, current.state, current.encodingVersion);
+  renderVerdict(outcome, current);
+}
+
+function scenarioPayload(s) {
+  if (s.derive === 'tamper-name') {
+    const genuine = DATA.scenarios.find((x) => x.id === 'genuine').payload;
+    return tamperName(genuine);
+  }
+  return s.payload;
+}
+
+function selectScenario(id) {
+  current = DATA.scenarios.find((s) => s.id === id);
+  document.querySelectorAll('.case').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.id === id));
+  });
+  run(scenarioPayload(current));
+}
+
+$('cases').innerHTML = DATA.scenarios.map((s) => {
+  const rejects = s.id !== 'genuine' && s.id !== 'currency';
+  return `<button class="case" type="button" data-id="${s.id}" aria-pressed="false">
+    <span class="case-top">
+      <span class="case-label">${esc(s.label)}</span>
+      <span class="chip ${rejects ? 'fail' : 'pass'}">${rejects ? 'rejects' : 'verifies'}</span>
+    </span>
+    <span class="case-teaches">${esc(s.teaches)}</span>
+  </button>`;
+}).join('');
+document.querySelectorAll('.case').forEach((b) => {
+  b.addEventListener('click', () => selectScenario(b.dataset.id));
+});
+
+$('payload').addEventListener('input', (e) => {
+  currentPayload = e.target.value.trim();
+  renderTlv(currentPayload);
+  verify(currentPayload, current.state, current.encodingVersion)
+    .then((o) => renderVerdict(o, null));
+});
+
+$('btn-flip').addEventListener('click', () => {
+  const p = currentPayload;
+  const i = Math.max(0, p.indexOf('SOK DARA') + 5);
+  const c = p[i];
+  const swapped = c >= 'A' && c <= 'Y' ? String.fromCharCode(c.charCodeAt(0) + 1)
+    : c >= '0' && c <= '8' ? String.fromCharCode(c.charCodeAt(0) + 1) : 'X';
+  run(p.slice(0, i) + swapped + p.slice(i + 1));
+});
+$('btn-reset').addEventListener('click', () => run(scenarioPayload(current)));
+
+/* ---------- currency pair ---------- */
+
+(async () => {
+  const cards = [];
+  for (const id of ['genuine', 'currency']) {
+    const s = DATA.scenarios.find((x) => x.id === id);
+    const o = await verify(s.payload, s.state, s.encodingVersion);
+    const p = o.result.payeeDisclosure;
+    cards.push(`<div class="pair-card">
+      <div class="pair-amount">${esc(p.amount)} ${esc(p.currencyAlpha)}</div>
+      <div class="pair-tag">tag 53 = <mark>${esc(p.currencyCode)}</mark> · tag 54 = ${esc(p.amount)}</div>
+      <div class="pair-verdict">Signature verified · ${esc(p.merchantName)}</div>
+    </div>`);
+  }
+  $('pair').innerHTML = cards.join('');
+})();
+
+/* ---------- suite ---------- */
+
+$('btn-suite').addEventListener('click', async () => {
+  const btn = $('btn-suite');
+  btn.disabled = true; btn.textContent = 'Running…';
+  let pass = 0; const cells = [];
+  for (const c of DATA.suite) {
+    const o = await verify(c.payload, c.state, c.encodingVersion, c.profile);
+    const wanted = c.expect === 'accept';
+    const ok = o.accepted === wanted && (c.reason === null || o.reason === c.reason);
+    if (ok) pass += 1;
+    cells.push(`<div class="cell ${ok ? 'ok' : 'bad'}"><span class="id">${esc(c.id)}</span><span class="mk">${ok ? '✓' : '✗'}</span></div>`);
+  }
+  $('suite').innerHTML = cells.join('');
+  $('tally').innerHTML = `<b>${pass}</b> of <b>${cells.length}</b> vectors pass, in this browser`;
+  btn.disabled = false; btn.textContent = 'Run again';
+});
+
+selectScenario('genuine');
+</script>

@@ -18,6 +18,7 @@
     "vectors:check": "node --experimental-strip-types tools/generate-vectors.ts --check",
     "measure:qr": "node --experimental-strip-types tools/measure-qr.ts",
     "check:profile-a-isolation": "node --experimental-strip-types tools/check-profile-a-isolation.ts",
+    "demo:build": "node --experimental-strip-types tools/build-demo.ts",
     "check:no-signing-keys": "node --experimental-strip-types tools/check-no-signing-keys.ts",
     "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm vectors:check && pnpm check:profile-a-isolation && pnpm check:no-signing-keys"
   },

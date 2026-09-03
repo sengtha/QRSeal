@@ -795,6 +795,11 @@ and the paper's Limitations say.
 same listing and must share one consistency point: split them and a screen could
 read a status an appeal had already lapsed.
 
+**Try it without deploying anything:** [`demo/qrseal-demo.html`](demo/qrseal-demo.html)
+is a single file that runs the real verifier in a browser — all 41 verification
+vectors, the currency-substitution pair, and live tampering. Built by
+`pnpm demo:build`.
+
 **Setting one up:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the
 end-to-end order — offline Root ceremony first, then `trustlist-edge`, then the
 two authenticated services — plus the mTLS requirement, officer enrolment, and

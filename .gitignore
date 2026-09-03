@@ -16,3 +16,4 @@ paper/*.synctex.gz
 paper/*.pdf
 paper/*.bbl
 paper/*.blg
+demo/.build/

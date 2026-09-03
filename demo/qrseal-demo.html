@@ -1,0 +1,603 @@
+<title>Scan, Verify, Then What</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root {
+    --ground: #F5F7FA;
+    --surface: #FFFFFF;
+    --sunk: #EDF0F5;
+    --ink: #141821;
+    --muted: #5C6577;
+    --faint: #8A93A6;
+    --line: #DDE2EB;
+    --line-strong: #C3CBD9;
+    --accent: #2E4B8F;
+    --accent-soft: #E4EAF7;
+    --reject: #A03325;
+    --reject-soft: #F8E7E4;
+    --caution: #8A5B18;
+    --caution-soft: #FBF0DC;
+    --shadow: 0 1px 2px rgba(20, 24, 33, .06), 0 8px 24px -12px rgba(20, 24, 33, .18);
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1319; --surface: #171C24; --sunk: #1E242E;
+      --ink: #E7EBF2; --muted: #99A2B4; --faint: #6E7789;
+      --line: #2A313D; --line-strong: #3A4352;
+      --accent: #89A8E8; --accent-soft: #1C2739;
+      --reject: #E28577; --reject-soft: #331E1A;
+      --caution: #DFAE68; --caution-soft: #2E2416;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0F1319; --surface: #171C24; --sunk: #1E242E;
+    --ink: #E7EBF2; --muted: #99A2B4; --faint: #6E7789;
+    --line: #2A313D; --line-strong: #3A4352;
+    --accent: #89A8E8; --accent-soft: #1C2739;
+    --reject: #E28577; --reject-soft: #331E1A;
+    --caution: #DFAE68; --caution-soft: #2E2416;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 72px; }
+
+  /* ---------- header ---------- */
+  header { border-bottom: 1px solid var(--line); background: var(--surface); }
+  .head-inner {
+    max-width: 1120px; margin: 0 auto; padding: 28px 20px 24px;
+    display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-end;
+    justify-content: space-between;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 6px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: 30px;
+    line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -.01em;
+  }
+  .sub { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+  .head-meta {
+    font-family: var(--mono); font-size: 11.5px; color: var(--faint);
+    text-align: right; line-height: 1.7; white-space: nowrap;
+  }
+  .head-meta b { color: var(--muted); font-weight: 500; }
+
+  /* ---------- the standing caution ---------- */
+  .thesis {
+    margin: 22px 0 0; padding: 16px 18px; border-radius: 3px;
+    background: var(--caution-soft); border-left: 3px solid var(--caution);
+    display: grid; gap: 6px;
+  }
+  .thesis p { margin: 0; }
+  .thesis .lead { font-family: var(--serif); font-size: 17px; font-weight: 500; }
+  .thesis .rest { color: var(--muted); font-size: 14px; max-width: 78ch; }
+
+  /* ---------- section furniture ---------- */
+  section { margin-top: 40px; }
+  h2 {
+    font-family: var(--serif); font-size: 19px; font-weight: 600;
+    margin: 0 0 4px; letter-spacing: -.005em;
+  }
+  .section-note { margin: 0 0 16px; color: var(--muted); font-size: 14px; max-width: 74ch; }
+
+  /* ---------- workbench ---------- */
+  .bench { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+  .cases { display: grid; gap: 8px; }
+  .case {
+    display: grid; gap: 4px; width: 100%; text-align: left; cursor: pointer;
+    padding: 12px 13px; border-radius: 3px; background: var(--surface);
+    border: 1px solid var(--line); border-left: 3px solid var(--line-strong);
+    font: inherit; color: inherit; transition: border-color .12s, background .12s;
+  }
+  .case:hover { border-color: var(--line-strong); }
+  .case[aria-pressed="true"] { border-left-color: var(--accent); background: var(--accent-soft); }
+  .case-top { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+  .case-label { font-weight: 500; font-size: 14px; line-height: 1.35; }
+  .case-teaches { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+  .chip {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 2px;
+    white-space: nowrap; flex: none; font-weight: 500;
+  }
+  .chip.pass { background: var(--accent-soft); color: var(--accent); }
+  .chip.fail { background: var(--reject-soft); color: var(--reject); }
+
+  /* ---------- verdict ---------- */
+  .verdict {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 3px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .verdict-head {
+    padding: 16px 18px; border-bottom: 1px solid var(--line);
+    display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;
+  }
+  .outcome { font-family: var(--serif); font-size: 21px; font-weight: 600; }
+  .outcome.ok { color: var(--accent); }
+  .outcome.no { color: var(--reject); }
+  .reason-code {
+    font-family: var(--mono); font-size: 12px; padding: 3px 7px; border-radius: 2px;
+    background: var(--reject-soft); color: var(--reject);
+  }
+  .verdict-body { padding: 16px 18px; display: grid; gap: 16px; }
+
+  .disclosure { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 3px; }
+  .row {
+    display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 14px;
+    padding: 9px 13px; border-bottom: 1px solid var(--line); align-items: baseline;
+  }
+  .row:last-child { border-bottom: 0; }
+  .row dt {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .row dd { margin: 0; font-size: 14.5px; overflow-wrap: anywhere; }
+  .row dd.big { font-family: var(--serif); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row.hi { background: var(--caution-soft); }
+  .row.hi dt { color: var(--caution); }
+
+  .aside {
+    font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--line-strong);
+    padding-left: 12px; margin: 0;
+  }
+  .aside b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- payload ---------- */
+  .payload-wrap { display: grid; gap: 8px; }
+  .payload-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button.act {
+    font: 500 12.5px/1 var(--sans); padding: 8px 12px; border-radius: 3px;
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    cursor: pointer; transition: background .12s, border-color .12s;
+  }
+  button.act:hover { background: var(--sunk); border-color: var(--faint); }
+  button.act:focus-visible, .case:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .hint { font-size: 12.5px; color: var(--faint); }
+
+  textarea {
+    width: 100%; min-height: 108px; resize: vertical; padding: 12px 13px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+    color: var(--ink); background: var(--sunk);
+    border: 1px solid var(--line); border-radius: 3px; overflow-wrap: anywhere;
+  }
+
+  .tlv {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.9;
+    background: var(--sunk); border: 1px solid var(--line); border-radius: 3px;
+    padding: 12px 13px; overflow-wrap: anywhere;
+  }
+  .tlv .tag { color: var(--accent); font-weight: 600; }
+  .tlv .len { color: var(--faint); }
+  .tlv .val { color: var(--ink); }
+  .tlv .seg { padding: 1px 0; }
+  .tlv .seg.mark { background: var(--caution-soft); outline: 1px solid var(--caution); border-radius: 2px; }
+  .tlv .seg.sig { color: var(--muted); }
+  .tlv-note { margin: 8px 0 0; font-size: 12.5px; color: var(--caution); }
+
+  /* ---------- currency pair ---------- */
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .pair-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+    padding: 16px 17px; display: grid; gap: 8px; align-content: start;
+  }
+  .pair-amount { font-family: var(--serif); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pair-tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .pair-tag mark { background: var(--caution-soft); color: var(--caution); padding: 1px 3px; border-radius: 2px; font-weight: 600; }
+  .pair-verdict { font-size: 13px; color: var(--accent); font-weight: 500; }
+
+  /* ---------- suite ---------- */
+  .suite-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }
+  .tally { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tally b { color: var(--ink); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 6px; }
+  .cell {
+    display: flex; gap: 8px; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 11.5px; padding: 7px 9px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 2px;
+  }
+  .cell .id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cell .mk { flex: none; font-weight: 600; }
+  .cell.ok .mk { color: var(--accent); }
+  .cell.bad { border-color: var(--reject); background: var(--reject-soft); }
+  .cell.bad .mk { color: var(--reject); }
+
+  /* ---------- closing ---------- */
+  .close { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .close h2 { margin-bottom: 10px; }
+  .close p { color: var(--muted); max-width: 72ch; margin: 0 0 12px; }
+  .close a { color: var(--accent); }
+  .note-strong { color: var(--ink); }
+  footer {
+    margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--faint); display: grid; gap: 6px;
+  }
+  footer code { font-family: var(--mono); font-size: 11.5px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div>
+      <p class="eyebrow">QRSeal · KH-SQR reference verifier</p>
+      <h1>Scan, verify, then what?</h1>
+      <p class="sub">
+        A signed Cambodian payment code, verified in your browser by the actual
+        KH-SQR library — no server, no network. Change anything and watch it fail.
+      </p>
+    </div>
+    <div class="head-meta">
+      <div><b>Profile A</b> · ECDSA P-256 · ES256</div>
+      <div><b>41</b> verification vectors</div>
+      <div><b>0</b> network requests</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="thesis">
+    <p class="lead">A verified signature is not a reason to pay.</p>
+    <p class="rest">
+      This page will never show you a green tick, because the library it runs
+      never returns one. Verification answers a narrow question — was this code
+      produced by a registered issuer and unaltered since — and says nothing
+      about whether the person who showed it to you is entitled to your money.
+      The most common QR fraud uses a perfectly genuine code.
+    </p>
+  </div>
+
+  <section>
+    <h2>Try a case</h2>
+    <p class="section-note">
+      Each runs the real verifier against the real trust list. The first two both
+      succeed, and that is the point of putting them next to each other.
+    </p>
+    <div class="bench">
+      <div class="cases" id="cases"></div>
+      <div>
+        <div class="verdict">
+          <div class="verdict-head">
+            <span class="outcome" id="outcome">—</span>
+            <span id="reason" hidden class="reason-code"></span>
+            <span style="flex:1"></span>
+            <span class="hint" id="timing"></span>
+          </div>
+          <div class="verdict-body">
+            <p class="aside" id="teaches"></p>
+            <dl class="disclosure" id="disclosure"></dl>
+            <div class="payload-wrap">
+              <div class="payload-tools">
+                <button class="act" id="btn-flip" type="button">Flip one character</button>
+                <button class="act" id="btn-reset" type="button">Reset</button>
+                <span class="hint">or edit the payload directly</span>
+              </div>
+              <textarea id="payload" spellcheck="false" aria-label="Payload"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the parser sees</h2>
+    <p class="section-note">
+      EMVCo payloads are tag, length, value, repeated. A strict parser reads two
+      length digits and walks. Currency sits at tag <code>53</code>, the amount at
+      <code>54</code>, and the signature in templates <code>85</code>–<code>87</code>.
+    </p>
+    <div class="tlv" id="tlv"></div>
+    <p class="tlv-note" id="tlv-note" hidden></p>
+  </section>
+
+  <section>
+    <h2>Three characters, four thousand times the money</h2>
+    <p class="section-note">
+      Both of these are genuine. Same payee, same account, same number, both
+      signed by the same registered issuer, both verify. Cambodia circulates riel
+      and US dollars side by side at roughly 4,000 to 1, and tag <code>53</code>
+      is the only thing that differs.
+    </p>
+    <div class="pair" id="pair"></div>
+    <p class="aside" style="margin-top:14px">
+      This is why the library resolves <b>116</b> to <b>KHR</b> and returns
+      <b>null</b> rather than guessing an unknown code, and why the specification
+      makes showing the amount <em>and</em> an alphabetic currency a MUST before
+      authorisation. A payer cannot read <code>116</code>. It is the one attack
+      in which a valid signature actively helps the attacker.
+    </p>
+  </section>
+
+  <section>
+    <h2>The whole conformance suite</h2>
+    <div class="suite-head">
+      <span class="tally" id="tally">Not run yet</span>
+      <button class="act" id="btn-suite" type="button">Run all vectors</button>
+    </div>
+    <p class="section-note">
+      The same file a Kotlin or Swift port would be checked against — all 41
+      verification cases from the published suite. The other three are roundtrip
+      cases, which need the issuer's private key, and a verifier has no business
+      loading one. Most cases are negative: what a verifier must <em>refuse</em> is the harder half of
+      the specification, and the easier half to get wrong.
+    </p>
+    <div class="grid" id="suite"></div>
+  </section>
+
+  <div class="close">
+    <h2>What this does not reach</h2>
+    <p>
+      QRSeal closes forgery at the code layer: without a registered key you cannot
+      produce a payment code that verifies, and you cannot alter a genuine one by
+      a single character. Everything above demonstrates that, and the demonstration
+      is worth exactly what it claims and no more.
+    </p>
+    <p>
+      It does not touch <span class="note-strong">authorised push payment fraud</span> —
+      a real, correctly registered, correctly signed code presented with a lie
+      (“scan to receive your refund”, “scan to release your parcel”). The victim
+      authorises the payment themselves. Nothing in the payload distinguishes that
+      from an ordinary purchase, and no amount of cryptography can, because the
+      deception happens one layer above the signature. That is the project's
+      argument, not a caveat to it: the specification is one half, and the
+      institutional measures — screening at the moment of payment, a right to
+      contest a listing, exit controls on cash-out — are the other.
+    </p>
+    <footer>
+      <div>
+        <b>This is a demonstration.</b> The trust list here is signed by the
+        repository's <em>published test keys</em>, whose private halves are public
+        and protect nothing. Nothing on this page is issued by, endorsed by, or
+        agreed with the National Bank of Cambodia or any other authority. KH-SQR
+        is proposed, not adopted.
+      </div>
+      <div>
+        Everything runs locally: <code>packages/core</code> compiled to
+        <code>2026-09-03</code>, Web Crypto only. Source and specification at
+        <a href="https://github.com/sengtha/qrseal">github.com/sengtha/qrseal</a>.
+      </div>
+    </footer>
+  </div>
+</div>
+
+<script>var KHSQR=(()=>{var me=Object.defineProperty;var Kt=Object.getOwnPropertyDescriptor;var Vt=Object.getOwnPropertyNames;var Bt=Object.prototype.hasOwnProperty;var Ft=(e,t)=>{for(var r in t)me(e,r,{get:t[r],enumerable:!0})},$t=(e,t,r,n)=>{if(t&&typeof t=="object"||typeof t=="function")for(let o of Vt(t))!Bt.call(e,o)&&o!==r&&me(e,o,{get:()=>t[o],enumerable:!(n=Kt(t,o))||n.enumerable});return e};var jt=e=>$t(me({},"__esModule",{value:!0}),e);var Qr={};Ft(Qr,{KhSqrError:()=>L,TrustAnchor:()=>pe,appendCrc:()=>de,crc16CcittFalse:()=>fe,stripCrc:()=>H,verifyProfileA:()=>dt,verifyProfileA2:()=>At,verifyProfileB:()=>Ut});var L=class extends Error{reason;constructor(t,r){super(`${t}: ${r}`),this.reason=t,this.name=new.target.name}},c=(e,t,r)=>{let n=class extends L{constructor(o=r){super(t,o),this.name=e}};return Object.defineProperty(n,"name",{value:e}),n},y=c("MalformedTlvError","MALFORMED_TLV","payload is not well-formed EMVCo TLV"),ge=c("CrcMissingError","CRC_MISSING","payload does not end with a tag 63 CRC object"),ke=c("CrcMalformedError","CRC_MALFORMED","CRC is not four uppercase hex characters"),Ge=c("CrcMismatchError","CRC_MISMATCH","computed CRC-16/CCITT-FALSE does not match"),Pe=c("SignatureTemplateMissingError","SIGNATURE_TEMPLATE_MISSING","template 85 is absent"),S=c("SignatureTemplateNotLastError","SIGNATURE_TEMPLATE_NOT_LAST","template 85 is not the last data object before the CRC"),we=c("SignatureSubtagNotLastError","SIGNATURE_SUBTAG_NOT_LAST","sub-tag 99 is not last within template 85"),T=c("SignatureSubtagMalformedError","SIGNATURE_SUBTAG_MALFORMED","sub-tag 99 is not a 128-character uppercase hex value"),He=c("DuplicateTagError","DUPLICATE_TAG","a data object appears more than once"),Y=c("UnsupportedFormatVersionError","UNSUPPORTED_FORMAT_VERSION","sub-tag 00 is not the supported format version"),X=c("UnsupportedAlgorithmError","UNSUPPORTED_ALGORITHM","sub-tag 02 is not ES256"),U=c("MalformedKidError","MALFORMED_KID","sub-tag 01 is not 16 uppercase hex characters"),W=c("MalformedTimestampError","MALFORMED_TIMESTAMP","a timestamp sub-tag is not 10 decimal digits"),q=c("MalformedPayeeClassError","MALFORMED_PAYEE_CLASS","sub-tag 05 is neither 'M' nor 'I'"),z=c("StaticCodeWithAmountError","STATIC_CODE_WITH_AMOUNT","a static code carries a transaction amount (tag 54)"),J=c("StaticCodeWithExpiryError","STATIC_CODE_WITH_EXPIRY","a static code carries an expiry (sub-tag 04)"),Q=c("DynamicCodeMissingExpiryError","DYNAMIC_CODE_MISSING_EXPIRY","a dynamic code omits the expiry sub-tag 04"),Z=c("ExpiryWindowTooLongError","EXPIRY_WINDOW_TOO_LONG","dynamic code validity exceeds the maximum window"),ee=c("ExpiryBeforeIssuanceError","EXPIRY_BEFORE_ISSUANCE","expiry precedes issuance"),te=c("CodeExpiredError","CODE_EXPIRED","the code has expired"),re=c("IssuedInFutureError","ISSUED_IN_FUTURE","issued-at is beyond the permitted clock skew"),ne=c("SignatureEncodingInvalidError","SIGNATURE_ENCODING_INVALID","signature is not raw r||s; DER is forbidden"),N=c("SignatureInvalidError","SIGNATURE_INVALID","ECDSA verification failed"),Te=c("UnknownKidError","UNKNOWN_KID","no trusted key matches the key identifier"),Ke=c("KeyRevokedError","KEY_REVOKED","the signing key is revoked"),Ve=c("KeyNotYetValidError","KEY_NOT_YET_VALID","the signing key is not yet valid"),Be=c("KeyExpiredError","KEY_EXPIRED","the signing key has expired"),Fe=c("KeyProfileMismatchError","KEY_PROFILE_MISMATCH","the key is not authorised for this profile"),oe=c("KeyMalformedError","KEY_MALFORMED","the trusted key material is malformed"),$e=c("TrustlistMalformedError","TRUSTLIST_MALFORMED","trust list structure is invalid"),je=c("TrustlistSignatureInvalidError","TRUSTLIST_SIGNATURE_INVALID","trust list Root signature failed to verify"),Ye=c("TrustlistRollbackError","TRUSTLIST_ROLLBACK","offered trust list version is lower than the version held"),Xe=c("TrustlistExpiredError","TRUSTLIST_EXPIRED","trust list expiry has passed"),We=c("TrustlistStaleError","TRUSTLIST_STALE","trust list cache age exceeds the maximum"),qe=c("TimestampMalformedError","TIMESTAMP_MALFORMED","timestamp statement structure is invalid"),ze=c("TimestampSignatureInvalidError","TIMESTAMP_SIGNATURE_INVALID","timestamp statement signature failed to verify"),Je=c("TimestampExpiredError","TIMESTAMP_EXPIRED","timestamp statement validity has passed"),Ae=c("TimestampTargetMismatchError","TIMESTAMP_TARGET_MISMATCH","timestamp statement does not attest the trust list held"),Qe=c("TimestampMissingError","TIMESTAMP_MISSING","no timestamp statement supplied"),Ze=c("PrefixInvalidError","PREFIX_INVALID","payload does not carry the KH1: prefix"),O=c("Base45InvalidError","BASE45_INVALID","payload is not valid RFC 9285 base45"),et=c("InflateFailedError","INFLATE_FAILED","zlib inflate failed"),l=c("CborInvalidError","CBOR_INVALID","CBOR is malformed or uses an unsupported construct"),h=c("CoseInvalidError","COSE_INVALID","COSE_Sign1 structure is invalid"),tt=c("UrlPayloadRejectedError","URL_PAYLOAD_REJECTED","payload is an http/https URL, which this profile forbids"),xe=c("ClaimMissingError","CLAIM_MISSING","a mandatory claim is absent"),k=c("ClaimTypeInvalidError","CLAIM_TYPE_INVALID","a claim has the wrong CBOR type");var Yt=/^[0-9A-F]*$/;function E(e,t){return t!==void 0&&e.length!==t||e.length%2!==0?!1:Yt.test(e)}function m(e){if(e.length%2!==0)throw new RangeError("hex string has odd length");let t=new Uint8Array(e.length/2);for(let r=0;r<t.length;r+=1){let n=Number.parseInt(e.slice(r*2,r*2+2),16);if(Number.isNaN(n))throw new RangeError("hex string contains a non-hex character");t[r]=n}return t}function I(e){let t="";for(let r of e)t+=r.toString(16).toUpperCase().padStart(2,"0");return t}function se(e){let t=new Uint8Array(e.length);for(let r=0;r<e.length;r+=1){let n=e.charCodeAt(r);if(n>127)throw new RangeError("input is not ASCII");t[r]=n}return t}function G(e,t){if(e.length!==t.length)return!1;let r=0;for(let n=0;n<e.length;n+=1)r|=e.charCodeAt(n)^t.charCodeAt(n);return r===0}var ie="63",P="85",D="54",ae="01",ce="11",ue="12",Xt=new Set([P]),rt=/^[0-9]+$/,Wt=/^[0-9A-F]{4}$/;function fe(e){let t=65535;for(let r=0;r<e.length;r+=1){let n=e.charCodeAt(r);if(n>255)throw new RangeError("CRC input must be single-octet characters");t^=n<<8;for(let o=0;o<8;o+=1)t=(t&32768)!==0?(t<<1^4129)&65535:t<<1&65535}return t.toString(16).toUpperCase().padStart(4,"0")}function _(e,t={}){let r=t.extendedLengthTags??Xt,n=[],o=new Set,i=0;for(;i<e.length;){if(e.length-i<4)throw new y("trailing characters are too short to form a data object");let s=e.slice(i,i+2);if(!rt.test(s))throw new y("tag is not two decimal digits");if(o.has(s))throw new He(`tag ${s} appears more than once at this level`);o.add(s);let a=r.has(s)?3:2,f=e.slice(i+2,i+2+a);if(f.length!==a||!rt.test(f))throw new y(`length for tag ${s} is not ${a} decimal digits`);let d=i+2+a,u;if(t.lengthAgnosticTag===s&&t.boundary!==void 0){if(u=t.boundary,u<d)throw new y(`tag ${s} extends past its boundary`)}else u=d+Number.parseInt(f,10);if(u>e.length)throw new y(`tag ${s} declares a length past the end of the payload`);n.push({tag:s,value:e.slice(d,u),start:i,end:u,lengthDigits:a}),i=u}return n}function p(e,t){return e.find(r=>r.tag===t)}function nt(e,t={}){if(e.length<8)throw new y("payload is too short to contain a CRC");let r=e.length-8;if(e.slice(r,r+4)!==`${ie}04`)throw new ge;let n=e.slice(r+4);if(!Wt.test(n))throw new ke;let o=t.signatureTemplateLengthAgnostic===!0?{lengthAgnosticTag:P,boundary:r}:{},i=_(e,o),s=i.at(-1);if(s===void 0||s.tag!==ie)throw new ge("the CRC object is not the final data object");let a=fe(e.slice(0,r+4));if(!G(a,n))throw new Ge;return{objects:i,declaredCrc:n,computedCrc:a,crcStart:r}}function ot(e){let t=e.findIndex(r=>r.tag===P);if(t===-1)throw new S("template 85 is absent");if(t!==e.length-2)throw new S;return e[t]}function de(e){let t=`${e}${ie}04`;return t+fe(t)}function H(e){return e.length>=8&&e.slice(-8,-4)===`${ie}04`?e.slice(0,-8):e}var ye=8,C=ye*2,qt=65,zt={name:"ECDSA",namedCurve:"P-256"},Jt={name:"ECDSA",hash:"SHA-256"},K=64;function Qt(e){if(e.length!==qt||e[0]!==4)throw new oe("public key is not a 65-byte uncompressed P-256 point")}async function Zt(e){Qt(e);try{return await crypto.subtle.importKey("raw",e,zt,!1,["verify"])}catch{throw new oe("public key point could not be imported")}}async function Se(e,t){if(!E(e,64)||!E(t,64))throw new oe("coordinates must each be 64 uppercase hex characters");return Zt(m(`04${e}${t}`))}async function A(e,t,r){return t.length!==K?!1:crypto.subtle.verify(Jt,e,t,r)}function le(e){if(e.length<8||e[0]!==48)return!1;let t=e[1];return t!==void 0&&t===e.length-2}var er=720*60*60,hn=10080*60,ct=new TextEncoder;function st(e,t,r){let n;try{n=JSON.parse(e.statement)}catch{r()}return(typeof n!="object"||n===null)&&r(),n.type!==t&&r(),n}function it(e,t){(typeof e!="object"||e===null)&&t();let r=e,n=r.signature;return(typeof r.statement!="string"||typeof n!="object"||n===null)&&t(),n.alg!=="ES256"&&t(),(!E(n.kid,C)||!E(n.value,128))&&t(),r}async function at(e,t){let r=t.filter(i=>G(i.kid,e.signature.kid)),n=ct.encode(e.statement),o=m(e.signature.value);for(let i of r){let s=await Se(i.x,i.y);if(await A(s,o,n))return!0}return!1}async function tr(e){let t=await crypto.subtle.digest("SHA-256",ct.encode(e));return I(new Uint8Array(t))}var pe=class e{keys;version;issuedAt;expires;digest;constructor(t,r){this.version=t.version,this.issuedAt=t.issuedAt,this.expires=t.expires,this.digest=r;let n=new Map;for(let o of t.keys){let i=n.get(o.kid);i===void 0?n.set(o.kid,[o]):i.push(o)}this.keys=n}static async open(t){let r=()=>{throw new $e},n=it(t.trustList,r);if(!await at(n,t.rootKeys))throw new je;let o=st(n,"kh-sqr/trustlist/1",r);if((!Number.isSafeInteger(o.version)||o.version<1)&&r(),(!Number.isSafeInteger(o.issuedAt)||!Number.isSafeInteger(o.expires))&&r(),Array.isArray(o.keys)||r(),t.heldVersion!==void 0&&o.version<t.heldVersion)throw new Ye(`offered version ${o.version} is below held version ${t.heldVersion}`);if(t.now>o.expires)throw new Xe;let i=t.fetchedAt??o.issuedAt;if(t.now-i>er)throw new We;let s=await tr(n.statement);if(t.timestamp===void 0||t.timestamp===null){if(t.allowMissingTimestamp!==!0)throw new Qe}else await e.checkTimestamp(t,o,s);return new e(o,s)}static async checkTimestamp(t,r,n){let o=()=>{throw new qe},i=it(t.timestamp,o);if(!await at(i,t.timestampKeys))throw new ze;let s=st(i,"kh-sqr/timestamp/1",o);if((!Number.isSafeInteger(s.expires)||!Number.isSafeInteger(s.issuedAt))&&o(),E(s.trustListDigest,64)||o(),t.now>s.expires)throw new Je;if(s.trustListVersion!==r.version)throw new Ae("timestamp attests a different trust list version");if(!G(s.trustListDigest,n))throw new Ae("timestamp attests a different trust list digest")}recordsFor(t){return this.keys.get(t)??[]}async resolve(t,r,n){let o=this.recordsFor(t);if(o.length===0)throw new Te;let i=[],s=!1,a=!1,f=!1,d=!1;for(let u of o){if(u.status==="revoked"){s=!0;continue}if(!u.profiles.includes(r)){d=!0;continue}if(n<u.notBefore){a=!0;continue}if(n>u.notAfter){f=!0;continue}i.push(u)}if(i.length===0)throw s?new Ke:f?new Be:a?new Ve:d?new Fe:new Te;return Promise.all(i.map(u=>Se(u.x,u.y)))}};var nr="00",or="01",sr="02",ir="03",ar="04",cr="05",he="99",ur="01",V="ES256",B=K*2,fr=`${he}${B}`,Ie=300,_e=60,ft=new Set([he]),ut=/^[0-9]{10}$/;function dr(e){let t=p(e,ae);return t===void 0||t.value===ce?"static":t.value===ue?"dynamic":"static"}function lr(e,t){if(t>=e.length)return!1;try{return _(e.slice(0,t),{extendedLengthTags:ft}).at(-1)?.tag===he}catch{return!1}}function pr(e,t){let r=Number.parseInt(t.slice(e.start+2,e.start+5),10),n=_(e.value,{extendedLengthTags:ft}),o=n.at(-1);if(o===void 0||o.tag!==he)throw lr(e.value,r)?new S:new we;let i=o.value;if(!E(i))throw new T;if(i.length!==B)throw le(m(i))?new ne:new T;let s=p(n,nr);if(s===void 0||s.value!==ur)throw new Y;let a=p(n,sr);if(a===void 0||a.value!==V)throw new X;let f=p(n,or);if(f===void 0||!E(f.value,C))throw new U;let d=p(n,ir);if(d===void 0||!ut.test(d.value))throw new W("sub-tag 03");let u=p(n,ar);if(u!==void 0&&!ut.test(u.value))throw new W("sub-tag 04");let g=p(n,cr);if(g===void 0||g.value!=="M"&&g.value!=="I")throw new q;return{kid:f.value,formatVersion:s.value,issuedAt:Number.parseInt(d.value,10),expiresAt:u===void 0?null:Number.parseInt(u.value,10),payeeClass:g.value,signature:i,declaredLength:r,actualLength:e.value.length}}var hr=new Map([["116","KHR"],["840","USD"]]);function Er(e){return e===null?null:hr.get(e)??null}function mr(e,t){let r=o=>p(e,o)?.value??null,n=e.filter(o=>Number(o.tag)>=26&&Number(o.tag)<=51).map(o=>({tag:o.tag,value:o.value}));return{merchantName:r("59"),merchantCity:r("60"),countryCode:r("58"),amount:r(D),currencyCode:r("53"),currencyAlpha:Er(r("53")),payeeClass:t,accounts:n}}async function dt(e){let{payload:t,trustAnchor:r,now:n}=e,o=e.clockSkewSeconds??_e,i=nt(t,{signatureTemplateLengthAgnostic:!0});if(p(i.objects,P)===void 0)throw new Pe;let s=ot(i.objects),a=pr(s,t),f=s.end-B,d=t.slice(0,f);if(!d.endsWith(fr))throw new we;let u=dr(i.objects);if(u==="static"){if(p(i.objects,D)!==void 0)throw new z;if(a.expiresAt!==null)throw new J}else if(a.expiresAt===null)throw new Q;if(a.expiresAt!==null){if(a.expiresAt<=a.issuedAt)throw new ee;if(a.expiresAt-a.issuedAt>Ie)throw new Z}let g=await r.resolve(a.kid,"A",n),Re=se(d),v=m(a.signature),b=!1;for(let M of g)if(await A(M,v,Re)){b=!0;break}if(!b)throw new N;if(a.issuedAt>n+o)throw new re;if(a.expiresAt!==null&&n>a.expiresAt)throw new te;return{profile:"A",kid:a.kid,algorithm:V,formatVersion:a.formatVersion,codeKind:u,issuedAt:a.issuedAt,expiresAt:a.expiresAt,signedThrough:f,payeeDisclosure:mr(i.objects,a.payeeClass),container:{declaredTemplateLength:a.declaredLength,actualTemplateLength:a.actualLength,declaredLengthConsistent:a.declaredLength===a.actualLength}}}var lt="85",Ce="86",pt="87",mt="KH.QRSEAL.SQR",gt="00",gr="01",wr="02",Tr="03",Ar="04",xr="05",yr="06",Sr="01",Ir="02",ht=B/2,wt=new Set;function _r(e){let t=p(e,ae);return t===void 0||t.value===ce?"static":t.value===ue?"dynamic":"static"}function Tt(e){return _(e.value,{extendedLengthTags:wt})}function x(e,t,r){let n=p(e,t);if(n===void 0)throw new T(`missing ${r}`);return n.value}function Et(e,t){let r=p(e,t);if(r===void 0)throw new T(`missing template ${t}`);let n=Tt(r);if(x(n,gt,`GUID in template ${t}`)!==mt)throw new T(`template ${t} carries a foreign GUID`);let o=x(n,Sr,`signature part in template ${t}`);if(!E(o,ht))throw new ne(`template ${t} does not carry ${ht} uppercase hex characters`);return o}function Cr(e,t){let r=s=>p(e,s)?.value??null,n=e.filter(s=>Number(s.tag)>=26&&Number(s.tag)<=51).map(s=>({tag:s.tag,value:s.value})),o=r("53"),i=o===null?null:br.get(o)??null;return{merchantName:r("59"),merchantCity:r("60"),countryCode:r("58"),amount:r(D),currencyCode:o,currencyAlpha:i,payeeClass:t,accounts:n}}var br=new Map([["116","KHR"],["840","USD"]]);async function At(e){let{payload:t,trustAnchor:r,now:n}=e,o=e.clockSkewSeconds??_e,i=H(t),s=_(i,{extendedLengthTags:wt});if(s.slice(-3).map(Ee=>Ee.tag).join(",")!==`${lt},${Ce},${pt}`)throw new S("templates 85, 86 and 87 must be the final three data objects before the CRC");let f=p(s,lt),d=p(s,Ce),u=Tt(f);if(x(u,gt,"GUID in template 85")!==mt)throw new T("template 85 carries a foreign GUID");let g=x(u,gr,"format version");if(g!==Ir)throw new Y;if(x(u,Tr,"algorithm")!==V)throw new X;let v=x(u,wr,"key identifier");if(!E(v,C))throw new U;let b=x(u,yr,"payee class");if(b!=="M"&&b!=="I")throw new q;let M=Number.parseInt(x(u,Ar,"issuance time"),10),ve=p(u,xr)?.value??null,w=ve===null?null:Number.parseInt(ve,10),Le=_r(s);if(Le==="static"){if(p(s,D)!==void 0)throw new z;if(w!==null)throw new J}else if(w===null)throw new Q;if(w!==null){if(w<=M)throw new ee;if(w-M>Ie)throw new Z}let Ue=d.start,Ot=t.slice(0,Ue),kt=Et(s,Ce)+Et(s,pt),Gt=await r.resolve(v,"A",n),Pt=se(Ot),Ht=m(kt),Oe=!1;for(let Ee of Gt)if(await A(Ee,Ht,Pt)){Oe=!0;break}if(!Oe)throw new N;if(M>n+o)throw new re;if(w!==null&&n>w)throw new te;return{profile:"A",encodingVersion:2,kid:v,algorithm:V,formatVersion:g,codeKind:Le,issuedAt:M,expiresAt:w,signedThrough:Ue,payeeDisclosure:Cr(s,b),lengthEncoding:"emvco-two-digit"}}var Mr="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:",Nr=new Map([...Mr].map((e,t)=>[e,t]));function xt(e){let t=e.length%3;if(t===1)throw new O("length modulo 3 is 1, which encodes no whole byte");let r=new Array(e.length);for(let s=0;s<e.length;s+=1){let a=Nr.get(e[s]);if(a===void 0)throw new O("input contains a character outside the base45 alphabet");r[s]=a}let n=new Uint8Array(Math.floor(e.length/3)*2+(t===2?1:0)),o=0,i=0;for(;i+2<r.length;i+=3){let s=r[i]+r[i+1]*45+r[i+2]*45*45;if(s>65535)throw new O("a character triple encodes a value above 0xFFFF");n[o++]=s>>>8,n[o++]=s&255}if(t===2){let s=r[i]+r[i+1]*45;if(s>255)throw new O("the final character pair encodes a value above 0xFF");n[o++]=s}return n}var yt=0,St=1,It=2,_t=3,Ct=4,bt=5,Mt=6,Dr=Number.MAX_SAFE_INTEGER,Rr=new TextEncoder,vr=new TextDecoder("utf-8",{fatal:!0});function Me(e){return typeof e=="object"&&e!==null&&!Array.isArray(e)&&!(e instanceof Uint8Array)&&!(e instanceof Map)&&typeof e.tag=="number"}var be=class{chunks=[];byte(t){this.chunks.push(t&255)}bytes(t){for(let r of t)this.chunks.push(r)}head(t,r){if(!Number.isSafeInteger(r)||r<0)throw new l("argument is not a non-negative safe integer");let n=t<<5;if(r<24)this.byte(n|r);else if(r<=255)this.byte(n|24),this.byte(r);else if(r<=65535)this.byte(n|25),this.byte(r>>>8),this.byte(r);else if(r<=4294967295)this.byte(n|26),this.byte(r>>>24),this.byte(r>>>16),this.byte(r>>>8),this.byte(r);else{this.byte(n|27);let o=Math.floor(r/4294967296),i=r>>>0===r?r:r-o*4294967296;this.byte(o>>>24),this.byte(o>>>16),this.byte(o>>>8),this.byte(o),this.byte(i>>>24),this.byte(i>>>16),this.byte(i>>>8),this.byte(i)}}result(){return Uint8Array.from(this.chunks)}};function F(e,t){if(typeof t=="number"){if(!Number.isSafeInteger(t))throw new l("only safe integers are supported");t>=0?e.head(yt,t):e.head(St,-1-t);return}if(typeof t=="string"){let r=Rr.encode(t);e.head(_t,r.length),e.bytes(r);return}if(t instanceof Uint8Array){e.head(It,t.length),e.bytes(t);return}if(Array.isArray(t)){e.head(Ct,t.length);for(let r of t)F(e,r);return}if(t instanceof Map){e.head(bt,t.size);for(let[r,n]of t)F(e,r),F(e,n);return}if(Me(t)){e.head(Mt,t.tag),F(e,t.value);return}throw new l("unsupported value type")}function Ne(e){let t=new be;return F(t,e),t.result()}function Lr(e,t){if(t>=e.length)throw new l("truncated input");let r=e[t],n=r>>5,o=r&31,i,s=t+1,a=f=>{if(s+f>e.length)throw new l("truncated integer argument")};if(o<24)i=o;else if(o===24){if(a(1),i=e[s],s+=1,i<24)throw new l("non-minimal integer encoding")}else if(o===25){if(a(2),i=e[s]<<8|e[s+1],s+=2,i<=255)throw new l("non-minimal integer encoding")}else if(o===26){if(a(4),i=e[s]*16777216+(e[s+1]<<16)+(e[s+2]<<8)+e[s+3],s+=4,i<=65535)throw new l("non-minimal integer encoding")}else if(o===27){a(8);let f=0;for(let u=0;u<4;u+=1)f=f*256+e[s+u];let d=0;for(let u=4;u<8;u+=1)d=d*256+e[s+u];if(i=f*4294967296+d,s+=8,i<=4294967295)throw new l("non-minimal integer encoding");if(i>Dr)throw new l("integer exceeds the safe integer range")}else throw o===31?new l("indefinite-length items are not accepted"):new l("reserved additional information value");return{major:n,argument:i,next:s}}function $(e,t,r){if(r>8)throw new l("nesting is deeper than this profile permits");let{major:n,argument:o,next:i}=Lr(e,t);switch(n){case yt:return{value:o,next:i};case St:return{value:-1-o,next:i};case It:{if(i+o>e.length)throw new l("truncated byte string");return{value:e.slice(i,i+o),next:i+o}}case _t:{if(i+o>e.length)throw new l("truncated text string");let s;try{s=vr.decode(e.subarray(i,i+o))}catch{throw new l("text string is not well-formed UTF-8")}return{value:s,next:i+o}}case Ct:{let s=[],a=i;for(let f=0;f<o;f+=1){let d=$(e,a,r+1);s.push(d.value),a=d.next}return{value:s,next:a}}case bt:{let s=new Map,a=i;for(let f=0;f<o;f+=1){let d=$(e,a,r+1);if(typeof d.value!="number"&&typeof d.value!="string")throw new l("map keys must be integers or text strings");if(s.has(d.value))throw new l("duplicate map key");let u=$(e,d.next,r+1);s.set(d.value,u.value),a=u.next}return{value:s,next:a}}case Mt:{let s=$(e,i,r+1);return{value:{tag:o,value:s.value},next:s.next}}default:throw new l("floating point and simple values are not accepted")}}function j(e){let{value:t,next:r}=$(e,0,0);if(r!==e.length)throw new l("trailing bytes after the top-level item");return t}var Ur=18,Nt=1,Or=4,kr=-7,Gr="Signature1";function Pr(e,t){return Ne([Gr,e,new Uint8Array(0),t])}function Dt(e,t){if(!(e instanceof Map))throw new h(`${t} is not a CBOR map`);return e}function Rt(e){let t=j(e),r=t;if(Me(t)){if(t.tag!==Ur)throw new h("CBOR tag is not 18 (COSE_Sign1)");r=t.value}if(!Array.isArray(r)||r.length!==4)throw new h("COSE_Sign1 is not a four-element array");let[n,o,i,s]=r;if(!(n instanceof Uint8Array))throw new h("protected header is not a byte string");if(!(i instanceof Uint8Array))throw new h("a detached payload is not supported");if(!(s instanceof Uint8Array))throw new h("signature is not a byte string");let a=n.length===0?new Map:Dt(j(n),"protected header"),f=Dt(o,"unprotected header");if(a.get(Nt)!==kr)throw new h("protected header does not select ES256");if(f.has(Nt))throw new h("algorithm must be in the protected header only");let u=a.get(Or);if(!(u instanceof Uint8Array))throw new h("protected header carries no byte-string kid");if(le(s))throw new h("signature is DER-encoded; raw r||s is required");if(s.length!==K)throw new h("signature is not 64 bytes of raw r||s");return{protectedBytes:n,protectedHeader:a,unprotectedHeader:f,payload:i,signature:s,kid:u}}async function vt(e,t){return A(t,e.signature,Pr(e.protectedBytes,e.payload))}var Lt="KH1:",Hr=1,Kr=6,Vr="dt",Br="di",Fr="sn",$r="io",jr="idt",Yr="dh";var Xr=/^https?:\/\//i;function Wr(e){if(Xr.test(e.trim()))throw new tt}async function qr(e){let t=e.getReader(),r=[],n=0;for(;;){let{done:s,value:a}=await t.read();if(s)break;r.push(a),n+=a.length}let o=new Uint8Array(n),i=0;for(let s of r)o.set(s,i),i+=s.length;return o}async function zr(e){try{let t=new Blob([e]).stream().pipeThrough(new DecompressionStream("deflate"));return await qr(t)}catch{throw new et("input is not zlib-wrapped deflate (RFC 1950)")}}function R(e,t,r){let n=e.get(t);if(n===void 0)throw new xe(`claim ${r} is absent`);if(typeof n!="string")throw new k(`claim ${r} is not a text string`);return n}function Jr(e){let t=j(e);if(!(t instanceof Map))throw new k("claims are not a CBOR map");let r=t.get(Kr);if(r===void 0)throw new xe("claim 6 (issued at) is absent");if(typeof r!="number"||!Number.isSafeInteger(r)||r<0)throw new k("claim 6 (issued at) is not a non-negative integer");let n=t.get(Yr);if(n!==void 0&&typeof n!="string")throw new k("claim dh is not a text string");return{issuer:R(t,Hr,"1 (issuer)"),issuedAt:r,documentType:R(t,Vr,"dt"),documentId:R(t,Br,"di"),subjectName:R(t,Fr,"sn"),issuingOrganisation:R(t,$r,"io"),issueDate:R(t,jr,"idt"),...n===void 0?{}:{documentHash:n}}}var De=class{profile="B";kid;issuer;issuedAt;documentType;documentHash;mustMatchPrintedDocument;credentialStatus="unchecked";constructor(t,r){this.kid=t,this.issuer=r.issuer,this.issuedAt=r.issuedAt,this.documentType=r.documentType,this.documentHash=r.documentHash??null,this.mustMatchPrintedDocument={subjectName:r.subjectName,documentId:r.documentId,issuingOrganisation:r.issuingOrganisation,issueDate:r.issueDate}}compareWithPrintedDocument(t){let n=["subjectName","documentId","issuingOrganisation","issueDate"].map(o=>{let i=this.mustMatchPrintedDocument[o].normalize("NFC").trim(),s=t[o].normalize("NFC").trim();return{field:o,signed:this.mustMatchPrintedDocument[o],observed:t[o],matches:i===s}});return{comparisons:n,mismatches:n.filter(o=>!o.matches)}}};async function Ut(e){if(Wr(e.payload),!e.payload.startsWith(Lt))throw new Ze;let t=xt(e.payload.slice(Lt.length)),r=Rt(await zr(t));if(r.kid.length!==ye)throw new h("kid is not 8 bytes");let n=I(r.kid),o=await e.trustAnchor.resolve(n,"B",e.now),i=!1;for(let s of o)if(await vt(r,s)){i=!0;break}if(!i)throw new N;return new De(n,Jr(r.payload))}return jt(Qr);})();
+</script>
+<script>
+const DATA = {"generated":"2026-09-03","pinned":{"rootKeys":[{"kid":"ED305634665F665A","x":"32D60CBC6552DD400BCF26B28191F5327E8A5991869AEF170510DEDB469D3437","y":"A397362F0EAC6455E9BEBA13F28790EA3508AE82DCFEC3270EF9C683F86B469A"}],"timestampKeys":[{"kid":"64D797C34895E71C","x":"78551EA44F99C58204AD9DD7175CA3B4194B167E97A7A018D08A1D61FF8D4DA8","y":"D8AEA40EFB021523D0603241667D274416DC7C4691187CFBF74C8C668890B1FF"}]},"trustLists":{"current":{"statement":"{\"type\":\"kh-sqr/trustlist/1\",\"version\":7,\"issuedAt\":1756511000,\"expires\":1788048000,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}","signature":{"alg":"ES256","kid":"ED305634665F665A","value":"9DBB0D5DDE0620759E08333C4E87CAA6EEC4F33B78A03E358F60876A8491DFD2370B78565849A58710C23B3E785BE39211778E7A2A2F9E7D6661B63D1C3CDB8B"}},"rolledBack":{"statement":"{\"type\":\"kh-sqr/trustlist/1\",\"version\":6,\"issuedAt\":1756511000,\"expires\":1788048000,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}","signature":{"alg":"ES256","kid":"ED305634665F665A","value":"A24A6685F88E45BD7028F2D69819DEBB5FFA7697DE23EA71A1B37C081A3A73B213E9AFE356DAEDB654DFF2BF826CAAF795DA0283D6592BDA9D87F29845864B3F"}},"expired":{"statement":"{\"type\":\"kh-sqr/trustlist/1\",\"version\":7,\"issuedAt\":1756511000,\"expires\":1756511999,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}","signature":{"alg":"ES256","kid":"ED305634665F665A","value":"407BCFE716AF5AAF527B67E62030D22102DD1ECB4B90AB62533E0FA065CBB69B597C0EB16829C661B8E2526BBDAAFD8D14C2434648A7AEB918CC26CCD1B7BED7"}},"forgedRootSignature":{"statement":"{\"type\":\"kh-sqr/trustlist/1\",\"version\":7,\"issuedAt\":1756511000,\"expires\":1788048000,\"keys\":[{\"kid\":\"27403764C95F4F5B\",\"x\":\"7EB3449028B9F9E6A5F53A068018EC6DA0CA1F1B3E2E08C58FCFE7DC3F51B886\",\"y\":\"1571912E8866378FF335EB4BA0A67DDA1D989751F6483EBAC2AFEC09FB2F8E67\",\"profiles\":[\"A\",\"B\"],\"status\":\"active\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"ABA Bank (test issuer)\",\"organisationId\":\"KH-TEST-0001\"}},{\"kid\":\"17835A87B9D2FDEF\",\"x\":\"1300D47D468FAB907D1E4F01DE6811A812FB3E06756B929A006E2DEBF28D2E49\",\"y\":\"600B8F4042DF7E8D778DD15872ABD9D2C80813159CC206B3A76FE618E45430F2\",\"profiles\":[\"A\",\"B\"],\"status\":\"revoked\",\"notBefore\":1724976000,\"notAfter\":1788048000,\"subject\":{\"name\":\"Withdrawn issuer (test)\",\"organisationId\":\"KH-TEST-0001\"}}]}","signature":{"alg":"ES256","kid":"09DCC2530568B7E7","value":"B6C8B30E6AAD04B732F3A9BE7B0816D1735BCD9FB63310E2EC609697B5BF22B41947024802F4BCD3469A32135004C2A85737857F7BDF825A65B1AA5BB061D1EC"}}},"timestamps":{"current":{"statement":"{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"B0003FF84A32B311CC2F714067FE9171F5F3FB2923664162643C66A73A40910B\",\"issuedAt\":1756511900,\"expires\":1757116800}","signature":{"alg":"ES256","kid":"64D797C34895E71C","value":"21D8AC7A175E4307C8252A0C98DA66E97386E1C326C8EB48AAE6C3B5F3C1333D1B94D9060616F18B6760949EC5FCC771A96C261A488B26ECB23D5E1E2D56DA98"}},"expired":{"statement":"{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"B0003FF84A32B311CC2F714067FE9171F5F3FB2923664162643C66A73A40910B\",\"issuedAt\":1756511900,\"expires\":1756511999}","signature":{"alg":"ES256","kid":"64D797C34895E71C","value":"722FA7F9B19A641BEE2A64FA332F2629D8EFCA5BF60417AFE3174182744328C3E52E4D49EEA2418FD7D006ED8931A9674627DE08F11948BF13E250A817D0E6A7"}},"rolledBack":{"statement":"{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":6,\"trustListDigest\":\"145F48341E4F4E8049D8AE0F5F9FF27A19712380718E06D21F46028B195B7053\",\"issuedAt\":1756511900,\"expires\":1757116800}","signature":{"alg":"ES256","kid":"64D797C34895E71C","value":"6D12718A58BB3F29E5DE64ED747B2692B5EDF3F739B880218FAE66EC51278D9292F32BC1B2D721284C5FBB652E9FC4E3C16E3773559EC73A6F7104BA6374DC34"}},"expiredList":{"statement":"{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"DC18500DA00687D8A94CCD3A72262DC05E59724BC8C0CC1EEBC45EB37CDDAEB3\",\"issuedAt\":1756511900,\"expires\":1757116800}","signature":{"alg":"ES256","kid":"64D797C34895E71C","value":"E6ED0E77E37DAF3DB0E6DBDB9610195815BCAFE9E6573B8AC5281B8D51949D5F468D159FEFCB8D2D98DE277E6F0E720370194D959D8E26ED53A1ECE30AE48A26"}},"farFuture":{"statement":"{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"B0003FF84A32B311CC2F714067FE9171F5F3FB2923664162643C66A73A40910B\",\"issuedAt\":1756511900,\"expires\":1791072000}","signature":{"alg":"ES256","kid":"64D797C34895E71C","value":"988B6BA2C57B78922FEBE866D9C78A6F12BEFADD139D30F605ED9CCD4F7BB784C65A321FDD476DA573AA0FFE9A9AE9D33755B65705D227FA4287B7BDCD3C67F3"}},"mismatchedDigest":{"statement":"{\"type\":\"kh-sqr/timestamp/1\",\"trustListVersion\":7,\"trustListDigest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"issuedAt\":1756511900,\"expires\":1757116800}","signature":{"alg":"ES256","kid":"64D797C34895E71C","value":"985745EE94404E9F69CACA878E5278C70561FC339176378453315A89F27032822E0F25C7F1474329B0E6798ACDDAA7F4EE9D88EE323C003F7E942CF6E45F4B37"}}},"scenarios":[{"id":"genuine","label":"A genuine signed payment code","teaches":"It verifies. That is all it tells you.","payload":"00020101021230310011abaakhppxxx0112855012345678520458125303116540472005802KH5908SOK DARA6010PHNOM PENH85850013KH.QRSEAL.SQR010202021627403764C95F4F5B0305ES25604101756512000051017565120600601M86850013KH.QRSEAL.SQR0164D479BEB02E10D96C841AB419FC2F64933F0D4ADF0CA04389AEF6C7EA0662B0F087850013KH.QRSEAL.SQR016487087F18F3BCB961D5DD0C2B3D5DA5D928B4DE4BB94D2AAC124FBF10EBA431F863043466","encodingVersion":2,"state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"currency","label":"The same payee, the same number, a different currency","teaches":"Also genuine, also verifies. 7,200 riel and 7,200 dollars differ by a factor of about four thousand, and three characters carry the whole loss.","payload":"00020101021230310011abaakhppxxx0112855012345678520458125303840540472005802KH5908SOK DARA6010PHNOM PENH85850013KH.QRSEAL.SQR010202021627403764C95F4F5B0305ES25604101756512000051017565120600601M86850013KH.QRSEAL.SQR016465CD1297FA8515A2911BFF7F7130AF135B56BB78021577CE99CECE66B3F02D1187850013KH.QRSEAL.SQR01649F8947C8D3D674FAAED6A69BED3481F487D68A314D34D43A2F431F81CAD14F9C6304DF53","encodingVersion":2,"state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"tampered","label":"One character of the merchant name changed","teaches":"Rejected. Forgery of the instrument is what a signature closes.","payload":null,"derive":"tamper-name","encodingVersion":2,"state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"appended","label":"Data appended after the signature","teaches":"Rejected. The signed region is a prefix, so an attacker cannot extend the payload and leave the signed bytes intact.","payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85850013KH.QRSEAL.SQR010202021627403764C95F4F5B0305ES25604101756512000051017565120600601M86850013KH.QRSEAL.SQR0164D232F2197F1FC10DB8DC38304DC9338676226BE2AE60E18BAE0DD8A19BE14E3687850013KH.QRSEAL.SQR016401A9E00657CAA5A8D59AFABC79AC89BA4C92ED462BA6FFE79742F7280C9B9E1B6204ABCD63044F79","encodingVersion":2,"state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"unknown-kid","label":"Signed by a key that is not on the trust list","teaches":"Rejected. A signature is only as good as the list the verifier trusts.","payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011609DCC2530568B7E70205ES25603101756512000041017565120600501M99128DCE7441D59965929CFA862EEAF7BC8B02A01D16081A6E36AC0D3650D301AC65FB18EEECBD36932D90BCB14DC41DBF010CD4DEE1DE01102CA840B6A18B40FA88B6304A186","encodingVersion":1,"state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"revoked","label":"Signed by a revoked key","teaches":"Rejected. Revocation invalidates everything that key ever signed.","payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011617835A87B9D2FDEF0205ES25603101756512000041017565120600501M991289C86E1238E608F13AFD7C6527E7458F58AE08B423FA64D4FE99173643BDCBB9D855023990F0B0B9045295AB893CFFCB6DAD55B7403027466AD6A63B0A1D3642E63049AF2","encodingVersion":1,"state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"expired","label":"A dynamic code past its expiry","teaches":"Rejected. A one-transaction code is not reusable.","payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","encodingVersion":1,"state":{"trustList":"current","timestamp":"current","now":1756512061}},{"id":"stale-trustlist","label":"The trust list is too old","teaches":"Rejected — and note what failed. The code is fine; the verifier stopped trusting its own list. Silence from the trust infrastructure is treated as hostile.","payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","encodingVersion":1,"state":{"trustList":"current","timestamp":"farFuture","now":1759190400,"fetchedAt":1756425600}}],"suite":[{"id":"A-accept-published-reference","profile":"A","expect":"accept","reason":null,"encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85200000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991288D060DF7D9848BAA7169DF7946242B491306E1EEBD17AC8367F0D5DA1693990D1CEB7A018D96CBAFEC1744F8A4A2B9B83374297CAF8F8C68E5DDAEC3BB8F08DC6304CB0C","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A2-accept-dynamic","profile":"A","expect":"accept","reason":null,"encodingVersion":2,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85850013KH.QRSEAL.SQR010202021627403764C95F4F5B0305ES25604101756512000051017565120600601M86850013KH.QRSEAL.SQR0164D232F2197F1FC10DB8DC38304DC9338676226BE2AE60E18BAE0DD8A19BE14E3687850013KH.QRSEAL.SQR016401A9E00657CAA5A8D59AFABC79AC89BA4C92ED462BA6FFE79742F7280C9B9E1B63048AF0","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A2-accept-static","profile":"A","expect":"accept","reason":null,"encodingVersion":2,"payload":"00020101021130310011abaakhppxxx01128550123456785204581253031165802KH5908SOK DARA6010PHNOM PENH85710013KH.QRSEAL.SQR010202021627403764C95F4F5B0305ES256041017565120000601I86850013KH.QRSEAL.SQR01640C005AA6F53856D507FF9243AAD15E3CE131A3A392A871151DBF778574FE9A4387850013KH.QRSEAL.SQR01645388F6D6DDE6CE3515940ACBCD3FFAC682DCFE1B05E1C06D5CFED30D3E3B60B463048518","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A2-reject-appended-after-signature","profile":"A","expect":"reject","reason":"SIGNATURE_TEMPLATE_NOT_LAST","encodingVersion":2,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85850013KH.QRSEAL.SQR010202021627403764C95F4F5B0305ES25604101756512000051017565120600601M86850013KH.QRSEAL.SQR0164D232F2197F1FC10DB8DC38304DC9338676226BE2AE60E18BAE0DD8A19BE14E3687850013KH.QRSEAL.SQR016401A9E00657CAA5A8D59AFABC79AC89BA4C92ED462BA6FFE79742F7280C9B9E1B6204ABCD63044F79","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A2-reject-foreign-guid","profile":"A","expect":"reject","reason":"SIGNATURE_SUBTAG_MALFORMED","encodingVersion":2,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85850013XX.XXXXXX.XXX010202021627403764C95F4F5B0305ES25604101756512000051017565120600601M86850013KH.QRSEAL.SQR0164D232F2197F1FC10DB8DC38304DC9338676226BE2AE60E18BAE0DD8A19BE14E3687850013KH.QRSEAL.SQR016401A9E00657CAA5A8D59AFABC79AC89BA4C92ED462BA6FFE79742F7280C9B9E1B630446FB","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-accept-canonical-dynamic","profile":"A","expect":"accept","reason":null,"encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-accept-canonical-static","profile":"A","expect":"accept","reason":null,"encodingVersion":1,"payload":"00020101021130310011abaakhppxxx01128550123456785204581253031165802KH5908SOK DARA6010PHNOM PENH85187000201011627403764C95F4F5B0205ES256031017565120000501I9912815828CAB9B2F25A14524C3E65D7A8CA364E332852921C412BBA5035DC2A8036DD3D5F77B5D2F5D37DBBB620403268EBD1850507964098F0F9D5959B2E1A6888F6304FDEF","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-accept-at-expiry-boundary","profile":"A","expect":"accept","reason":null,"encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"current","now":1756512060}},{"id":"A-reject-bad-signature","profile":"A","expect":"reject","reason":"SIGNATURE_INVALID","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0A24C63045E92","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-der-signature","profile":"A","expect":"reject","reason":"SIGNATURE_ENCODING_INVALID","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85213000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M9914030440220AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0220BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB63048723","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-template-not-last","profile":"A","expect":"reject","reason":"SIGNATURE_TEMPLATE_NOT_LAST","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C62080304ABCD63040A20","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-subtag-not-last","profile":"A","expect":"reject","reason":"SIGNATURE_SUBTAG_NOT_LAST","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85206000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991282CBC5F9152BB74CD9F853FFEE93FDA165D5DCCA5E4E848FE28FF817480EE6D52B6303F8DC6CF9D03B7FE9568ECE70BC761FE5BB73DEF56106B92DE471B31CF350601X6304A492","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-bad-crc","profile":"A","expect":"reject","reason":"CRC_MISMATCH","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C63040000","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-mutation-inside-signed-region","profile":"A","expect":"reject","reason":"SIGNATURE_INVALID","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENG85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304799C","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-mutation-outside-signed-region","profile":"A","expect":"reject","reason":"CRC_MISMATCH","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B042AC6304A620","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-expired-dynamic","profile":"A","expect":"reject","reason":"CODE_EXPIRED","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"current","now":1756512061}},{"id":"A-reject-unknown-kid","profile":"A","expect":"reject","reason":"UNKNOWN_KID","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011609DCC2530568B7E70205ES25603101756512000041017565120600501M99128DCE7441D59965929CFA862EEAF7BC8B02A01D16081A6E36AC0D3650D301AC65FB18EEECBD36932D90BCB14DC41DBF010CD4DEE1DE01102CA840B6A18B40FA88B6304A186","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-revoked-key","profile":"A","expect":"reject","reason":"KEY_REVOKED","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011617835A87B9D2FDEF0205ES25603101756512000041017565120600501M991289C86E1238E608F13AFD7C6527E7458F58AE08B423FA64D4FE99173643BDCBB9D855023990F0B0B9045295AB893CFFCB6DAD55B7403027466AD6A63B0A1D3642E63049AF2","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-static-with-amount","profile":"A","expect":"reject","reason":"STATIC_CODE_WITH_AMOUNT","encodingVersion":1,"payload":"00020101021130310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85187000201011627403764C95F4F5B0205ES256031017565120000501I9912829FDF4B555E2B8F2EFC57EC43B1A72AD8D4276CDA00012B933D2F03A095E7EBE9C7D0DED85A7267F2C65EFFAFDBB51D2C91F7895588FAA1C651A2E2CAAA7EE3363048895","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-expiry-window-too-long","profile":"A","expect":"reject","reason":"EXPIRY_WINDOW_TOO_LONG","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565126000501M9912884A870A6091C2DE1E534D7AC7A4043016A783F84DD315001F76631567F089B47E6E7E292049F497896CBC46E736E13544978AC4920C3673E34400E2AC9F09E1E63041497","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-dynamic-without-expiry","profile":"A","expect":"reject","reason":"DYNAMIC_CODE_MISSING_EXPIRY","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85187000201011627403764C95F4F5B0205ES256031017565120000501M9912831154963C98EAADCA99DFD4A7E39CD1E6DDEF824608B1DC46AD0D5E75B49B26EF073A69DF12BD4C06BA598F975E6C2D0F571797EA999F2A177F3C1BD26DA39B363044276","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-bad-payee-class","profile":"A","expect":"reject","reason":"MALFORMED_PAYEE_CLASS","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501X99128B6C91AA53CCA4CF03730A79460ADD343C0D957779DEF7C595BA509F2981F55A556411485C059A15457681C19E4C9FBDA3A7923ADB199006FB58A4D6421BE3626630469CE","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-unsupported-algorithm","profile":"A","expect":"reject","reason":"UNSUPPORTED_ALGORITHM","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES38403101756512000041017565120600501M991282BDB699CD4341CF7D73F65ECEA470563A89FE063BB20ACF0B701C4CBA8B8634E580D0E466577AECFEBAE39A2723A059DE2FA1E331287328C1209D609903BCE4363042794","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-unsupported-format-version","profile":"A","expect":"reject","reason":"UNSUPPORTED_FORMAT_VERSION","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000202011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281BE1CB375564817206BAFCDAFF8F7F1A5F501523E42384A6474FD952EEF9C88B2A911EDF7619D430E9EE47E5D3614A282BFB9A770EA80717F38F5733E9C17BF763040098","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"A-reject-issued-in-future","profile":"A","expect":"reject","reason":"ISSUED_IN_FUTURE","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"current","now":1756508400}},{"id":"A-reject-trustlist-rollback","profile":"A","expect":"reject","reason":"TRUSTLIST_ROLLBACK","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"rolledBack","timestamp":"rolledBack","now":1756512030,"heldVersion":7}},{"id":"A-reject-trustlist-stale","profile":"A","expect":"reject","reason":"TRUSTLIST_STALE","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"farFuture","now":1759190400,"fetchedAt":1756425600}},{"id":"A-reject-trustlist-expired","profile":"A","expect":"reject","reason":"TRUSTLIST_EXPIRED","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"expired","timestamp":"expiredList","now":1756512030}},{"id":"A-reject-trustlist-forged-signature","profile":"A","expect":"reject","reason":"TRUSTLIST_SIGNATURE_INVALID","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"forgedRootSignature","timestamp":"current","now":1756512030}},{"id":"A-reject-timestamp-expired","profile":"A","expect":"reject","reason":"TIMESTAMP_EXPIRED","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"expired","now":1756512030}},{"id":"A-reject-timestamp-missing","profile":"A","expect":"reject","reason":"TIMESTAMP_MISSING","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":null,"now":1756512030}},{"id":"A-reject-timestamp-digest-mismatch","profile":"A","expect":"reject","reason":"TIMESTAMP_TARGET_MISMATCH","encodingVersion":1,"payload":"00020101021230310011abaakhppxxx01128550123456785204581253031165405250005802KH5908SOK DARA6010PHNOM PENH85201000201011627403764C95F4F5B0205ES25603101756512000041017565120600501M991281F84FC6F56876525BB4149BF6AD1A57CA7995A0461384CB278DA583916F40190917835903794E225B3D29C51BBEE0026FB117409FA2F83CB96EFB35743B0424C6304A620","state":{"trustList":"current","timestamp":"mismatchedDigest","now":1756512030}},{"id":"B-accept-published-reference","profile":"B","expect":"accept","reason":null,"encodingVersion":1,"payload":"KH1:NCFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0I9BEX D3/1566DSCK3RN$DY/AQQBV-HH.CMX25ONQQRQMUGX2L*BWU7B/464P926/JTNVGRJJLRNDEV7/7O1H7GS++E9:L.+T6.ENKT300U0V61","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-accept-canonical","profile":"B","expect":"accept","reason":null,"encodingVersion":1,"payload":"KH1:6BFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0IH7CS53A7G5VJ5LDBM58-8O.PYI49MCS.G%JJN3DM.5Y0V/ZFV$A-ZLQMMH5J37V/ LWKTR281YQJ0B15CO1O NSLSDKSV57FMDUQXVHB0SNQESB","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-deflate-raw","profile":"B","expect":"reject","reason":"INFLATE_FAILED","encodingVersion":1,"payload":"KH1: 70P30FFWTWGSLKC 4L59E58GXC92CBQB7O9PVDKPC59DSVD5$C27BX JCZ3OBKC0RRICV+K 1W/CU4:C2GNC0N7NFTDK0Z3G:KUUH:90313ED8A2DS15:43U%MLEEHLHM.KZTO%LKTGV%QITDA5LD","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-https-payload","profile":"B","expect":"reject","reason":"URL_PAYLOAD_REJECTED","encodingVersion":1,"payload":"https://verify.example.gov.kh/c/RUPP-2026-004821","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-bad-prefix","profile":"B","expect":"reject","reason":"PREFIX_INVALID","encodingVersion":1,"payload":"HC1:6BFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0IH7CS53A7G5VJ5LDBM58-8O.PYI49MCS.G%JJN3DM.5Y0V/ZFV$A-ZLQMMH5J37V/ LWKTR281YQJ0B15CO1O NSLSDKSV57FMDUQXVHB0SNQESB","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-base45-alphabet","profile":"B","expect":"reject","reason":"BASE45_INVALID","encodingVersion":1,"payload":"KH1:NCFOXN%TSMAHN-H3Q8DJO;;","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-tampered","profile":"B","expect":"reject","reason":null,"encodingVersion":1,"payload":"KH1:6BFOXN%TSMAHN-H3Q8DJO::SF$N:+UHBH7K5PL1PP63UQCZPZIEAJ9E1VBYUWM56NRTF6SKRLS4RZIOLNDNNQLN%*4HTCWP0AY0IFTY73QKJKD3UBJ423T 4HBTHN76571E53XVYBF F7V*CH4BOX0Z0BF4T2 G-$C7*KYV290J0J5/5L:O07.S3ATIQ0V5T4R4T2LFUCJS9D9ROR6KK9NCLC46XT6D69QR6VC6ICM.%6VW6LS9-TMW.91R6 L64H9S0A%%6E0IH7CS53A7G5VJ5LDBM58-8O.PYI49MCS.G%JJN3DM.5Y0V/ZFV$A-ZLQMMH5J37V/ LWKTR281YQJ0B15CO1O NSLSDKSV57FMDUAXVHB0SNQESB","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-unknown-kid","profile":"B","expect":"reject","reason":"UNKNOWN_KID","encodingVersion":1,"payload":"KH1:6BFOXN%TSMAHN-HTUGM5Q+ACW H58QHV8:QB09BX-JO7J64C26JG8A% LEUJ:IBH PQ-I:LPT84L*KR0Q4/QNHPJW6LY4.24OQ6*882HPLEPHCRSGO4SO$66S47VZRJUOAHA9FRRGO$.QH9528OQ$5V7OFA6+84G16FT5:BL/VMAHA508K847K4F08K84PW6HK4 N62P4IKCELNBIK6IA8-8MNGZIKWY8DOK5NHD+GKJM*PL3FC.GJ/LER.KHHJXJAEHFXIMLLE7XOAK1V1UPFBNXD3YS3UU+TR2QD+0LN4C5HLLSFUA2C$OI:PE+5MTM/5M*6M/G9.+HYWR$BR2NPWTAB9KV6P2NOL1R3IK9ELPLL/7F550/KQE0","state":{"trustList":"current","timestamp":"current","now":1756512030}},{"id":"B-reject-revoked-key","profile":"B","expect":"reject","reason":"KEY_REVOKED","encodingVersion":1,"payload":"KH1:6BFOXN%TSMAHN-HFP82D7B-F-.K7AUHV8:QB09BX-JO7J64C26JG8A% LEUJ:IBH PQ-I:LPT84L*KR0Q4/QNHPJW6LY4.24OQ6*882HPLEPHCRSGO4SO$66S47VZRJUOAHA9FRRGO$.QH9528OQ$5V7OFA6+84G16FT5:BL/VMAHA508K847K4F08K84PW6HK4 N62P4IKCELNBIK6IA8-8MNGZIKWY8DOK5NHD+GKJM*PL3FC.GJ/LER.KHHJXJAEHFXIMLLECQ8/QC6RLK DSPEV+P .NCBCVBV6%AHBRZ7W %F3*M1FT:KL-K7-2F34M7TM.Q9:QV+4BMIDELC0.4%UB52U1-L4RNM AB AYFAM4CC97E5AA7C","state":{"trustList":"current","timestamp":"current","now":1756512030}}],"counts":{"total":41,"negative":33}};
+const { TrustAnchor, verifyProfileA, verifyProfileA2, verifyProfileB, KhSqrError } = KHSQR;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+async function anchorFor(state) {
+  return TrustAnchor.open({
+    trustList: DATA.trustLists[state.trustList],
+    ...(state.timestamp == null ? {} : { timestamp: DATA.timestamps[state.timestamp] }),
+    rootKeys: DATA.pinned.rootKeys,
+    timestampKeys: DATA.pinned.timestampKeys,
+    now: state.now,
+    ...(state.heldVersion === undefined ? {} : { heldVersion: state.heldVersion }),
+    ...(state.fetchedAt === undefined ? {} : { fetchedAt: state.fetchedAt }),
+  });
+}
+
+/** Run the real verifier. Never returns a boolean on its own — the reason travels with it. */
+async function verify(payload, state, encodingVersion, profile = 'A') {
+  const t0 = performance.now();
+  try {
+    const trustAnchor = await anchorFor(state);
+    const fn = profile === 'B' ? verifyProfileB
+      : encodingVersion === 2 ? verifyProfileA2 : verifyProfileA;
+    const result = await fn({ payload, trustAnchor, now: state.now });
+    return { accepted: true, reason: null, result, ms: performance.now() - t0 };
+  } catch (error) {
+    if (!(error instanceof KhSqrError)) {
+      return { accepted: false, reason: 'MALFORMED', detail: String(error.message || error), ms: performance.now() - t0 };
+    }
+    return { accepted: false, reason: error.reason, detail: error.message, ms: performance.now() - t0 };
+  }
+}
+
+/* ---------- payload inspector ---------- */
+
+const MARKED = new Set(['53', '54']);
+const SIGTAGS = new Set(['85', '86', '87']);
+
+/**
+ * Walk with two-digit lengths only — exactly what a wallet implementing EMVCo
+ * 1.1 and nothing else would do. Encoding v1 does not tile under this walk, and
+ * saying so is the honest version of the v1-to-v2 story.
+ */
+function walk(payload) {
+  const out = [];
+  let i = 0;
+  while (i < payload.length) {
+    if (i + 4 > payload.length) return null;
+    const tag = payload.slice(i, i + 2);
+    const len = Number(payload.slice(i + 2, i + 4));
+    if (!/^\d{2}$/.test(payload.slice(i + 2, i + 4))) return null;
+    const end = i + 4 + len;
+    if (end > payload.length) return null;
+    out.push({ tag, len, value: payload.slice(i + 4, end) });
+    i = end;
+  }
+  return out;
+}
+
+function renderTlv(payload) {
+  const objects = walk(payload);
+  const note = $('tlv-note');
+  if (objects === null) {
+    $('tlv').innerHTML = `<span class="val">${esc(payload)}</span>`;
+    note.hidden = false;
+    note.textContent =
+      'A strict EMVCo parser cannot walk this payload — a length runs past the end. '
+      + 'That is encoding version 1, which declared a three-digit length where the standard allows two, '
+      + 'and it is the defect encoding version 2 exists to fix.';
+    return;
+  }
+  note.hidden = true;
+  $('tlv').innerHTML = objects.map((o) => {
+    const cls = MARKED.has(o.tag) ? 'seg mark' : SIGTAGS.has(o.tag) ? 'seg sig' : 'seg';
+    const shown = o.value.length > 74 ? o.value.slice(0, 60) + '…' + o.value.slice(-8) : o.value;
+    return `<span class="${cls}"><span class="tag">${o.tag}</span><span class="len">${String(o.len).padStart(2,'0')}</span><span class="val">${esc(shown)}</span></span> `;
+  }).join('');
+}
+
+/* ---------- verdict rendering ---------- */
+
+function row(label, value, opts = {}) {
+  if (value === null || value === undefined || value === '') return '';
+  return `<div class="row${opts.hi ? ' hi' : ''}"><dt>${esc(label)}</dt>`
+    + `<dd${opts.big ? ' class="big"' : ''}>${esc(value)}</dd></div>`;
+}
+
+function renderVerdict(outcome, scenario) {
+  const el = $('outcome'), rc = $('reason');
+  el.className = 'outcome ' + (outcome.accepted ? 'ok' : 'no');
+  el.textContent = outcome.accepted ? 'Signature verified' : 'Rejected';
+  rc.hidden = outcome.accepted;
+  if (!outcome.accepted) rc.textContent = outcome.reason || 'REJECTED';
+  $('timing').textContent = outcome.ms.toFixed(1) + ' ms, locally';
+  $('teaches').innerHTML = outcome.accepted
+    ? (scenario ? esc(scenario.teaches) : '')
+    : `<b>${esc(outcome.detail || 'The payload did not verify.')}</b>`;
+
+  const d = $('disclosure');
+  if (!outcome.accepted) {
+    d.innerHTML = row('Reason code', outcome.reason || '—')
+      + row('What it means', 'A conforming verifier refuses this payload. The reason code is stable and part of the specification.');
+    return;
+  }
+  const r = outcome.result, p = r.payeeDisclosure;
+  const money = p.amount === null ? null
+    : `${p.amount} ${p.currencyAlpha ?? '(unknown currency ' + p.currencyCode + ')'}`;
+  d.innerHTML =
+      row('Payee', p.merchantName)
+    + row('City', p.merchantCity)
+    + row('Amount', money, { big: true, hi: true })
+    + row('Payee class', p.payeeClass === 'M' ? 'M — merchant' : p.payeeClass)
+    + row('Code kind', r.codeKind)
+    + row('Encoding', r.encodingVersion === 2 ? 'v2 — EMVCo-conformant' : 'v1 — legacy')
+    + row('Signed by', r.kid)
+    + row('Credential status', 'unchecked')
+    + row('Is it safe to pay?', 'The library does not answer this, and neither does this page.');
+}
+
+/* ---------- state ---------- */
+
+let current = null;
+let currentPayload = '';
+
+function tamperName(payload) {
+  // Change one character inside the signed region. The CRC is not repaired,
+  // so this is what a careless overlay looks like rather than a careful one.
+  return payload.replace('SOK DARA', 'SOK DARB');
+}
+
+async function run(payload) {
+  currentPayload = payload;
+  $('payload').value = payload;
+  renderTlv(payload);
+  const outcome = await verify(payload, current.state, current.encodingVersion);
+  renderVerdict(outcome, current);
+}
+
+function scenarioPayload(s) {
+  if (s.derive === 'tamper-name') {
+    const genuine = DATA.scenarios.find((x) => x.id === 'genuine').payload;
+    return tamperName(genuine);
+  }
+  return s.payload;
+}
+
+function selectScenario(id) {
+  current = DATA.scenarios.find((s) => s.id === id);
+  document.querySelectorAll('.case').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.id === id));
+  });
+  run(scenarioPayload(current));
+}
+
+$('cases').innerHTML = DATA.scenarios.map((s) => {
+  const rejects = s.id !== 'genuine' && s.id !== 'currency';
+  return `<button class="case" type="button" data-id="${s.id}" aria-pressed="false">
+    <span class="case-top">
+      <span class="case-label">${esc(s.label)}</span>
+      <span class="chip ${rejects ? 'fail' : 'pass'}">${rejects ? 'rejects' : 'verifies'}</span>
+    </span>
+    <span class="case-teaches">${esc(s.teaches)}</span>
+  </button>`;
+}).join('');
+document.querySelectorAll('.case').forEach((b) => {
+  b.addEventListener('click', () => selectScenario(b.dataset.id));
+});
+
+$('payload').addEventListener('input', (e) => {
+  currentPayload = e.target.value.trim();
+  renderTlv(currentPayload);
+  verify(currentPayload, current.state, current.encodingVersion)
+    .then((o) => renderVerdict(o, null));
+});
+
+$('btn-flip').addEventListener('click', () => {
+  const p = currentPayload;
+  const i = Math.max(0, p.indexOf('SOK DARA') + 5);
+  const c = p[i];
+  const swapped = c >= 'A' && c <= 'Y' ? String.fromCharCode(c.charCodeAt(0) + 1)
+    : c >= '0' && c <= '8' ? String.fromCharCode(c.charCodeAt(0) + 1) : 'X';
+  run(p.slice(0, i) + swapped + p.slice(i + 1));
+});
+$('btn-reset').addEventListener('click', () => run(scenarioPayload(current)));
+
+/* ---------- currency pair ---------- */
+
+(async () => {
+  const cards = [];
+  for (const id of ['genuine', 'currency']) {
+    const s = DATA.scenarios.find((x) => x.id === id);
+    const o = await verify(s.payload, s.state, s.encodingVersion);
+    const p = o.result.payeeDisclosure;
+    cards.push(`<div class="pair-card">
+      <div class="pair-amount">${esc(p.amount)} ${esc(p.currencyAlpha)}</div>
+      <div class="pair-tag">tag 53 = <mark>${esc(p.currencyCode)}</mark> · tag 54 = ${esc(p.amount)}</div>
+      <div class="pair-verdict">Signature verified · ${esc(p.merchantName)}</div>
+    </div>`);
+  }
+  $('pair').innerHTML = cards.join('');
+})();
+
+/* ---------- suite ---------- */
+
+$('btn-suite').addEventListener('click', async () => {
+  const btn = $('btn-suite');
+  btn.disabled = true; btn.textContent = 'Running…';
+  let pass = 0; const cells = [];
+  for (const c of DATA.suite) {
+    const o = await verify(c.payload, c.state, c.encodingVersion, c.profile);
+    const wanted = c.expect === 'accept';
+    const ok = o.accepted === wanted && (c.reason === null || o.reason === c.reason);
+    if (ok) pass += 1;
+    cells.push(`<div class="cell ${ok ? 'ok' : 'bad'}"><span class="id">${esc(c.id)}</span><span class="mk">${ok ? '✓' : '✗'}</span></div>`);
+  }
+  $('suite').innerHTML = cells.join('');
+  $('tally').innerHTML = `<b>${pass}</b> of <b>${cells.length}</b> vectors pass, in this browser`;
+  btn.disabled = false; btn.textContent = 'Run again';
+});
+
+selectScenario('genuine');
+</script>
