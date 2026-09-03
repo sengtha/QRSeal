@@ -774,6 +774,32 @@ introduced violation, not merely to pass.
 | `registry-api` | no key material | enqueue junk, read the queue | mint an issuer |
 | `risklist-api` | no key material | restrict an account (one officer, ≤72h) | block or unlist alone; edit history |
 
+**Which Worker serves which solution.** Only three of the seven proposals have
+running code, and these are it:
+
+| Solution | Worker | Role |
+|---|---|---|
+| **S0** — QRSeal signing | `registry-api` | queues issuer CSRs for the offline ceremony; cannot issue |
+| **S0** — QRSeal signing | `trustlist-edge` | serves the trust list and timestamp a verifier needs |
+| **S3** — Screening at payment | `risklist-api` | `POST /screen` → allow / warn / hold / block |
+| **S4** — Right to contest | `risklist-api` | `POST /appeals`, the deadline, and the lapse |
+
+The other four have no Worker and that is not an omission. **S1** (incident
+reporting) is an obligation, not a service. **S2** (URL prohibition) is
+normative in `SPEC.md` §8 and enforced in the wallet. **S5** (liability) is
+policy. **S6** (exit controls) is proposed but not designed — thresholds and
+distributional cost are unspecified, as [§10](#10-where-this-repository-does-not-conform-to-its-own-specification)
+and the paper's Limitations say.
+
+`risklist-api` carries two solutions because screening and appeals act on the
+same listing and must share one consistency point: split them and a screen could
+read a status an appeal had already lapsed.
+
+**Setting one up:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the
+end-to-end order — offline Root ceremony first, then `trustlist-edge`, then the
+two authenticated services — plus the mTLS requirement, officer enrolment, and
+the four preconditions this deployment does not meet.
+
 #### `trustlist-edge` — read-only distribution
 
 Serves the trust list, the timestamp statement and the application trust list

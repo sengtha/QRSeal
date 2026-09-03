@@ -4,6 +4,12 @@ The Annex C account risk list: authenticated institutional writes, strongly
 consistent status reads, transaction-time screening, a delta feed, and the right
 to contest a listing.
 
+**Serves two solutions: S3** (screening at the moment of payment) and **S4**
+(the right to contest a listing). They live in one service because they act on
+the same listing and must share one consistency point — split them and a screen
+could read a status an appeal had already lapsed. To stand one up, see
+[`docs/DEPLOYMENT.md`](../../docs/DEPLOYMENT.md).
+
 This is the largest of the three services and the one that acts on the fraud the
 cryptography cannot reach — see
 [README §3 P4](../../README.md#p4--authorised-push-payment-fraud--not-addressed-at-all)

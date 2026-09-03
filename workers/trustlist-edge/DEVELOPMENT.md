@@ -3,6 +3,12 @@
 Serves the trust list, the timestamp statement and the application trust list.
 Read-only, and keyless by construction.
 
+**Serves solution S0** (QRSeal signing) together with `registry-api`: this half
+distributes what the offline ceremony produced, so a verifier has something to
+verify against. To stand one up, see
+[`docs/DEPLOYMENT.md`](../../docs/DEPLOYMENT.md) — deploy this Worker first, as
+the other two do not depend on it and a verifier is useless without it.
+
 For *why* this service exists and where it sits in the architecture, see
 [README §6.1](../../README.md#61-the-three-workers-and-what-each-one-is-unable-to-do).
 This file is about working on it.

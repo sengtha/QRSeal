@@ -3,6 +3,10 @@
 Accepts issuer certificate signing requests, queues them for the offline Root
 ceremony, and publishes the certificates that ceremony produced.
 
+**Serves solution S0** (QRSeal signing) together with `trustlist-edge`: this
+half enrols the issuers whose keys that list carries. To stand one up, see
+[`docs/DEPLOYMENT.md`](../../docs/DEPLOYMENT.md).
+
 For *why* this service exists, see
 [README §6.1](../../README.md#61-the-three-workers-and-what-each-one-is-unable-to-do).
 This file is about working on it.
