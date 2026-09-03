@@ -20,6 +20,16 @@ import {
 } from '../src/profileA2.js';
 import { anchorFor, suite } from './support/anchors.js';
 
+/**
+ * A GUID belonging to no scheme, for the rejection cases.
+ *
+ * Derived from the real one so it is always the same length. A shorter or
+ * longer substitute would change the template's length prefix, and the payload
+ * would then be rejected for a malformed length rather than for a foreign GUID
+ * --- the test would still pass, and would no longer test what it names.
+ */
+const FOREIGN_GUID = V2_GUID.replace(/[A-Z]/g, 'X');
+
 const STATIC_BASE =
   '00020101021130310011abaakhppxxx01128550123456785204581253031165802KH5908SOK DARA6010PHNOM PENH';
 const DYNAMIC_BASE =
@@ -173,7 +183,7 @@ describe('v2 rejects what v1 rejects', () => {
   });
 
   it('rejects a foreign GUID', async () => {
-    const payload = await tamper((b) => b.replace(V2_GUID, 'XX.XXX.XXX.XXX'));
+    const payload = await tamper((b) => b.replace(V2_GUID, FOREIGN_GUID));
     await expect(verifyProfileA2({ payload, ...(await verifyOptions()) })).rejects.toThrow(/GUID/);
   });
 

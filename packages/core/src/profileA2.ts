@@ -96,12 +96,20 @@ export const V2_SIG_LO_TAG = '87';
  * unreserved template.
  *
  * A reverse-domain identifier rather than an ISO 7816 AID, which is the
- * conventional form when a scheme has no registered application identifier. A
- * national deployment must settle this value with the scheme operator before
- * issuance; it is part of the wire format and cannot be changed afterwards
- * without a further version.
+ * conventional form when a scheme has no registered application identifier.
+ *
+ * It names the project and the country and asserts no institution. An earlier
+ * value was `KH.GOV.NBC.SQR`, which claimed National Bank of Cambodia
+ * governance in the wire format for a design the Bank has not endorsed --- a
+ * claim the paper's own disclaimer contradicts. A default value must not assert
+ * an authority that has not granted it.
+ *
+ * A national deployment must still settle this value with the scheme operator
+ * before issuance; it is part of the wire format and cannot be changed
+ * afterwards without a further version. If a central bank adopts the scheme, a
+ * GUID naming it is theirs to choose.
  */
-export const V2_GUID = 'KH.GOV.NBC.SQR';
+export const V2_GUID = 'KH.QRSEAL.SQR';
 
 /** Sub-tags inside template 85. */
 export const V2_SUBTAG_GUID = '00';

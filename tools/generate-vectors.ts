@@ -52,6 +52,17 @@ const encoder = new TextEncoder();
 const hex = (bytes: Uint8Array): string =>
   [...bytes].map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
 
+
+/**
+ * A GUID belonging to no scheme, for the rejection cases.
+ *
+ * Derived from the real one so it is always the same length. A shorter or
+ * longer substitute would change the template's length prefix, and the payload
+ * would then be rejected for a malformed length rather than for a foreign GUID
+ * --- the test would still pass, and would no longer test what it names.
+ */
+const FOREIGN_GUID = V2_GUID.replace(/[A-Z]/g, 'X');
+
 async function signStatement(statement: string, key: TestKeyPair): Promise<unknown> {
   const raw = await crypto.subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
@@ -308,7 +319,7 @@ async function main(): Promise<void> {
 
   // Replace the GUID in template 85 with a foreign one of the same length.
   const v2ForeignGuid = (() => {
-    const body = stripCrc(v2Dynamic.payload).replace(V2_GUID, 'XX.XXX.XXX.XXX');
+    const body = stripCrc(v2Dynamic.payload).replace(V2_GUID, FOREIGN_GUID);
     return appendCrc(body);
   })();
 

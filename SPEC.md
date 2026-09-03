@@ -7,6 +7,17 @@ This document specifies two profiles for signing QR codes, a trust hierarchy,
 and the rules a conforming verifier follows. It specifies what those mechanisms
 achieve and, equally normatively, what they do not.
 
+**KH-SQR is one half of a project called QRSeal.** This document is the half an
+implementer conforms to. The other half is a set of institutional proposals,
+numbered S0–S6 in the project's README and paper, which act on the fraud this
+specification cannot reach; they are deliberately not specified here, because
+they are reference designs rather than normative requirements.
+
+**Neither name designates a standard.** KH-SQR is proposed by this project, not
+adopted by anyone. It is not issued by, endorsed by, or agreed with the National
+Bank of Cambodia or any other authority, and no identifier defined in this
+document should be read as claiming otherwise.
+
 ## 0. Scope, and the limit of scope
 
 KH-SQR addresses **forgery**: an attacker producing a code that a verifier
@@ -239,9 +250,17 @@ template design was chosen for in the first place.
 2. Templates `85`, `86` and `87` MUST each carry the scheme's Globally Unique
    Identifier at sub-tag `00`. A verifier MUST reject a payload whose GUID is
    not this scheme's; the presence of *a* GUID is not sufficient.
-3. The GUID for this scheme is `KH.GOV.NBC.SQR`. It is part of the wire format.
+3. The GUID for this scheme is `KH.QRSEAL.SQR`. It is part of the wire format.
    A national deployment MUST settle this value with the scheme operator before
    issuance, because changing it later is a further version.
+
+   The default names the project and the country and asserts no institution.
+   An earlier draft used `KH.GOV.NBC.SQR`, which claimed National Bank of
+   Cambodia governance in the wire format for a design the Bank has not
+   endorsed. **A default value MUST NOT assert an authority that has not
+   granted it**, because the payload is the one place the claim travels without
+   the document that disclaims it. If a central bank adopts this scheme, a GUID
+   naming it is theirs to choose.
 3a. **The template identifiers `85`, `86` and `87` MUST be confirmed unused
    before issuance** — against the national scheme's own merchant-presented
    guideline, and against the guideline of every scheme it is linked to for
@@ -272,7 +291,7 @@ ignores them, and the payment fields it does understand are intact. That is the
 legacy transparency version 1 claimed and did not have.
 
 **What it costs, measured.** The reference dynamic payload grows from 317 to
-381 characters, and the QR symbol from version 10 to version 11 — 57×57 to
+378 characters, and the QR symbol from version 10 to version 11 — 57×57 to
 61×61 modules at error-correction level M. `tools/measure-qr.ts` reports both
 encodings side by side. The cost is the three repeated GUIDs and the second
 template header; it is the price of being readable by a parser that was never

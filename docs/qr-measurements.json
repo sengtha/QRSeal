@@ -21,7 +21,7 @@
     },
     {
       "label": "Profile A signed, encoding v2",
-      "characters": 381,
+      "characters": 378,
       "version": 11,
       "modules": 61,
       "mode": "Numeric+Byte+Alphanumeric",
@@ -53,7 +53,7 @@
     },
     {
       "label": "Profile A v2, uppercase acquirer id",
-      "characters": 381,
+      "characters": 378,
       "version": 11,
       "modules": 61,
       "mode": "Numeric+Alphanumeric",

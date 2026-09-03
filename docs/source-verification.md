@@ -89,6 +89,24 @@ both corrections are reflected in the paper.
 | Secondary outlets syndicating the Infoblox findings | Used to locate the report, never cited in its place. |
 | UNESCO digital-skills figures for Cambodia in 2020, cited second-hand | — | **Deleted from the paper at the author's direction.** They were corroborating only — §7.2's argument against a scoped URL rule is structural, since a QR code's class is unknowable before it is scanned — and citing UNESCO through a newspaper added an unverifiable figure to an argument that never needed one. |
 
+## Claims the project deliberately does not make about itself
+
+- **KH-SQR is not a standard.** It is proposed by this project and adopted by
+  nobody. Neither it nor QRSeal is issued by, endorsed by, or agreed with the
+  National Bank of Cambodia, the Ministry of Post and Telecommunications, or any
+  other authority. The paper's Disclaimer says so; the specification preamble and
+  the README now say so too, because a reader who meets the wire format first
+  never sees the Disclaimer.
+- **No identifier asserts an institution.** The scheme GUID was
+  `KH.GOV.NBC.SQR` until September 2026, which claimed National Bank of Cambodia
+  governance inside the payload — the one place a claim travels without the
+  document that disclaims it. It is now `KH.QRSEAL.SQR`: the project and the
+  country, no authority. SPEC §2.9 clause 3 states the prohibition normatively
+  and leaves a bank-named GUID available to a bank that adopts the scheme.
+- **S0–S6 are numbered rather than named** so that the institutional proposals
+  cannot be cited as an adopted framework. They are reference designs; none has
+  been trialled and their costs are unquantified.
+
 ## Deliberately not claimed
 
 - Any prevalence, frequency or trend figure for QR fraud in Cambodia.
