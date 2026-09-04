@@ -36,8 +36,10 @@ which is the dominant vector, and nothing built on it should suggest otherwise.*
 
 A verified signature is not a reason to pay. The API is built so that this is
 hard to forget: verification never returns a boolean, and the credential result
-has no `isValid` accessor, precisely so a caller cannot reach a verdict without
-handling the fields that would catch a fraud.
+has no `isValid` accessor. That does not make a verdict unreachable — success or
+failure is control flow, and a caller can always wrap it — but it means the
+result a caller *renders* is the comparison fields, and a verdict-only interface
+has to be built deliberately rather than falling out by default.
 
 The rest of this document says exactly what that means, problem by problem.
 
@@ -78,7 +80,7 @@ Two structural facts make these hard:
 |---|---|---|
 | **P1** Overlay forgery | **Solved at the code layer** | An attacker without a registered issuer key cannot produce a payment code that verifies, and cannot alter a genuine one by a single character. |
 | **P2** Forged official codes | **Solved at the code layer** | Profile B credentials are signed by a registered issuer against a Root-anchored trust list. An unsigned or altered credential fails. |
-| **P7** Transplanted credential | **Made detectable, and hard to skip** | Verification returns `mustMatchPrintedDocument` — subject name, document id, issuing organisation, issue date — and offers no boolean. A caller cannot reach a verdict without the comparison, and a test asserts no boolean member exists, so a later refactor adding a convenience accessor fails the build. |
+| **P7** Transplanted credential | **Made detectable, and hard to skip** | Verification returns `mustMatchPrintedDocument` — subject name, document id, issuing organisation, issue date — and offers no boolean. This is an API-shape control, not an enforcement: a caller can still derive a verdict from whether the call threw, but the result they hold carries the fields to compare and nothing that summarises them, so skipping the comparison is a deliberate act rather than the default. A test asserts no boolean member exists, so a later refactor adding a convenience accessor fails the build. |
 
 "Solved at the code layer" is a precise claim, not a rhetorical one: within the
 standard cryptographic threat model, forgery of the *artefact* is closed. It says

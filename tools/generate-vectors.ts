@@ -622,8 +622,10 @@ async function main(): Promise<void> {
       profile: 'A',
       type: 'verify',
       description:
-        'A character altered after the signed prefix, CRC left alone. It must still fail, because the ' +
-        'CRC covers the whole payload including the signature.',
+        'A character altered after the signed prefix, CRC left stale. Rejected on the CRC before any ' +
+        'cryptography runs. This tests corruption handling, NOT a security property: a CRC is trivially ' +
+        'recomputed, and an attacker who does so is then caught by the tail-order rule ' +
+        '(A-reject-template-not-last) or the signature itself (A-reject-bad-signature).',
       input: { payload: mutatedOutside },
       state: DEFAULT_STATE,
       expect: 'reject',

@@ -444,13 +444,17 @@ decision in the design, and it is a deliberate rejection of the pattern --- pars
 normalise, re-serialise, verify --- that has produced a long history of signature
 bypasses in XML, JSON and JWT processing.
 
-The suite pins the two ways an attacker might exploit a prefix rule.
-\code{A-reject-\allowbreak mutation-\allowbreak outside-\allowbreak signed-\allowbreak region} appends or alters data after the
-signature and must still be rejected, because the CRC covers the whole payload
-even though the signature does not; \code{A-reject-\allowbreak template-\allowbreak not-last} and
+The suite pins the one way an attacker might exploit a prefix rule, and is
+careful about what does the work. \code{A-reject-\allowbreak template-\allowbreak not-last} and
 \code{A-reject-\allowbreak subtag-\allowbreak not-last} reject a payload in which the signature template
-is not final, which is what would otherwise let an attacker extend the payload
-while keeping the signed prefix intact.
+is not final --- with the CRC correctly recomputed --- which is what would
+otherwise let an attacker extend the payload while keeping the signed prefix
+byte-identical. That ordering rule is the defence. The CRC is not: it is
+trivially recomputable, and \code{A-reject-\allowbreak mutation-\allowbreak outside-\allowbreak signed-\allowbreak region},
+which leaves it stale, tests only that accidental corruption is caught before
+any cryptography runs. An attacker who alters the bytes after the signed prefix
+and fixes the CRC finds nothing there but the signature and the CRC itself, and
+is rejected as a bad signature.
 
 \paragraph{Raw signatures, not DER.}
 Signatures are the P1363 concatenation $r \Vert s$, 64 bytes, rendered as 128
