@@ -797,6 +797,11 @@ and the paper's Limitations say.
 same listing and must share one consistency point: split them and a screen could
 read a status an appeal had already lapsed.
 
+**If a government adopted this, in what order:**
+[`docs/ADOPTION.md`](docs/ADOPTION.md) — roles, four phases, the gate between
+each that must not be waived, and what the sequence refuses. Roles, not
+institutions.
+
 **Which deployments are exposed, and to what:**
 [`docs/EXPOSURE.md`](docs/EXPOSURE.md) maps five common deployment patterns against
 P1–P9, says which KH-SQR closes and which it does not, and which patterns to

@@ -2491,6 +2491,99 @@ We have not implemented anything at this layer. It is policy, and it is named
 here because a threat decomposition that stopped at layer~3 would misrepresent
 where the residual risk finally settles.
 
+\subsection{A sequence for adoption}
+\label{sec:adoption}
+
+A government that took this paper's argument seriously would face an ordering
+problem, and the order is not free. Five results above fix it: coverage is a
+precondition rather than a benefit that scales
+(Section~\ref{sec:display}); cryptography and statute address different layers
+and neither substitutes for the other (Section~\ref{sec:general}); nothing can
+be evaluated without incident data (Section~\ref{sec:data}); encoding version~2
+is legacy-transparent, so a signed code is a valid unsigned one to every
+existing wallet (Section~\ref{sec:container}); and two specification gaps ---
+the printed bill carrying an amount, and the credential's verification at its
+own horizon --- must be closed by decision before the issuers they affect are
+enrolled (Section~\ref{sec:limits}). What follows is the sequence those five
+impose. It names roles rather than institutions, because the sequence follows
+from the function and the mapping is the adopting government's first decision.
+The full version, with gates and rejected options, is in the repository
+\citep{khsqr2026repo}.
+
+\paragraph{Roles.} A \emph{rail operator} holding the payment scheme and the
+authority to mandate what merchant codes look like; a \emph{ceremony authority}
+holding the Root key under split custody, air-gapped, and never the same body
+as the registry; a \emph{registry operator} that enrols keys and holds no key,
+no credential and no transaction; three \emph{trust-list publishers} under
+distinct operational control; a \emph{timestamp signer} outside the
+distribution provider; issuers for each profile, holding their own keys or
+signing through a governed shared service; a \emph{risk-list operator}; a
+\emph{financial regulator} owning the reporting mandate, the liability rule
+and the screening threshold; a \emph{communications regulator} owning the URL
+prohibition; an \emph{independent auditor} not paid by what it audits; and a
+\emph{statistics function} that publishes incident data by mechanism. Three
+rules run through the list: the Root is separated from everything online, so
+that compromising every online component together yields withholding and never
+issuance; conflicting roles sit in different bodies; and every officer is a
+named person, because an entry naming only an institution is not an audit
+entry.
+
+\paragraph{Phase 0, settle.} Nothing is deployed. The layer boundary is adopted
+as policy; roles are mapped to institutions; the scheme identifier is settled
+and the template identifiers confirmed unused against the national guideline;
+key custody devolution is decided; the credential horizon is decided, and
+until it is, Profile~B is scoped to documents whose own life is shorter than a
+key's; the bill question is decided; the implementation is independently
+audited; and \textbf{S1 is enacted}, so that a baseline exists before any
+intervention. Gate: every decision recorded, a first reporting period complete.
+
+\paragraph{Phase 1, foundation.} The ceremony authority is constituted and runs
+its first ceremony. The registry, the three publishers and the timestamp signer
+are deployed. First issuers enrol. \textbf{Visual uniformity is mandated} for
+printed codes --- the instrument of Section~\ref{sec:display}, cheap and
+independent of coverage --- and \textbf{S2 is enacted}, likewise independent.
+Officers enrol per person; screening deploys in advisory mode. Gate: a list at
+three mirrors, a timestamp on schedule, a rotation rehearsed.
+
+\paragraph{Phase 2, silent coverage.} Every new code is signed, existing codes
+are reprinted by exposure, and \emph{no verifier changes visible behaviour}:
+an unsigned code during this phase is an unenrolled merchant, and a wallet that
+says otherwise is training users to ignore it. Wallets do show the payee and the
+amount with its alphabetic currency for every code, which is true regardless of
+coverage. Screening runs in shadow, so the two-officer rule, the deadlines and
+the lapse are exercised before they have consequences. Gate: \textbf{coverage
+above a stated threshold of active merchant codes, measured} --- the one gate
+that must not be waived, because a deployment that proceeds below it has bought
+the cost of every later step and forfeited the benefit.
+
+\paragraph{Phase 3, visible verification.} Wallets distinguish signed from
+unsigned, and the public message is the narrow one of Section~\ref{sec:display}
+rather than a warning against printed codes. Screening moves from advisory to
+enforcing, with the low-value threshold set and owned by the regulator and
+every caller failing \emph{open}, because an unreachable list means unscreened
+and unscreened is not clear. The display rule phases in by turnover with
+provision below it. Profile~B extends to long-lived documents only in the
+direction Phase~0 decided. Gate: one reporting period enforcing, appeals within
+deadline, no sustained outage.
+
+\paragraph{Phase 4, steady state.} The public message becomes \emph{an unsigned
+code is anomalous}, true only now. S5 is enacted, calibrated on S1 data and
+conditional on screening existing. S6 is designed from data rather than
+assumed. Rotation is routine and a revocation has been drilled. Trust lists
+federate with linked schemes, which is what turns the legibility achieved in
+Phase~2 into verifiability.
+
+\paragraph{What the sequence refuses.} Warning the public against printed codes
+before saturation; screening that fails closed; visible verification before the
+coverage gate; S0 without S1; an institution's name in the scheme identifier
+before that institution has adopted; a brand on the proposals; and a registry
+that holds anything but keys. Each is rejected above for a stated reason, and
+each is attractive at some point in the sequence, which is why they are listed.
+
+\paragraph{What it does not know.} How many merchants there are; what coverage
+threshold suffices; what any of it costs; whether every issuer can hold a key;
+and how much of each attack actually happens. The last is why S1 is first.
+
 \section{Generalisation}
 \label{sec:general}
 
