@@ -797,6 +797,11 @@ and the paper's Limitations say.
 same listing and must share one consistency point: split them and a screen could
 read a status an appeal had already lapsed.
 
+**Screen captures behind the paper's claims:**
+[`docs/evidence/`](docs/evidence/README.md) — what each capture shows, where it
+came from, and what was covered before it was committed and why. Some captures
+are deliberately not kept; the manifest says which.
+
 **If a government adopted this, in what order:**
 [`docs/ADOPTION.md`](docs/ADOPTION.md) — roles, four phases, the gate between
 each that must not be waived, and what the sequence refuses. Roles, not

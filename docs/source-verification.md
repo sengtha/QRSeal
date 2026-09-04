@@ -79,6 +79,12 @@ both corrections are reflected in the paper.
 | No incident count, fraud rate or loss figure for code payments appears in Japan's MPM and CPM guidelines, either fraud-prevention guideline, the summary deck or the operator bylaws, nor on the scheme site or the association's publication index | same, plus the extraction's stated search scope (six documents, the scheme site, the association portal 2019–2026) | **Verified as an absence, with the scope of the search stated** — which is why §9 can say it. The claim is scoped to *the scheme body*: it is not a claim that no Japanese institution publishes fraud statistics. §9 uses it to argue the gap is structural to payment-scheme governance rather than a Cambodian shortfall. |
 | A shared fraud-identifier database said to have been deployed in December 2023 | — | **Not used.** The extraction mentioned it, but it is not in any of the supplied documents and no source was given. The 2019 guideline itself records only a recommendation to build an information-sharing framework, which is what §7 cites. |
 
+## Screen captures
+
+Captures that stand behind claims here are kept in [`evidence/`](evidence/README.md),
+with a manifest of what each shows, its source, and any redaction. Captures
+identifying a private individual are not kept, and the manifest says which.
+
 ## Reference identifiers: DOIs and links
 
 Every reference that has a DOI now carries it, and every reference that has a
