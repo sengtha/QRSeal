@@ -195,7 +195,11 @@ removes our excuse, not the attack.
 truthfulness is not in question; its *legitimacy* is, and legitimacy is a fact
 about intent and history, not about bytes. Nothing computable from the payload
 distinguishes a real merchant from a real criminal who completed the same
-onboarding.
+onboarding. And the onboarding itself can be passed by someone who is not
+there: a Ministry of Interior warning of September 2026 lists accounts opened
+remotely with a stolen ID photograph and a selfie among four ways criminals
+obtain mule accounts, alongside accounts bought, rented, or opened for a
+fictitious job (paper §6.3).
 
 ### P3 — URL quishing · **partly addressed, and this is the weaker half**
 

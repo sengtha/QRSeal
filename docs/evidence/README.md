@@ -48,6 +48,7 @@ who holds it.
 | File | Shows | Source | Covered |
 |---|---|---|---|
 | *(pending)* `mef-telegram-warning-post.png` | The Ministry of Economy and Finance's verified page, its warning post, the timestamp, and the reaction and share counts, with the warning graphic embedded | The Ministry's Facebook page, `facebook.com/share/p/1GgsosTuMS/`, September 2026 | The payment QR and the payee name inside the embedded graphic; the phone's status bar cropped |
+| *(pending)* `moi-mule-warning-page.png`, `moi-mule-warning-post-1.png`, `moi-mule-warning-post-2.png` | The Ministry of Interior general department's verified page, and its 4 September 2026 warning on how criminals obtain mule accounts, in full | The Department's Facebook page, `facebook.com/share/p/1JJsXPRWyC/` | The "Followed by" line on the page capture, which names three private individuals; the phone's status bar cropped. Nothing in the post itself: no code, no account, no person |
 | *(pending)* `jpqr-site-*.png` | The scheme operator's public onboarding pages for JPQR merchant-presented codes | `jpqr.paymentsjapan.or.jp` | Nothing — a public scheme website with no personal data |
 | *(pending)* `khmertimes-verify-418k.png` | A news headline reporting the volume of digital diplomas issued through the national lookup platform | Khmer Times | Nothing |
 
