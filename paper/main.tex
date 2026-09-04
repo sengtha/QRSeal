@@ -119,10 +119,10 @@ missed.
 The corollary is constructive. Where a control cannot be enforced below the
 harm, four moves remain: raise the control above the meaning, reverse the
 transfer, remove the convertibility of the proceeds, or reallocate the loss.
-S0--S6 are offered as an existence proof that each move is available, not as a
-national programme; the first is a categorical prohibition on URL-bearing
-payment and official codes, which closes one channel and does not reduce the
-adversary's budget. We report two failures of our own work --- the reference
+S0--S6 are one concrete instance of each move, sequenced so that a government
+could evaluate them in order, and not a costed programme; the first is a
+categorical prohibition on URL-bearing payment and official codes, which closes
+one channel and does not reduce the adversary's budget. We report two failures of our own work --- the reference
 deployment does not meet its mirror-independence requirement, and the first
 container encoding was not readable by a conforming EMVCo parser, since
 corrected at a cost of sixty-one characters and one symbol version --- and we
@@ -863,6 +863,32 @@ inexpensive handset in poor light. It falls on merchants, who must reprint, and
 a scheme that requires every merchant in the country to reprint has an adoption
 problem that no amount of cryptographic elegance addresses.
 
+\paragraph{An envelope, in place of the census we could not obtain.} We were
+unable to obtain a count of active KHQR merchant codes: the figures in
+circulation disagree about what they count (Section~\ref{sec:background}), and
+we quote none. Second-hand summaries of the central bank's 2024 reporting put
+acceptance points in the millions; we have not verified that figure and use
+only its order of magnitude. What can be said without a census is the shape of
+the cost. The print is the small part: a sticker is a unit cost of cents, so at
+that order of magnitude the reprint is a programme costing millions of dollars
+in print alone, and the visit to each merchant --- to enrol a key and replace
+the sticker --- exceeds the print by a multiple we cannot estimate.
+Scannability at sticker size is the part Table~\ref{tab:qr} does let us bound.
+Japan's guideline sets a minimum cell of 0.33\,mm and recommends 0.5\,mm
+(Section~\ref{sec:display}); a version~11 symbol of $61\times61$ modules is
+therefore 20\,mm across at the minimum and 31\,mm at the recommendation, and a
+counter sticker of the size commonly seen --- which we put at 50 to 80\,mm
+without having measured one --- prints it at 0.8 to 1.3\,mm per module, two to
+four times the minimum. The size cost does not bind at sticker size. It binds
+where the symbol is small, on a receipt, a low-resolution screen or the corner
+of a bill, and on the handset side, in the scan trial at versions 10 and 11 we
+have not run. That is the envelope: print is cheap, the visit is not, and the
+symbol stays within a national guideline's own printing tolerance at the sizes
+stickers are printed at. Japan's central print channel, which
+Section~\ref{sec:display} recovers as the option compatible with a stall that
+has no device, has no Cambodian cost attached either; what it would change in
+this envelope is the visit, which it converts into a mailing.
+
 The measurement also records the encoding mode, which surfaces something the
 version alone conceals. The reference payload's acquirer identifier is
 lowercase, which forces a byte-mode segment; making it uppercase keeps the
@@ -938,6 +964,12 @@ attacks the new structure introduces, namely data appended after the signature
 templates (\code{A2-reject-\allowbreak appended-\allowbreak after-\allowbreak
 signature}) and a foreign identifier in place of the scheme's
 (\code{A2-reject-\allowbreak foreign-\allowbreak guid}).
+
+The three identifiers are checked against Japan's guideline and not against
+Cambodia's own, which we could not obtain; an implementer should treat them as
+provisional until that check is made, and the adoption sequence of
+Section~\ref{sec:adoption} makes it a gate before anything is deployed
+(Section~\ref{sec:limits}).
 
 We also record an erratum in the version~1 vectors: the reference payload
 declares template \code{85}'s length as 200 where its content is 201
@@ -1121,7 +1153,8 @@ four thousand.
 And the dual circulation is structural rather than incidental. The National Bank
 reports foreign-currency deposits at 84.4 per cent of broad money and 90.7 per
 cent of total deposits for 2025, a ratio that has moved only between 83.0 and
-85.1 per cent over six years \citep{chay2026stages}. A payer at a Cambodian
+85.1 per cent over six years \citep{nbcfsr2025}, as quoted in
+\citet{chay2026stages}. A payer at a Cambodian
 counter is therefore not choosing between a normal currency and an exotic one.
 Both are ordinary, which is what makes the substituted code unremarkable to look
 at and what rules out the defence a designer would otherwise reach for --- that
@@ -1196,7 +1229,8 @@ one --- so the burden falls back on dissemination
 \paragraph{And one identity anchor is weaker than it is usually assumed to be.}
 The Global Findex 2025 survey reports that 60.1 per cent of Cambodian phone
 owners say the SIM in their phone is registered in their own name
-\citep{chay2026stages}: for roughly two adults in five, the handset is not
+\citep{findex2025}, as quoted in \citet{chay2026stages}: for roughly two adults
+in five, the handset is not
 identity-bound. We draw a conditional consequence rather than a general one,
 because we have not established how any particular Cambodian institution
 enrols. To whatever extent an account, a recovery path or a step-up
@@ -1413,44 +1447,22 @@ not contract. Five mechanisms drive it, each running one way only:
 \end{enumerate}
 
 \paragraph{The same trajectory is now running on documents, one step behind.}
-Everything above concerns payments, because that is where habituation is
-complete. Document verification is at the stage payments were at earlier: a
-national platform exists, adoption is real but the artefacts are not yet
-load-bearing in daily life, and the payoff to attacking it is correspondingly
-low. That is a statement about \emph{today}, and the mechanisms listed above do
-not care which artefact they run on.
-
-The attack the trajectory produces is worth stating before it arrives, because
-its shape is already fully determined by the design. A forged certificate, land
-title or official notice is manufactured with a QR code of the forger's
-choosing. The recipient is told the document is genuine and invited to check it
---- \emph{scan the code and see for yourself} --- and the code opens a
-counterfeit page that confirms the document and, in the second stage, asks the
-reader to enter their own details to complete the check. Every element is
-supplied by the attacker: the paper, the code, the page, and the instruction to
-scan.
-
-Three things make this worse than its payment equivalent rather than merely
-analogous. There is no genuine artefact underneath, as there is beneath a
-sticker on a merchant's code, so nothing is displaced and nothing goes missing
-to be noticed later. The invitation to verify is not a red flag but the
-mechanism working as designed --- a forger who says ``scan it and check''
-sounds exactly like an honest issuer, and confidence in the document rises
-because the check was offered. And the reader's only defence is reading a domain
-name, since a counterfeit page is reached the same way the real one is, which
-returns to Section~\ref{sec:indicators}.
-
-The residue is what makes the timing matter. Habituation is what the attack
-consumes, and habituation is what successful adoption produces: the more
-reliably a state platform teaches the public that scanning a government code
-yields an authoritative answer, the more a counterfeit of it is worth. An
-offline signature removes the page from the attack entirely --- there is no
-service to impersonate when the verifier consults nothing --- and relocates the
-residue to the verifier application, which Section~\ref{sec:counterfeit} says is
-addressed weakly. That is a smaller and better-understood problem than a
-counterfeit website, and it is the case for making the change before the
-platform is load-bearing rather than after, when the installed base of printed
-documents will make it expensive.
+Document verification is at the stage payments were at earlier: a national
+platform exists, adoption is real, and the artefacts are not yet load-bearing
+in daily life, so the payoff to attacking them is still low. The mechanisms
+above do not care which artefact they run on, and the attack they will produce
+is already determined by the design: a forged certificate or notice carries a
+code of the forger's choosing, the recipient is invited to \emph{scan and see
+for yourself}, and the code opens a counterfeit page that confirms the document
+and then asks for the reader's own details. Every element is supplied by the
+attacker; nothing genuine is displaced to be missed later; the invitation to
+verify sounds exactly like an honest issuer; and the reader's only defence is a
+domain name (Section~\ref{sec:indicators}). Habituation is what that attack
+consumes and what successful adoption produces. An offline signature removes
+the page from the attack entirely and relocates the residue to the verifier
+application, a smaller and better-understood problem, which is the case for
+making the change before the platform is load-bearing rather than after, when
+the installed base of printed documents will make it expensive.
 
 \paragraph{And this design widens the gap it cannot close.}
 Every signed code that a person scans successfully teaches them that the system
@@ -1475,38 +1487,25 @@ evidence; this is the stronger form of that argument. Without measurement, the
 trajectory described here cannot be observed even in principle, and the net
 effect of deploying this design will remain unknown for as long as that holds.
 
-There is a governance consequence, and it is the more serious half. A commercial
-system in this position would at least be told: it faces competitors, it loses
-share, and the loss is legible early enough to force a decision while the
-decision is still cheap. National payment and credential infrastructure faces no
-competitor and offers its users no exit, so no such signal is generated. Without
-published incident statistics there is no scoreboard either, and a system can
-therefore degrade for years with nothing that would compel anyone to act ---
-while the installed base of printed artefacts, registered merchants and issued
-credentials grows monotonically, so the cost of changing course rises the whole
-time. Measurement is not only how prioritisation is argued from evidence. It is
-the only mechanism available here that could produce pressure to change a format
-while changing it is still affordable.
+There is a governance consequence. A commercial system in this position would
+at least lose share, and the loss would be legible early enough to force a
+decision while it is still cheap. National payment and credential
+infrastructure faces no competitor and offers no exit, so no such signal is
+generated, and without published statistics there is no scoreboard either;
+meanwhile the installed base of printed artefacts, registered merchants and
+issued credentials grows, so the cost of changing course rises the whole time.
+Measurement is the only mechanism available here that could produce pressure
+to change a format while changing it is still affordable.
 
-\paragraph{What follows for sequencing.}
-If exposure grows, the interventions of Section~\ref{sec:institutional} do not
-age equally, and the difference is systematic.
-
-\begin{itemize}[leftmargin=1.4em]
-  \item \textbf{Detection-dependent controls degrade with volume.} Screening
-    protects nobody until somebody has listed the account; the contest procedure
-    requires officers to answer within a deadline. Both consume institutional
-    effort in proportion to attacker volume, and in a rising market both lose
-    that race.
-  \item \textbf{Substrate controls are volume-independent.} Exit controls
-    (Section~\ref{sec:exit}) do not care how many attacks occur. Illiquidity
-    applies identically at ten incidents and at ten thousand, and costs no more
-    to enforce at either.
-\end{itemize}
-
-\noindent Under a rising trajectory the ordering should therefore shift further
-towards the substrate and away from detection. We record this as a consequence
-of the argument rather than as a recommendation we can support with measurement.
+\paragraph{What follows for sequencing.} If exposure grows, the interventions
+of Section~\ref{sec:institutional} do not age equally. Detection-dependent
+controls --- screening, the contest procedure --- consume institutional effort
+in proportion to attacker volume and lose that race in a rising market;
+substrate controls such as the exit controls of Section~\ref{sec:exit} apply
+identically at ten incidents and at ten thousand. Under a rising trajectory the
+ordering should therefore shift towards the substrate and away from detection,
+which we record as a consequence of the argument rather than as a
+recommendation we can support with measurement.
 
 \paragraph{Who ends up bearing it, if nothing at the substrate changes.}
 One consequence of a rising trajectory is distributional, and it is already
@@ -1524,11 +1523,10 @@ everyone at once and cannot be bought out of; its own cost, which falls on the
 same people, is taken up in Section~\ref{sec:exit}. We have no data on how many
 Cambodians already pay for intermediated safety, and we do not claim to.
 
-\paragraph{What kind of claim this is.}
-It is a mechanism argument, not a forecast. Each item above is structural and
-one-directional, and we can say which way the gap moves. We cannot say how fast,
-and with no incident data we can neither estimate the magnitude nor, at present,
-observe it. We make no quantitative prediction, and we would distrust one.
+\paragraph{What kind of claim this is.} A mechanism argument, not a forecast.
+Each item above is structural and one-directional, so we can say which way the
+gap moves and not how fast; with no incident data we can neither estimate the
+magnitude nor, at present, observe it.
 
 \subsection{Summary}
 
@@ -1536,8 +1534,8 @@ Layers~1 and~2 are the parts of the problem that cryptography addresses, and
 this design addresses them. Layers~3 and~4 are the parts it does not address at all, and the parts toward
 which attacker effort migrates once forgery is closed on a rail whose transfers
 are final. Whether they already dominate Cambodian losses is unmeasured
-(Section~\ref{sec:data}); every Cambodian case this paper could document sits
-there, which is suggestive and is not a statistic. Any presentation
+(Section~\ref{sec:data}); the cases we use to exhibit the boundary all sit
+there, which is why they were chosen and is not a statistic. Any presentation
 of this work that inverts that emphasis misrepresents it. And by
 Section~\ref{sec:trajectory}, the share of the problem it does not address
 should be expected to grow --- partly for reasons that have nothing to do with
@@ -1570,11 +1568,12 @@ reporting (Section~\ref{sec:response}); S2 the categorical URL prohibition
 listing (Section~\ref{sec:appeal}); S5 liability allocation
 (Section~\ref{sec:liability}); and S6 exit controls (Section~\ref{sec:exit}).
 They are reference designs, two of them implemented as far as software reaches
-and none trialled. Their purpose in this paper is to show that each of the four
-moves of Section~\ref{sec:degrees} is available in a concrete form --- an
-existence proof that the layer result is not a counsel of despair --- and not
-to set out a national programme, which would need the evaluation, the costing
-and the incident data that Section~\ref{sec:limits} says we do not have.
+and none trialled. Their purpose is to show each of the four moves of
+Section~\ref{sec:degrees} in a concrete form, and in an order a government
+could evaluate them in --- which Section~\ref{sec:adoption} gives in a page,
+with the detail in the repository. What they are not is a costed programme:
+the evaluation, the costing and the incident data that would make them one are
+what Section~\ref{sec:limits} says we do not have.
 
 \subsection{The response so far, and the signal that was never built}
 \label{sec:response}
@@ -2036,7 +2035,8 @@ without dissolving it.} The Global Findex 2025 survey of Cambodia, fielded in
 2024, puts mobile phone ownership at 81.3 per cent of adults against account
 ownership at 39.0 per cent --- a national gap of 42.3 points --- and, within the
 survey's own strata, device ownership at parity (81.2 against 81.4 per cent)
-while account ownership differs by 31.2 points \citep{chay2026stages}. The
+while account ownership differs by 31.2 points \citep{findex2025}, as quoted in
+\citet{chay2026stages}. The
 binding constraint on Cambodian financial participation is the account, not the
 handset, and the handset is not the thing that is unevenly distributed.
 
@@ -2387,11 +2387,11 @@ matters.
 
 \begin{widefigure}
 \centering
-\begin{tikzpicture}[font=\scriptsize,node distance=3mm and 4mm,
-  fstep/.style={draw,rounded corners=1pt,align=center,inner sep=2.5pt,minimum width=24mm},
+\begin{tikzpicture}[font=\footnotesize,node distance=4mm and 5mm,
+  fstep/.style={draw,rounded corners=1pt,align=center,inner sep=3pt,minimum width=27mm},
   fq/.style={draw,diamond,aspect=2.2,align=center,inner sep=0.5pt},
-  fstop/.style={draw,thick,fill=black!10,align=center,inner sep=2.5pt,minimum width=24mm},
-  fgo/.style={draw,thick,align=center,inner sep=2.5pt,minimum width=24mm},
+  fstop/.style={draw,thick,fill=black!10,align=center,inner sep=3pt,minimum width=27mm},
+  fgo/.style={draw,thick,align=center,inner sep=3pt,minimum width=27mm},
   hd/.style={font=\footnotesize\bfseries},
   >={Stealth[length=2mm]}]
 \node[hd] (h1) {Verifier (layer 1): fails closed};
@@ -2687,14 +2687,19 @@ and digital platforms to obligations of prevention, detection and response
 across scams generally, with compensation reached through dispute resolution
 rather than a reimbursement rule \citep{au2025spf}. The United Kingdom's
 Confirmation of Payee is not a liability rule at all but a name check at
-initiation, and it sits in Table~\ref{tab:alternatives} for that reason: it
-reaches a false pretext only where the payer holds an expectation about the
-name, which Section~\ref{sec:app} shows is the condition the Cambodian cases
-lack \citep{payuk2020cop}. Read together, the three fix the two questions a
-Cambodian rule would have to answer first: whether authorised payments are in
-scope at all, and whether the recipient's institution is bound. We know of no
-published evaluation of any of them that isolates the effect of the allocation
-from everything else changed at the same time, and we make no claim about which
+initiation, and it sits in Table~\ref{tab:alternatives} for that reason
+\citep{payuk2020cop}. It reaches a false pretext only where the payer holds an
+expectation about the name, so it would not have helped the relative-takeover
+and ministry-letter shapes of Section~\ref{sec:app}; that is a statement about
+those two shapes, not about its effect in the United Kingdom, where the
+evidence is public and mixed and we have not reviewed it. We describe all three
+regimes from their published summaries and not from the primary texts, which
+were not reachable when this was written, and we take from them nothing but
+scope. Even at that resolution they expose the two questions a Cambodian rule
+would have to answer first: whether authorised payments are in scope at all,
+and whether the recipient's institution is bound. We know of no published
+evaluation of any of them that isolates the effect of the allocation from
+everything else changed at the same time, and we make no claim about which
 works.
 
 \paragraph{One scheme wrote these rules and did not publish them.} Japan's
@@ -2725,93 +2730,57 @@ where the residual risk finally settles.
 
 A government that took this paper's argument seriously would face an ordering
 problem, and the order is not free. Five results above fix it: coverage is a
-precondition rather than a benefit that scales
-(Section~\ref{sec:display}); cryptography and statute address different layers
-and neither substitutes for the other (Section~\ref{sec:general}); nothing can
-be evaluated without incident data (Section~\ref{sec:data}); encoding version~2
-is legacy-transparent, so a signed code is a valid unsigned one to every
-existing wallet (Section~\ref{sec:container}); and two specification gaps ---
-the printed bill carrying an amount, and the credential's verification at its
-own horizon --- must be closed by decision before the issuers they affect are
-enrolled (Section~\ref{sec:limits}). What follows is the sequence those five
-impose. It names roles rather than institutions, because the sequence follows
-from the function and the mapping is the adopting government's first decision.
-The full version, with gates and rejected options, is in the repository
-\citep{khsqr2026repo}.
+precondition rather than a benefit that scales (Section~\ref{sec:display});
+cryptography and statute address different layers and neither substitutes for
+the other (Section~\ref{sec:general}); nothing can be evaluated without
+incident data (Section~\ref{sec:data}); encoding version~2 is
+legacy-transparent, so a signed code is a valid unsigned one to every existing
+wallet (Section~\ref{sec:container}); and the two specification gaps --- the
+printed bill carrying an amount, and the credential at its horizon --- must be
+closed by decision before the issuers they affect are enrolled
+(Section~\ref{sec:limits}). The sequence those five impose fits in a page. It
+names roles rather than institutions, because the mapping is the adopting
+government's first decision. The roles, their separation, the gates and the
+rejected options are set out in full in the repository \citep{khsqr2026repo};
+three rules run through all of them: the Root is separated from everything
+online, conflicting roles sit in different bodies, and every officer is a named
+person.
 
-\paragraph{Roles.} A \emph{rail operator} holding the payment scheme and the
-authority to mandate what merchant codes look like; a \emph{ceremony authority}
-holding the Root key under split custody, air-gapped, and never the same body
-as the registry; a \emph{registry operator} that enrols keys and holds no key,
-no credential and no transaction; three \emph{trust-list publishers} under
-distinct operational control; a \emph{timestamp signer} outside the
-distribution provider; issuers for each profile, holding their own keys or
-signing through a governed shared service; a \emph{risk-list operator}; a
-\emph{financial regulator} owning the reporting mandate, the liability rule
-and the screening threshold; a \emph{communications regulator} owning the URL
-prohibition; an \emph{independent auditor} not paid by what it audits; and a
-\emph{statistics function} that publishes incident data by mechanism. Three
-rules run through the list: the Root is separated from everything online, so
-that compromising every online component together yields withholding and never
-issuance; conflicting roles sit in different bodies; and every officer is a
-named person, because an entry naming only an institution is not an audit
-entry.
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Settle.} Nothing is deployed. The layer boundary is adopted as
+    policy; roles are mapped to institutions; the template identifiers are
+    confirmed unused against the national guideline; the bill and horizon
+    questions are decided; the implementation is independently audited; and S1
+    is enacted, so that a baseline exists before any intervention. Gate: a
+    first reporting period complete.
+  \item \textbf{Foundation.} The Root ceremony is performed; the registry,
+    three independent publishers and the timestamp signer are deployed; first
+    issuers enrol. Visual uniformity for printed codes and S2 are enacted, both
+    independent of coverage. Screening deploys in advisory mode. Gate: a list
+    at three mirrors, a timestamp on schedule, a rotation rehearsed.
+  \item \textbf{Silent coverage.} Every new code is signed and existing codes
+    are reprinted by exposure, while no verifier changes visible behaviour: an
+    unsigned code in this phase is an unenrolled merchant. Wallets show payee,
+    amount and alphabetic currency for every code. Screening runs in shadow.
+    Gate: coverage above a stated threshold of active merchant codes, measured
+    --- the one gate that must not be waived.
+  \item \textbf{Visible verification.} Wallets distinguish signed from
+    unsigned; screening enforces, failing open, with the low-value threshold
+    owned by the regulator; the display rule phases in by turnover, with
+    provision below it. Gate: one reporting period enforcing, appeals within
+    deadline, no sustained outage.
+  \item \textbf{Steady state.} The public message becomes \emph{an unsigned
+    code is anomalous}, true only now. S5 is enacted on S1 data; S6 is designed
+    from data rather than assumed; trust lists federate with linked schemes.
+\end{enumerate}
 
-\paragraph{Phase 0, settle.} Nothing is deployed. The layer boundary is adopted
-as policy; roles are mapped to institutions; the scheme identifier is settled
-and the template identifiers confirmed unused against the national guideline;
-key custody devolution is decided; the credential horizon is decided, and
-until it is, Profile~B is scoped to documents whose own life is shorter than a
-key's; the bill question is decided; the implementation is independently
-audited; and \textbf{S1 is enacted}, so that a baseline exists before any
-intervention. Gate: every decision recorded, a first reporting period complete.
-
-\paragraph{Phase 1, foundation.} The ceremony authority is constituted and runs
-its first ceremony. The registry, the three publishers and the timestamp signer
-are deployed. First issuers enrol. \textbf{Visual uniformity is mandated} for
-printed codes --- the instrument of Section~\ref{sec:display}, cheap and
-independent of coverage --- and \textbf{S2 is enacted}, likewise independent.
-Officers enrol per person; screening deploys in advisory mode. Gate: a list at
-three mirrors, a timestamp on schedule, a rotation rehearsed.
-
-\paragraph{Phase 2, silent coverage.} Every new code is signed, existing codes
-are reprinted by exposure, and \emph{no verifier changes visible behaviour}:
-an unsigned code during this phase is an unenrolled merchant, and a wallet that
-says otherwise is training users to ignore it. Wallets do show the payee and the
-amount with its alphabetic currency for every code, which is true regardless of
-coverage. Screening runs in shadow, so the two-officer rule, the deadlines and
-the lapse are exercised before they have consequences. Gate: \textbf{coverage
-above a stated threshold of active merchant codes, measured} --- the one gate
-that must not be waived, because a deployment that proceeds below it has bought
-the cost of every later step and forfeited the benefit.
-
-\paragraph{Phase 3, visible verification.} Wallets distinguish signed from
-unsigned, and the public message is the narrow one of Section~\ref{sec:display}
-rather than a warning against printed codes. Screening moves from advisory to
-enforcing, with the low-value threshold set and owned by the regulator and
-every caller failing \emph{open}, because an unreachable list means unscreened
-and unscreened is not clear. The display rule phases in by turnover with
-provision below it. Profile~B extends to long-lived documents only in the
-direction Phase~0 decided. Gate: one reporting period enforcing, appeals within
-deadline, no sustained outage.
-
-\paragraph{Phase 4, steady state.} The public message becomes \emph{an unsigned
-code is anomalous}, true only now. S5 is enacted, calibrated on S1 data and
-conditional on screening existing. S6 is designed from data rather than
-assumed. Rotation is routine and a revocation has been drilled. Trust lists
-federate with linked schemes, which is what turns the legibility achieved in
-Phase~2 into verifiability.
-
-\paragraph{What the sequence refuses.} Warning the public against printed codes
-before saturation; screening that fails closed; visible verification before the
-coverage gate; S0 without S1; an institution's name in the scheme identifier
-before that institution has adopted; a brand on the proposals; and a registry
-that holds anything but keys. Each is rejected above for a stated reason, and
-each is attractive at some point in the sequence, which is why they are listed.
-
-\paragraph{What it does not know.} How many merchants there are; what coverage
-threshold suffices; what any of it costs; whether every issuer can hold a key;
-and how much of each attack actually happens. The last is why S1 is first.
+\noindent The sequence refuses, for reasons given where each arises: a public
+warning against printed codes before saturation; screening that fails closed;
+visible verification before the coverage gate; S0 without S1; and an
+institution's name in the scheme identifier before that institution has
+adopted. What it does not know is how many merchants there are, what coverage
+threshold suffices, what any of it costs, and how much of each attack actually
+happens --- which is why S1 is first.
 
 \section{Generalisation}
 \label{sec:general}
@@ -3148,20 +3117,14 @@ diagnostic question above as a design practice.
 
 \subsection{Other push-payment markets}
 
-Where Japan is a contrast, real-time push-payment systems whose transfers are
-final and initiated from a machine-readable artefact are instances: the
-substrate is Bakong's, and the layer result of Section~\ref{sec:layers} applies
-to them by construction rather than by analogy. Contrast and instance do
-different work: the contrast identifies which property drives exposure, and an
-instance shows the same property in place elsewhere. We do not name particular
-schemes, because to name one as an instance is to imply that the same migration
-of attacker effort from instrument to persuasion has been observed there, and
-that is a claim about incident data we have not examined in any of them. The
-structural point stands independently of the numbers: where payments are final
-and initiation is delegated to an artefact the user cannot read, securing the
-artefact is necessary and is not close to sufficient. Whether that has already
-played out in a given market is a question for that market's statistics, where
-they exist.
+Where Japan is a contrast, any real-time push-payment system whose transfers
+are final and initiated from a machine-readable artefact is an instance, and
+the layer result of Section~\ref{sec:layers} applies to it by construction:
+securing the artefact is necessary and is not close to sufficient. We name
+none, because to call a scheme an instance is to claim that the migration of
+attacker effort from instrument to persuasion has been observed there, and that
+is a question for each market's incident statistics, which we have not
+examined.
 
 \section{Data availability and the absence of Cambodian incident statistics}
 \label{sec:data}
@@ -3415,10 +3378,9 @@ conformance suite whose negative cases outnumber its positive ones.
 
 It achieves nothing whatever against deception: the category toward which
 attacker effort migrates once forgery is closed on a rail whose transfers are
-final, and the one in which every Cambodian case this paper could document
-sits. Whether it already dominates Cambodian losses is unmeasured, and we do
-not say that it does. A
-genuine code, correctly signed and payable to a correctly registered account,
+final, and the one the cases we chose to exhibit the boundary sit in, which is
+why they were chosen. Whether it already dominates Cambodian losses is
+unmeasured, and we do not say that it does. A genuine code, correctly signed and payable to a correctly registered account,
 presented with a false story, verifies --- and must. The deception is created one
 layer above the enforcement point, and no control at the lower layer reaches it.
 That is not a deficiency of this design but a property of layered systems, and
@@ -3428,14 +3390,19 @@ secured custody of an asset and left exposure to it untouched.
 The practical implication is uncomfortable for anyone hoping cryptography will
 settle the matter. If the structural argument is right, the next marginal
 improvement in Cambodian QR fraud outcomes will not come from a better
-signature. It will come from a categorical rule that
-empties the legitimate set of URL-bearing payment codes, which costs nothing to
-enforce against the small regulated population that would otherwise falsify it;
-from shortening the interval between an institution recognising a mule account
-and every other institution being able to act on it; from allocating liability
-so that the party best placed to prevent a loss bears part of it; and, before
-any of them, from publishing incident data so that the prioritisation can be
-argued from evidence rather than, as here, from structure.
+signature, because the layer it would have to reach is not one a signature
+occupies. What the layer result says is where a control must sit, not which
+one comes next. Four are available at that height, and
+Section~\ref{sec:institutional} gives one instance of each: a categorical rule
+that empties the legitimate set of URL-bearing payment codes, at a cost to the
+issuers it binds that Section~\ref{sec:categorical} leaves unquantified; a
+shorter interval between an institution recognising a mule account and every
+other institution being able to act on it; an allocation of liability under
+which the party best placed to prevent a loss bears part of it; and controls on
+the convertibility of the proceeds. None is evaluated here. The one thing we do
+ask for, before any of them, is the publication of incident data, so that the
+choice among them can be argued from evidence rather than, as here, from
+structure.
 
 Each of those is an intervention at a layer the code cannot reach, which is the
 point. The response to a control that stops too low is not a stronger control at

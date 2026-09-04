@@ -34,9 +34,9 @@ TypeScript, Web Crypto only, Cloudflare Workers. MIT licensed.
 ## Read this first
 
 **KH-SQR addresses forgery. It does not prevent authorised push payment fraud,
-the category toward which attacker effort migrates once forgery is closed and the
-one every Cambodian case in the paper falls into, and nothing built on it should
-suggest otherwise.** Whether that category already dominates Cambodian losses is
+the category toward which attacker effort migrates once forgery is closed — the
+one the paper's illustrative cases were chosen from — and nothing built on it
+should suggest otherwise.** Whether that category already dominates Cambodian losses is
 unmeasured, because nobody publishes the data; the argument does not need the
 ranking and this project does not make it.
 
