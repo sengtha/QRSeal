@@ -337,6 +337,24 @@ The key identifier MUST appear in the COSE **protected** header as an 8-byte
 byte string. A kid in the unprotected header can be replaced in transit to steer
 a verifier at a different trust-list entry, and MUST be rejected.
 
+### 3.1a Horizon — a hard gate on what Profile B may carry
+
+A verifier resolves a key only while the trust list says it is valid (§4.2,
+`KEY_EXPIRED`) and stops verifying once its list is older than 30 days (§4.2,
+`TRUSTLIST_STALE`). Neither rule is written for a document that outlives its
+issuing key, and this specification does not yet say how a verifier decades
+after issuance obtains the issuer's key, establishes that it was the issuer's,
+or shows that the signature predated the key's expiry.
+
+Until it does, **an issuer MUST NOT issue a Profile B credential for a document
+whose intended verification life exceeds the `notAfter` of the signing key.**
+This is a rule, not advice. A degree, a land title and a civil-status record
+are outside the profile as it stands; a receipt, a permit, a ticket or a
+short-lived licence are inside it. An issuer that needs the former today should
+keep its lookup reference, or emit a signed credential beside it that is
+understood to expire with its key (paper §4.3). The archival mechanism that
+would lift this gate is a specification change and is recorded as open in §9.
+
 ### 3.2 The payload MUST NOT be a URL
 
 A Profile B payload MUST NOT be an `http` or `https` URL, and a verifier MUST
@@ -599,6 +617,18 @@ still encounter it.
 - **Foreign and platform codes.** Codes from systems outside the trust
   hierarchy cannot be verified, and a verifier that shows "unverified" for the
   majority of what people scan trains them to ignore the indicator.
+- **A printed bill carrying an amount.** §2.5 forbids an amount on a static
+  code and bounds a dynamic code's life at 300 s (`STATIC_CODE_WITH_AMOUNT`,
+  `EXPIRY_WINDOW_TOO_LONG`). A payable notice that needs both an amount and a
+  life of weeks is therefore not expressible. The issuers affected — utilities,
+  tax and fee collection — are national in scale. Closing this is a third code
+  kind with its own replay and reprint semantics, not a setting, and it has not
+  been designed.
+- **Credentials that outlive their key.** §3.1a gates Profile B to documents
+  shorter-lived than the signing key, because the archival verification path —
+  how a verifier decades out obtains and trusts the issuer's key and dates the
+  signature against it — is unspecified. Until it is specified, long-lived
+  documents are outside the profile.
 - **Legacy transparency, in encoding version 1.** As §2.4 records, template
   `85` is not transparent to a strict EMVCo parser under version 1: its length
   encoding is not EMVCo's, and it does not carry the Globally Unique Identifier

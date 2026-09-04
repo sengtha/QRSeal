@@ -85,7 +85,8 @@ Three design rules run through that table:
 Decisions that cannot be revisited cheaply, and that later phases depend on.
 
 1. **Adopt the layer boundary as policy.** Signatures close forgery. They do not
-   touch the dominant attack. Any communication that suggests otherwise is
+   touch deception, the attack toward which effort migrates once forgery is
+   closed. Any communication that suggests otherwise is
    refused at this phase and every later one.
 2. **Map the roles above to institutions.** Including who is the ceremony
    authority and who the three publishers are.

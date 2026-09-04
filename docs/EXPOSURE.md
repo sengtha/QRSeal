@@ -97,8 +97,10 @@ something else must carry it.
 | **P8** | Mule cash-out | **No** | **S6** exit controls on convertibility. Not a code-layer problem at any point |
 
 **The two `Fixed` rows are the whole of what cryptography buys**, and P4 — the
-one marked `No` — is the attack that dominates. That ordering is the argument,
-not a disclaimer attached to it.
+one marked `No` — is the attack toward which effort migrates once they are
+closed, and the one every documented Cambodian case falls into. Whether it
+already dominates losses is unmeasured (see the last section). That ordering is
+the argument, not a disclaimer attached to it.
 
 ---
 

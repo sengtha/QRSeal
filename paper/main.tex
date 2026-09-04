@@ -29,6 +29,8 @@
 \usepackage{xcolor}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing,shapes.geometric}
 \usepackage{enumitem}
 \usepackage[hyphens]{url}
 \usepackage[hidelinks,breaklinks]{hyperref}
@@ -57,10 +59,12 @@
 % the page there and behave as ordinary floats in single column.
 \ifdefined\twocol
   \newenvironment{widetable}{\begin{table*}[t]}{\end{table*}}
+  \newenvironment{widefigure}{\begin{figure*}[t]}{\end{figure*}}
   \setlength{\emergencystretch}{3em}
   \tolerance=1200
 \else
   \newenvironment{widetable}{\begin{table}[t]}{\end{table}}
+  \newenvironment{widefigure}{\begin{figure}[t]}{\end{figure}}
 \fi
 
 % Three inline reference tables sit in the running text rather than floating.
@@ -78,7 +82,7 @@
 \author{Chay Sengtha\thanks{National University of Management, Phnom Penh.
 Correspondence: \texttt{sengtha@gmail.com}.}}
 
-\date{August 2026\\[0.5em]\normalsize\emph{Preprint. Comments welcome.}}
+\date{September 2026\\[0.5em]\normalsize\emph{Preprint. Comments welcome.}}
 
 \newcommand{\frontmatterblock}{%
 \begin{abstract}
@@ -91,58 +95,41 @@ routinely conflated: forgery, where a code is not what it claims to be, and
 deception, where a genuine code, correctly signed and payable to a correctly
 registered account, is presented under a false pretext.
 
-This paper is the technical and institutional report of \textbf{QRSeal}, a
-project in two halves. \textbf{KH-SQR} is its specification --- the wire format,
-the profiles, the trust hierarchy and the conformance suite, which is what an
-implementer conforms to. \textbf{S0--S6} are its proposals --- the institutional
-measures of Section~\ref{sec:degrees} onwards, numbered rather than named
-because they are reference designs and not evaluated interventions. QRSeal is
-the specification and the proposals together, and the reason the project needs
-both is this paper's argument. Neither name designates a standard: KH-SQR is
+This paper reports \textbf{QRSeal}, a project in two halves. \textbf{KH-SQR}
+is a signature specification for payment codes and document credentials, with
+an MIT-licensed reference implementation and a language-neutral conformance
+suite of forty-four cases, thirty-three of them negative. \textbf{S0--S6} are
+institutional proposals, numbered rather than named because they are reference
+designs and not evaluated interventions. Neither is a standard: KH-SQR is
 proposed here, not adopted anywhere, and nothing in it is issued by or agreed
 with any Cambodian authority.
 
-We specify and implement KH-SQR, a signature scheme for both payment codes and
-document credentials, and we use it as evidence for a claim about where its own
-assurance stops. Cryptography closes forgery completely and does not touch
-deception at all, because a control enforced at one layer does not govern
-meaning created at the layer above it. Signing the code secures the instrument;
-it cannot secure the transaction, because the deception occurs one layer up, in
-the person. This is the same shape as the central finding of our earlier work on
-sovereign hybrid blockchains, where base-layer identity secured custody of an
-asset but not exposure to it, because the derivative claim was minted above the
-enforcement point.
+We use the artefact as evidence for a claim about where its own assurance
+stops. Inside a conforming verifier on an uncompromised device, a signature
+closes forgery; it does not touch deception, because a control enforced at one
+layer does not govern meaning created at the layer above it. Signing the code
+secures the instrument and cannot secure the transaction. A signature is also a
+provenance instrument, so what it asks a verifier to act on is the
+\emph{absence} of one, which carries no information until coverage is
+near-complete; we report that a national scheme in Japan reached the same
+overlay attack and answered it with mandated visual uniformity for printed
+codes, an option compatible with the stall that has no device and one we had
+missed.
 
-The contribution is fourfold: a four-layer decomposition of QR payment trust
-that locates precisely where cryptographic assurance ends; a working,
-MIT-licensed reference implementation with a language-neutral conformance suite
-of forty-four cases, thirty-three of them negative; an explicit account of what the
-design does not achieve and why each residual risk is unreachable from the code
-layer; and a constructive corollary --- that where a control cannot be enforced
-below the harm, four moves remain, acting at successive points of the causal
-chain --- raise the control above the meaning, reverse the transfer, remove the
-convertibility of the proceeds, or reallocate the loss. We give the first concretely as
-a categorical national prohibition on URL-bearing payment and official QR codes,
-paired with a public rule that requires no judgement to apply, and we use Japan, where the same QR code sits on a
-reversible stored-value substrate whose illiquidity is statutory rather than
-designed, to identify the properties of the payment substrate --- not the
-strength of any cryptography --- as what governs exposure. We report that the gap between institutional control and public
-credulity widens structurally, and that this design widens the part of it the
-design cannot close: a code that visibly verifies manufactures the confidence
-the unaddressed attack depends on. We report where our own work fell short of its
-specification: the reference deployment does not meet the mirror-independence
-requirement, and the first container encoding was not readable by a conforming
-EMVCo parser --- a defect we have since corrected in a second encoding, at a cost
-of sixty-one characters and one QR symbol version. And we treat the absence of
-Cambodia-specific incident data as a finding rather than a gap to be filled with
-vendor figures.
-
-The institutional proposals are offered as reference designs, not as evaluated
-interventions. None has been trialled, their costs are unquantified, and we say
-throughout which claims rest on structure and which would need measurement this
-paper does not have. What we do claim is narrower and, we think, sufficient: the
-problem is present now, its trajectory is upward for reasons that do not
-reverse, and asking the public to be more careful cannot reach it.
+The corollary is constructive. Where a control cannot be enforced below the
+harm, four moves remain: raise the control above the meaning, reverse the
+transfer, remove the convertibility of the proceeds, or reallocate the loss.
+S0--S6 are offered as an existence proof that each move is available, not as a
+national programme; the first is a categorical prohibition on URL-bearing
+payment and official codes, which closes one channel and does not reduce the
+adversary's budget. We report two failures of our own work --- the reference
+deployment does not meet its mirror-independence requirement, and the first
+container encoding was not readable by a conforming EMVCo parser, since
+corrected at a cost of sixty-one characters and one symbol version --- and we
+treat the absence of Cambodia-specific incident data as a finding. The
+trajectory of exposure is argued from structure and not measured: a code that
+visibly verifies manufactures the confidence the unaddressed attack depends
+on, and nothing here has been deployed or trialled.
 \end{abstract}
 
 \medskip
@@ -200,7 +187,11 @@ So, crucially, is a completely genuine KHQR presented with a false story
 attached.
 
 Signing the codes closes part of this gap and, we will argue, exactly the part
-that is easiest to close and least often exploited. The rest is not a
+that is easiest to close, and the part from which attacker effort migrates once
+it is closed on a rail whose transfers are final (Section~\ref{sec:notachieved}).
+What share of present Cambodian losses that part carries is unknown, because
+nobody measures it (Section~\ref{sec:data}); the argument does not need the
+ranking and we do not make it. The rest is not a
 cryptographic problem, and the central claim of this paper is that it cannot be
 made into one:
 
@@ -217,8 +208,10 @@ to the custody/exposure finding in our earlier work on regulated DeFi
 \citep{sengtha2026csb} and its applicability to other real-time push-payment
 markets.
 
-We are deliberate about what this paper is not. It is not a claim to have solved
-QR phishing. A reviewer who finishes it believing that has been given the wrong
+We are deliberate about what this paper is not. It is not the work of the
+National Bank of Cambodia or of any operator of the Bakong system, nor agreed
+with either; KH-SQR is a name we propose, and no authority has adopted it. It is
+not a claim to have solved QR phishing. A reviewer who finishes it believing that has been given the wrong
 paper, and we have written Section~\ref{sec:notachieved} --- the longest
 substantive section --- to make that reading difficult.
 
@@ -232,7 +225,13 @@ substantive section --- to make that reading difficult.
     implementation covering a payment profile bound to EMVCo payloads and a
     standalone credential profile, with a language-neutral conformance suite of
     forty-four cases, thirty-three negative, across both container encodings
-    \citep{khsqr2026repo}.
+    \citep{khsqr2026repo}. Two qualifications belong here rather than only in
+    Section~\ref{sec:limits}. The payment profile is a format that becomes
+    useful only after a coverage programme this paper does not design
+    (Section~\ref{sec:display}). And the suite has not yet been run against an
+    implementation other than ours, so its language neutrality is so far a
+    property of the file format and not a demonstrated interoperability
+    result.
   \item An explicit account of the residual risk (Section~\ref{sec:notachieved}),
     explaining for each item \emph{why} it is unreachable from the code layer
     rather than merely noting that it is, and an institutional-layer design
@@ -456,11 +455,47 @@ trivially recomputable, and \code{A-reject-\allowbreak mutation-\allowbreak outs
 which leaves it stale, tests only that accidental corruption is caught before
 any cryptography runs. An attacker who alters the bytes after the signed prefix
 and fixes the CRC finds nothing there but the signature and the CRC itself, and
-is rejected as a bad signature.
+is rejected as a bad signature. Figure~\ref{fig:prefix} draws the layout.
+
+\begin{widefigure}
+\centering
+\begin{tikzpicture}[x=1mm,y=1mm,font=\footnotesize,
+  box/.style={draw,minimum height=7mm,inner sep=0pt,outer sep=0pt,anchor=west,align=center},
+  lab/.style={font=\scriptsize,align=center}]
+\node[box,minimum width=40mm,fill=black!6] (p) at (0,0) {EMVCo data objects \code{00}\,\ldots\,\code{62}};
+\node[box,minimum width=26mm,fill=black!6,right=0 of p] (t85) {\code{85}: version, key id,\\ algorithm, times, class};
+\node[box,minimum width=17mm,fill=black!18,right=0 of t85] (t86) {\code{86}: sig $r$};
+\node[box,minimum width=17mm,fill=black!18,right=0 of t86] (t87) {\code{87}: sig $s$};
+\node[box,minimum width=14mm,right=0 of t87] (crc) {\code{63}: CRC};
+\draw[decorate,decoration={brace,amplitude=3pt}]
+  ([yshift=1.2mm]p.north west) -- ([yshift=1.2mm]t85.north east)
+  node[midway,above=4pt,lab]{signed region: a substring of the received bytes, ending where \code{86} begins};
+\draw[decorate,decoration={brace,amplitude=3pt,mirror}]
+  ([yshift=-1.2mm]t86.south west) -- ([yshift=-1.2mm]crc.south east)
+  node[midway,below=4pt,lab]{unsigned: the signature itself, and a CRC anyone can recompute};
+\node[box,minimum width=40mm,fill=black!6] (q) at (0,-24) {EMVCo data objects \code{00}\,\ldots\,\code{62}};
+\node[box,minimum width=26mm,fill=black!6,right=0 of q] (u85) {\code{85}};
+\node[box,minimum width=17mm,fill=black!18,right=0 of u85] (u86) {\code{86}};
+\node[box,minimum width=17mm,fill=black!18,right=0 of u86] (u87) {\code{87}};
+\node[box,minimum width=22mm,fill=red!12,draw=red!60!black,right=0 of u87] (x) {\code{XX}: appended};
+\node[box,minimum width=14mm,right=0 of x] (crc2) {\code{63}: CRC$'$};
+\node[lab] at ($(q.south west)!0.5!(crc2.south east)+(0,-5mm)$) {rejected by the ordering rule, not by the CRC: \code{85}--\code{87} must be the last three data objects before \code{63}};
+\end{tikzpicture}
+\caption{Encoding version~2 of Profile~A. Above: the signed region is a
+plain prefix of the payload, recovered by substring and never by
+re-serialisation. Below: an attacker who appends a data object and recomputes
+the CRC leaves the signed prefix byte-identical; what rejects the payload is the
+ordering rule (\code{A2-reject-\allowbreak appended-\allowbreak after-\allowbreak
+signature}, and in version~1 \code{A-reject-\allowbreak template-\allowbreak
+not-last}), not the CRC. Version~1 differs only in placing the signature at
+sub-tag \code{99} inside template \code{85}, with the prefix ending at the
+marker \code{99128}.}
+\label{fig:prefix}
+\end{widefigure}
 
 \paragraph{Raw signatures, not DER.}
 Signatures are the P1363 concatenation $r \Vert s$, 64 bytes, rendered as 128
-uppercase hexadecimal characters. DER is prohibited. DER's length is variable,
+uppercase hexadecimal characters. DER is prohibited (\code{A-reject-\allowbreak der-\allowbreak signature}). DER's length is variable,
 which would defeat the fixed-offset property above, and DER length parsing is
 itself a recurring source of defects. The choice also happens to eliminate a
 conversion step entirely on the Web Crypto platform, whose ECDSA operations
@@ -474,9 +509,40 @@ bits per character. Base64's mixed case would therefore enlarge every signed
 symbol.
 
 \paragraph{Static and dynamic codes.}
-A dynamic code carries an expiry no more than 300 seconds after issuance. A
-static code carries no amount, so that a printed sticker cannot be given a
-figure the merchant did not choose.
+A dynamic code carries an expiry no more than 300 seconds after issuance
+(\code{A-reject-\allowbreak expiry-\allowbreak window-\allowbreak too-\allowbreak long},
+\code{A-reject-\allowbreak expired-\allowbreak dynamic}). A static code carries no
+amount, so that a printed sticker cannot be given a figure the merchant did not
+choose (\code{A-reject-\allowbreak static-\allowbreak with-\allowbreak amount}).
+
+\paragraph{What those two rules exclude, and it is not an edge case.}
+Together they make a printed bill or notice that carries an amount
+inexpressible: it needs an amount and a life measured in weeks, and the
+specification offers a code kind with one or the other. We confirmed this by
+attempting it rather than by reasoning about it --- a static payload with an
+amount and a dynamic payload with a fourteen-day window are refused for the two
+reasons just named. The issuers affected are utilities, tax and fee collection,
+and any institution that prints a payable notice, which is to say issuers of
+national scale whose codes the public most needs to be able to trust;
+Section~\ref{sec:response} records a national utility promoting payment by the
+code printed on its bill. What a bill issuer can do today is sign the payee and
+leave the amount for the payer to key in, which authenticates who is paid and
+leaves unauthenticated the number Section~\ref{sec:currency} is about. A third
+code kind would be a specification change, not a setting.
+Section~\ref{sec:limits} records the decision as open, and
+Section~\ref{sec:adoption} as one that must be closed before such issuers
+enrol.
+
+\paragraph{What Profile~A is, stated at its own size.} It is a format that
+becomes useful only once coverage is near-complete, because what it asks a
+verifier to act on is the absence of a signature, and that absence is
+uninformative while most unsigned codes belong to merchants not yet enrolled
+(Section~\ref{sec:display}). The coverage programme that would make it useful
+--- a merchant census, a reprint cost, scan reliability at symbol versions 10
+and 11 on inexpensive handsets, and what a wallet shows during the interval ---
+is not designed in this paper. We say so here rather than only in the
+limitations because a specification with a conformance suite is otherwise easy
+to read as ready to deploy, and this one is not.
 
 \subsection{Profile B: credential}
 
@@ -496,7 +562,8 @@ reason as above --- the choice the DCC made, for the same reason.
 
 \paragraph{Excluding URL carriers.}
 A Profile B payload must not be an \code{http} or \code{https} URL, and a
-verifier must reject one. This is a design constraint, not an omission. A
+verifier must reject one (\code{B-reject-\allowbreak https-\allowbreak payload}).
+This is a design constraint, not an omission. A
 URL-bearing QR relocates the trust decision into a browser and asks the user to
 judge a domain name, which is the judgement that Section~\ref{sec:notachieved}
 gives empirical reason to believe people do not reliably make. Our
@@ -591,6 +658,23 @@ nothing to worry about. For a credential that can be withdrawn and must be
 checked without a network, no signature scheme --- ours included --- gives the
 reader what a lookup gives them.
 
+\paragraph{The horizon is a gate, not a scope note.} A second limit sits beside
+revocation and is easier to overlook. A verifier in this specification resolves
+a key only while the trust list says the key is valid, and stops verifying once
+its list is more than thirty days old. Neither rule was written with a document
+that outlives its issuing key in mind, and together they mean that a degree
+checked in forty years is rejected as \code{KEY\_EXPIRED} by a conforming
+verifier as the specification stands, if it can obtain a list at all. The
+specification does not yet say how a verifier at that distance obtains the
+issuer's key, establishes that it was the issuer's, or shows that the signature
+predated the key's expiry. Until it does, Profile~B is restricted, as a rule and
+not as advice, to documents whose own life is shorter than the validity of the
+key that signs them. A land title and a degree are outside it; the honest design
+for them today is the lookup, or the lookup with a signed credential beside it
+that is understood to expire with its key. Section~\ref{sec:limits} records the
+gap, and the adoption sequence of Section~\ref{sec:adoption} makes closing it a
+decision that precedes enrolling any long-lived issuer.
+
 \paragraph{Both designs meet the same wall, and that is the useful finding.}
 Resolving such a URL produces neither the original document nor a verdict about
 the paper in the reader's hand. It produces a short field list --- issuing
@@ -630,13 +714,27 @@ artefact, and the rest of this section returns to it.
 Keys are identified by the first eight bytes of SHA-256 over the uncompressed
 public point. The identifier is a lookup hint and never an authenticator: a
 verifier encountering two trust-list entries with the same identifier must try
-both and accept only on a signature that verifies.
+both and accept only on a signature that verifies. The rule costs nothing in
+practice. With $n$ registered keys the expected number of colliding pairs is
+about $n^2/2^{65}$, which at ten thousand keys is of the order of $10^{-12}$;
+and an attacker who spent the $2^{64}$ work to register a key whose identifier
+collides with a bank's would gain nothing, because the verifier accepts only
+the key under which the signature verifies, and that key is registered to the
+attacker. The rule exists so that a collision, however it arises, is a lookup
+ambiguity rather than a verification failure. An identifier matching no
+current entry, or only a revoked one, is refused
+(\code{A-reject-\allowbreak unknown-\allowbreak kid},
+\code{A-reject-\allowbreak revoked-\allowbreak key}).
 
 The trust list is signed by an offline Root and carries a monotonic version and
 an expiry. A verifier must reject a list numbered below the one it holds
-(rollback), must stop verifying once its cached copy exceeds thirty days
-(staleness), and must reject when the freshest \emph{timestamp statement} has
-expired.
+(rollback; \code{A-reject-\allowbreak trustlist-\allowbreak rollback}), must stop
+verifying once its cached copy exceeds thirty days (staleness;
+\code{A-reject-\allowbreak trustlist-\allowbreak stale}), and must reject when
+the freshest \emph{timestamp statement} has expired
+(\code{A-reject-\allowbreak timestamp-\allowbreak expired}). A list whose own
+signature does not verify under the Root is refused before any of these applies
+(\code{A-reject-\allowbreak trustlist-\allowbreak forged-\allowbreak signature}).
 
 The timestamp statement is a separate signed object with a seven-day validity,
 naming the current trust list's version and digest. It exists because expiry
@@ -645,7 +743,10 @@ network can pin a verifier to an old but still-valid list, so that a key revoked
 yesterday keeps verifying. This is TUF's timestamp role, adopted for the same
 reason TUF has it and cited as such \citep{tufspec}. The verifier fails closed:
 absent a fresh timestamp statement it stops verifying rather than falling back
-on what it holds.
+on what it holds (\code{A-reject-\allowbreak timestamp-\allowbreak missing},
+\code{A-reject-\allowbreak timestamp-\allowbreak digest-\allowbreak mismatch}).
+Figure~\ref{fig:failmodes} sets this discipline beside the one the screening
+layer of Section~\ref{sec:screening} must adopt, which is its opposite.
 
 Verification performs no network access. Everything it needs is supplied by the
 caller. A verifier that fetched during verification could be stalled or steered
@@ -810,7 +911,8 @@ at sub-tag \code{00}; and the signature is split at 64 characters across
 templates \code{86} and \code{87}, because 128 characters cannot fit in one
 template whatever else is done. Templates \code{85}, \code{86} and \code{87}
 must be the final three data objects before the CRC, which is what prevents an
-attacker appending data while the signed prefix stays byte-identical.
+attacker appending data while the signed prefix stays byte-identical
+(Figure~\ref{fig:prefix}).
 
 The property that mattered survives. The signed region is still a plain
 substring of the received payload, never a re-serialisation of parsed fields,
@@ -833,7 +935,9 @@ the specification requires a verifier to support both and to dispatch on the
 encoding rather than attempt either with the other's rules. The conformance
 suite carries four version~2 cases --- two accepting, and two rejecting the
 attacks the new structure introduces, namely data appended after the signature
-templates and a foreign identifier in place of the scheme's.
+templates (\code{A2-reject-\allowbreak appended-\allowbreak after-\allowbreak
+signature}) and a foreign identifier in place of the scheme's
+(\code{A2-reject-\allowbreak foreign-\allowbreak guid}).
 
 We also record an erratum in the version~1 vectors: the reference payload
 declares template \code{85}'s length as 200 where its content is 201
@@ -1073,9 +1177,13 @@ know-your-customer quality and post-hoc detection, both of which live at layer~3
 and neither of which is cryptography.
 
 \textbf{And the identity is more often borrowed than bought.} We wrote
-``coerced or purchased'' above because that is the standard framing. The
-Cambodian case discussed in Section~\ref{sec:integrity} suggests a more ordinary
-mechanism: collection accounts opened in the names of a brother, a son, a
+``coerced or purchased'' above because that is the standard framing. An
+Anti-Corruption Unit prosecution announced in March 2026 suggests a more
+ordinary mechanism. We should say at first use what that case is: extortion
+collected over the payment rail, not deception with a QR code, and it is used
+in this paper --- here and in Sections~\ref{sec:ttl} and~\ref{sec:integrity}
+--- for structural facts about accounts and never as evidence of how much QR
+fraud occurs. The mechanism it shows is collection accounts opened in the names of a brother, a son, a
 daughter and an associate, alongside two national identity cards held by the
 principal \citep{cambodianess2026kohkong}. Those are real people with real
 documents presenting themselves in person. No onboarding check separates a
@@ -1349,7 +1457,7 @@ Every signed code that a person scans successfully teaches them that the system
 checks these codes on their behalf. That raises credulity. It does not extend
 the trust boundary over what actually harms them, because
 Section~\ref{sec:notachieved} is untouched by any of it. A measure that
-manufactures precisely the confidence the dominant attack feeds on is not a
+manufactures precisely the confidence the unaddressed attack feeds on is not a
 neutral addition to the system.
 
 We therefore state the expected effect plainly. Deploying this design should be
@@ -1405,25 +1513,16 @@ One consequence of a rising trajectory is distributional, and it is already
 visible rather than projected. Where a rail supplies no reversibility, somebody
 sells it: Section~\ref{sec:degrees} describes a Cambodian firm that interposes
 itself between buyers and overseas sellers and guarantees against non-delivery,
-which is an escrow, priced per transaction.
-
-That is a market answering a demand the substrate declines to meet, and its
-incidence is regressive by construction. Reversibility bought privately reaches
-whoever can pay for it and transacts through an intermediary that offers it. It
-does not reach the market seller taking a domestic KHQR payment, the tuk-tuk
-driver, or the micro-merchant for whom the fee is a material fraction of the
-margin --- who are also the people least able to absorb an irrecoverable loss,
-and who therefore carry the unmitigated irrevocability that better-resourced
-users have bought their way out of.
-
-If the interventions of Section~\ref{sec:institutional} are not taken and the
-trajectory continues, this is the equilibrium: safety becomes a product rather
-than a property of the rail, and the distribution of exposure inverts the
-distribution of capacity to bear it. A substrate-level control has the opposite
-incidence, because it applies to everyone on the rail at once and cannot be
-bought out of. That is a further reason for the sequencing above, and it is an
-argument from structure --- we have no data on how many Cambodians already pay
-for intermediated safety, and we do not claim to.
+which is an escrow, priced per transaction. Reversibility bought privately
+reaches whoever can pay for it, and not the market seller, the tuk-tuk driver or
+the micro-merchant least able to absorb an irrecoverable loss. If the
+interventions of Section~\ref{sec:institutional} are not taken, that is the
+equilibrium: safety becomes a product rather than a property of the rail, and
+the distribution of exposure inverts the distribution of capacity to bear it. A
+substrate-level control has the opposite incidence, because it applies to
+everyone at once and cannot be bought out of; its own cost, which falls on the
+same people, is taken up in Section~\ref{sec:exit}. We have no data on how many
+Cambodians already pay for intermediated safety, and we do not claim to.
 
 \paragraph{What kind of claim this is.}
 It is a mechanism argument, not a forecast. Each item above is structural and
@@ -1434,8 +1533,11 @@ observe it. We make no quantitative prediction, and we would distrust one.
 \subsection{Summary}
 
 Layers~1 and~2 are the parts of the problem that cryptography addresses, and
-this design addresses them. Layers~3 and~4 are the parts that matter most in
-current Cambodian fraud, and it does not address them at all. Any presentation
+this design addresses them. Layers~3 and~4 are the parts it does not address at all, and the parts toward
+which attacker effort migrates once forgery is closed on a rail whose transfers
+are final. Whether they already dominate Cambodian losses is unmeasured
+(Section~\ref{sec:data}); every Cambodian case this paper could document sits
+there, which is suggestive and is not a statistic. Any presentation
 of this work that inverts that emphasis misrepresents it. And by
 Section~\ref{sec:trajectory}, the share of the problem it does not address
 should be expected to grow --- partly for reasons that have nothing to do with
@@ -1458,6 +1560,21 @@ altogether. They are reachable from the institutions, by two mechanisms that are
 not cryptography: constraining what legitimate issuers are permitted to emit,
 and sharing information about accounts. We take them in that order, because the
 first is the cheaper and the more decisive.
+
+What follows should be read at its own size. The proposals are numbered S0--S6
+in the repository and in Section~\ref{sec:adoption}: S0 is the signing
+infrastructure of Section~\ref{sec:design} deployed; S1 mandatory incident
+reporting (Section~\ref{sec:response}); S2 the categorical URL prohibition
+(Section~\ref{sec:categorical}); S3 screening against a shared risk list
+(Sections~\ref{sec:ttl} and~\ref{sec:screening}); S4 the right to contest a
+listing (Section~\ref{sec:appeal}); S5 liability allocation
+(Section~\ref{sec:liability}); and S6 exit controls (Section~\ref{sec:exit}).
+They are reference designs, two of them implemented as far as software reaches
+and none trialled. Their purpose in this paper is to show that each of the four
+moves of Section~\ref{sec:degrees} is available in a concrete form --- an
+existence proof that the layer result is not a counsel of despair --- and not
+to set out a national programme, which would need the evaluation, the costing
+and the incident data that Section~\ref{sec:limits} says we do not have.
 
 \subsection{The response so far, and the signal that was never built}
 \label{sec:response}
@@ -1769,6 +1886,12 @@ Operating-system camera integration &
   Nothing &
   During &
   Not within national control; unavailable on the installed handset base \\[0.3em]
+Operating-system handler policy: the camera refuses URL-bearing codes &
+  Nothing &
+  During &
+  Not nationally controllable: a handset vendor's global default, not a
+  regulator's rule, and absent from the installed base; the right answer if a
+  vendor ever gives it \\[0.3em]
 Education without a categorical rule &
   Apply conditions &
   Before &
@@ -1828,10 +1951,30 @@ an attacker, only against the legitimate issuers whose compliance makes it true.
 \paragraph{What the rule does not do.}
 It closes a channel; it does not reduce the adversary's budget. Effort displaces
 to what remains permitted --- most obviously to the genuine-code-with-false-pretext
-attack of Section~\ref{sec:notachieved}, which is already the dominant vector and
-which this rule leaves entirely intact --- and to channels with no QR code at all.
+attack of Section~\ref{sec:app}, toward which effort migrates on a rail whose
+transfers are final and which this rule leaves entirely intact --- and to channels with no QR code at all.
 We claim the elimination of one attack, not a reduction in fraud, and the
 distinction is the same one this paper insists on everywhere else.
+
+\paragraph{What the rule costs, and what it would take to bind.} Two things are
+unquantified here, and they would decide the rule's fate. The first is the
+legitimate use it forecloses inside the perimeter: a bill paid by scanning the
+bill, which Section~\ref{sec:response} records a national utility promoting;
+tax and fee notices; application installation; and the document-verification
+platform of Section~\ref{sec:verifygov}, whose codes are URLs by design. Each
+would have to move into a payment or verifier application or be withdrawn, and
+the utility example shows that the rule binds real government service design
+and not only marketing. The second is the instrument.
+Section~\ref{sec:response} shows several arms of government already
+coordinating on this problem; coordination is not a binding rule, and the
+prohibition reaches its decisive population --- telecommunications operators
+and line ministries, not only licensed payment institutions --- only through an
+instrument that can bind them, which no existing body issues today. We do not
+know what that instrument is in Cambodian administrative law, and a proposal
+that depends on it should say so. What the rule buys is stated in the paragraph
+before this one, and it should be read with both costs beside it: one channel
+closed, at a price paid by legitimate issuers, against an adversary whose budget
+is untouched.
 
 \subsection{A second categorical rule: a payment code is displayed, not printed}
 \label{sec:display}
@@ -2072,7 +2215,7 @@ than an alternative to them.
 uses a genuine code the criminal is entitled to display, on a screen as readily
 as on paper. Not quishing, whose codes are not merchant payment codes at all.
 Not registration abuse. The rule closes one attack completely and leaves the
-category this paper identifies as dominant exactly where it was.
+category this paper cannot address exactly where it was.
 
 \paragraph{And it does not transfer to documents.} A screen cannot be attached
 to a diploma or a land title. A printed credential has to carry its own proof,
@@ -2138,6 +2281,15 @@ A register that nobody consults before releasing money is a record of the fraud,
 not a control on it. The operative step is therefore a check made by the payer's
 institution, at the moment of payment, against the payee account named in the
 code.
+
+What follows is a specification sketch with a reference implementation behind
+it, not an evaluated result. The endpoints, the status-to-action mapping and the
+failure behaviour are built and tested; the false-positive rate, the latency a
+live authorisation path would tolerate, the listing volume and the tension
+between contest transparency and tipping off a listed account are all
+unmeasured, and Section~\ref{sec:limits} says so. We set it out at this length
+because the design choices are the substance of the proposal, and a reader
+cannot assess a mechanism that is only named.
 
 This is also the one point at which layer~1 feeds layer~3. A verified Profile~A
 attestation yields the payee account identifier from a payload that has been
@@ -2219,6 +2371,57 @@ for the serialising-object design in this section, and for the delta endpoint
 that lets an institution hold a recent local copy rather than depending on a
 live call for every payment. The residue is bounded by how long an institution
 tolerates operating unscreened, which is a policy parameter we do not set here.
+
+How stale a local replica may be is not a separate parameter, and it can be
+stated exactly. A replica of age $\tau$ misses every listing made in the last
+$\tau$, so for those accounts it is a list whose time-to-list has been
+lengthened by $\tau$. Section~\ref{sec:ttl} makes time-to-list the quantity the
+whole register is judged on, so a replica is acceptable up to the difference
+between the time-to-list target and the dissemination latency actually
+achieved, and no further. Beyond that it is equivalent to no list for exactly
+the accounts the target exists to catch --- the most recently listed, which on
+the rotation evidence of Section~\ref{sec:ttl} are the ones still receiving. An
+institution that falls back to a replica during an outage should therefore
+report the replica's age, not the outage's duration, as the number that
+matters.
+
+\begin{widefigure}
+\centering
+\begin{tikzpicture}[font=\scriptsize,node distance=3mm and 4mm,
+  fstep/.style={draw,rounded corners=1pt,align=center,inner sep=2.5pt,minimum width=24mm},
+  fq/.style={draw,diamond,aspect=2.2,align=center,inner sep=0.5pt},
+  fstop/.style={draw,thick,fill=black!10,align=center,inner sep=2.5pt,minimum width=24mm},
+  fgo/.style={draw,thick,align=center,inner sep=2.5pt,minimum width=24mm},
+  hd/.style={font=\footnotesize\bfseries},
+  >={Stealth[length=2mm]}]
+\node[hd] (h1) {Verifier (layer 1): fails closed};
+\node[fstep,below=of h1] (v0) {scanned payload};
+\node[fq,below=of v0] (v1) {trust list fresh,\\ timestamp valid?};
+\node[fq,below=of v1] (v2) {signature verifies\\ under a listed key?};
+\node[fgo,below=of v2] (v3) {show payee, amount\\ and currency; proceed};
+\node[fstop,right=of v1] (r1) {refuse\\ \scriptsize\code{TRUSTLIST\_STALE}};
+\node[fstop,right=of v2] (r2) {refuse\\ \scriptsize\code{BAD\_SIGNATURE}};
+\draw[->] (v0) -- (v1); \draw[->] (v1) -- node[left]{yes} (v2); \draw[->] (v2) -- node[left]{yes} (v3);
+\draw[->] (v1) -- node[above]{no} (r1); \draw[->] (v2) -- node[above]{no} (r2);
+\node[hd,right=22mm of h1] (h2) {Screening (layer 3): fails open};
+\node[fstep,below=of h2] (s0) {payee account from\\ the verified payload};
+\node[fq,below=of s0] (s1) {register\\ reachable in time?};
+\node[fq,below=of s1] (s2) {status?};
+\node[fgo,below=of s2] (s3) {\code{clear}: execute};
+\node[fgo,right=of s1] (o1) {proceed, record\\ \scriptsize\code{unscreened}, not \code{clear}};
+\node[fstop,right=of s2] (o2) {\code{restricted}: hold\\ \code{blocked}: refuse};
+\draw[->] (s0) -- (s1); \draw[->] (s1) -- node[left]{yes} (s2); \draw[->] (s2) -- (s3);
+\draw[->] (s1) -- node[above]{no} (o1); \draw[->] (s2) -- (o2);
+\end{tikzpicture}
+\caption{Two failure disciplines in one payment. The verifier refuses whenever
+it cannot establish authenticity, because an unverifiable code is the attack.
+The screener proceeds when the register cannot answer, because a refusal there
+would make one national service's availability the availability of retail
+payment; the cost is that an adversary who can degrade the register passes
+unscreened, which is why the record distinguishes \code{unscreened} from
+\code{clear} and why a local replica's age is the number that matters.}
+\label{fig:failmodes}
+\end{widefigure}
 
 \paragraph{What screening does not do.}
 It stops payments to accounts that are \emph{already listed}. The victims of a
@@ -2440,7 +2643,9 @@ otherwise the short expiry reads as timidity rather than as a choice.
 \paragraph{What we are not claiming.} Not that this design resists a determined
 insider --- an officer who can list can still list wrongly, and the audit record
 establishes only that they did. Not that the case above is representative of
-anything; it is one prosecution, and the fact that it was prosecuted and
+anything, nor that it is more than an analogy: the power abused was over the
+broadcast of reports, not a listing power, which exists nowhere yet. It is one
+prosecution, and the fact that it was prosecuted and
 announced is itself evidence of a functioning integrity mechanism. The claim is
 narrower and, we think, unavoidable: an institutional control layer proposed for
 this environment must be designed as though some of the people operating it will
@@ -2469,6 +2674,28 @@ meaning elsewhere. What transfers is the principle that liability should rest
 where the cheapest available control is, and that a scheme which leaves the
 entire loss with the payer has by construction allocated it to the party with
 the least ability to prevent it.
+
+\paragraph{Other regimes draw the line elsewhere, and where they draw it is the
+design.} Singapore's Shared Responsibility Framework, in force from December
+2024, makes banks and telecommunications operators bear a phishing victim's loss
+in a fixed order, but only where each failed a stated duty and only for
+transactions the victim did not authorise: a payment the victim knowingly
+authorised under a false pretext --- the category this paper cannot reach --- is
+outside it by design \citep{mas2024srf}. Australia's Scams Prevention Framework
+Act 2025 takes the opposite scope, binding banks, telecommunications operators
+and digital platforms to obligations of prevention, detection and response
+across scams generally, with compensation reached through dispute resolution
+rather than a reimbursement rule \citep{au2025spf}. The United Kingdom's
+Confirmation of Payee is not a liability rule at all but a name check at
+initiation, and it sits in Table~\ref{tab:alternatives} for that reason: it
+reaches a false pretext only where the payer holds an expectation about the
+name, which Section~\ref{sec:app} shows is the condition the Cambodian cases
+lack \citep{payuk2020cop}. Read together, the three fix the two questions a
+Cambodian rule would have to answer first: whether authorised payments are in
+scope at all, and whether the recipient's institution is bound. We know of no
+published evaluation of any of them that isolates the effect of the allocation
+from everything else changed at the same time, and we make no claim about which
+works.
 
 \paragraph{One scheme wrote these rules and did not publish them.} Japan's
 guidelines on code-payment fraud are detailed and public, and they contain no
@@ -2921,16 +3148,20 @@ diagnostic question above as a design practice.
 
 \subsection{Other push-payment markets}
 
-Where Japan is a contrast, India's UPI and Brazil's PIX are instances. Both are
-real-time push-payment systems in which payments are irrevocable and initiated
-from a machine-readable artefact --- the same substrate as Bakong --- and both have
-contended with the same migration of attacker effort from instrument to
-persuasion. Contrast and instance do different work: the instances show the
-pattern recurs, and the contrast identifies which property drives it. We do not claim
-detailed knowledge of either market's incident data and make no quantitative
-comparison. The structural point stands independently of the numbers: where
-payments are final and initiation is delegated to an artefact the user cannot
-read, securing the artefact is necessary and is not close to sufficient.
+Where Japan is a contrast, real-time push-payment systems whose transfers are
+final and initiated from a machine-readable artefact are instances: the
+substrate is Bakong's, and the layer result of Section~\ref{sec:layers} applies
+to them by construction rather than by analogy. Contrast and instance do
+different work: the contrast identifies which property drives exposure, and an
+instance shows the same property in place elsewhere. We do not name particular
+schemes, because to name one as an instance is to imply that the same migration
+of attacker effort from instrument to persuasion has been observed there, and
+that is a claim about incident data we have not examined in any of them. The
+structural point stands independently of the numbers: where payments are final
+and initiation is delegated to an artefact the user cannot read, securing the
+artefact is necessary and is not close to sufficient. Whether that has already
+played out in a given market is a question for that market's statistics, where
+they exist.
 
 \section{Data availability and the absence of Cambodian incident statistics}
 \label{sec:data}
@@ -3057,7 +3288,9 @@ verified fail on deliberately introduced violations.
     issuing keyed codes across the merchant base, and no account of what a
     verifier should display during the interval in which coverage is partial.
     That interval is the period in which the scheme is most exposed, and we do
-    not address it.
+    not address it. We therefore describe Profile~A as a format that becomes
+    useful only after a coverage programme this paper does not design, and not
+    as a specification ready to deploy.
 
   \item \textbf{Mirror independence is unmet.} Section~\ref{sec:mirrors}. The
     implementation does not satisfy a requirement its own specification states.
@@ -3068,6 +3301,24 @@ verified fail on deliberately introduced violations.
     Encoding version~2 removes both, at a cost of 61 characters and one QR
     version. Version~1 remains in the suite because its vectors are published,
     so a conforming implementation must still read it.
+
+  \item \textbf{A printed bill carrying an amount cannot be signed.}
+    Section~\ref{sec:profileA}. A static code may not carry an amount and a
+    dynamic one may not live longer than five minutes, so the payable notice a
+    utility or a tax office prints is outside the specification, and the
+    issuers affected are national in scale. Closing it is a specification
+    change --- a third code kind, with its own replay and reprint semantics ---
+    that we have not designed, and Section~\ref{sec:adoption} makes the
+    decision a precondition of enrolling such issuers.
+
+  \item \textbf{Profile~B is gated to documents shorter-lived than their key.}
+    Section~\ref{sec:verifygov}. The key-validity and list-freshness rules
+    reject a credential checked after its issuing key has expired, and the
+    specification does not say how a verifier decades out obtains and trusts
+    an archived key or establishes that the signature predated the expiry.
+    Until it does, a degree or a land title is outside the profile as a matter
+    of rule, not of advice, and we have not designed the archival mechanism
+    that would bring them in.
 
   \item \textbf{The device-compromise evidence is about a different fraud.}
     Section~\ref{sec:device} documents account takeover, not authorised push
@@ -3132,9 +3383,12 @@ verified fail on deliberately introduced violations.
     most and which we could not obtain.
 
   \item \textbf{Truncated key identifiers.} Eight bytes is a size choice, not a
-    collision-resistance claim. The specification requires verifiers to treat
-    the identifier as a hint and to try every candidate, which contains the
-    consequence, but an implementer who ignores that rule has a real bug.
+    collision-resistance claim. With $n$ registered keys the expected number
+    of colliding pairs is about $n^2/2^{65}$, negligible at any plausible
+    issuer count (Section~\ref{sec:design}), so the specification's rule that
+    a verifier treat the identifier as a hint and try every candidate is a
+    correctness rule rather than a load concern; an implementer who ignores
+    it has a real bug, not a performance problem.
 
   \item \textbf{One implementation.} The conformance suite exists to enable
     independent ports and has not yet been run against one. Until it has, the
@@ -3159,7 +3413,11 @@ code that verifies was produced by a registered issuer and has not been altered,
 and the reference implementation demonstrates this against a published
 conformance suite whose negative cases outnumber its positive ones.
 
-It achieves nothing whatever against the fraud that currently dominates. A
+It achieves nothing whatever against deception: the category toward which
+attacker effort migrates once forgery is closed on a rail whose transfers are
+final, and the one in which every Cambodian case this paper could document
+sits. Whether it already dominates Cambodian losses is unmeasured, and we do
+not say that it does. A
 genuine code, correctly signed and payable to a correctly registered account,
 presented with a false story, verifies --- and must. The deception is created one
 layer above the enforcement point, and no control at the lower layer reaches it.
@@ -3168,8 +3426,9 @@ the same property we found in a different domain when base-layer identity
 secured custody of an asset and left exposure to it untouched.
 
 The practical implication is uncomfortable for anyone hoping cryptography will
-settle the matter. The next marginal improvement in Cambodian QR fraud outcomes
-will not come from a better signature. It will come from a categorical rule that
+settle the matter. If the structural argument is right, the next marginal
+improvement in Cambodian QR fraud outcomes will not come from a better
+signature. It will come from a categorical rule that
 empties the legitimate set of URL-bearing payment codes, which costs nothing to
 enforce against the small regulated population that would otherwise falsify it;
 from shortening the interval between an institution recognising a mule account

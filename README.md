@@ -11,8 +11,10 @@ Signed QR codes for Cambodia, and the institutional measures around them.
 | **KH-SQR** | the specification | wire format, two profiles, trust hierarchy, 44 conformance vectors — what an implementer conforms to. [`SPEC.md`](SPEC.md) |
 | **S0–S6** | the proposals | the institutional measures in [§5](#5-stakeholders) — numbered, not branded, because they are reference designs and not evaluated interventions |
 
-The split is the argument. A signature closes forgery completely and does not
-touch the dominant attack, so the project cannot be only a specification —
+The split is the argument. A signature closes forgery, inside a conforming
+verifier on an uncompromised device, and does not touch deception — the attack
+toward which effort migrates once forgery is closed on an irrevocable rail — so
+the project cannot be only a specification —
 [§3](#3-what-kh-sqr-cannot-solve) is why, and [§4](#4-how-to-solve-what-kh-sqr-cannot)
 is what remains.
 
@@ -32,7 +34,11 @@ TypeScript, Web Crypto only, Cloudflare Workers. MIT licensed.
 ## Read this first
 
 **KH-SQR addresses forgery. It does not prevent authorised push payment fraud,
-which is the dominant vector, and nothing built on it should suggest otherwise.**
+the category toward which attacker effort migrates once forgery is closed and the
+one every Cambodian case in the paper falls into, and nothing built on it should
+suggest otherwise.** Whether that category already dominates Cambodian losses is
+unmeasured, because nobody publishes the data; the argument does not need the
+ranking and this project does not make it.
 
 A verified signature is not a reason to pay. The API is built so that this is
 hard to forget: verification never returns a boolean, and the credential result
@@ -87,6 +93,17 @@ standard cryptographic threat model, forgery of the *artefact* is closed. It say
 nothing about the layers above it — see **P6**, where a counterfeit verifier
 defeats all of this without breaking any cryptography.
 
+**Two hard gates sit inside those rows, and both are rules in the specification,
+not advice.** A printed bill or notice carrying an amount cannot be signed: a
+static code may not carry an amount and a dynamic one may not live longer than
+300 seconds (`STATIC_CODE_WITH_AMOUNT`, `EXPIRY_WINDOW_TOO_LONG`), so the
+national-scale issuers who print payable notices are outside Profile A until a
+third code kind is designed. And Profile B is gated to documents whose life is
+shorter than the signing key's ([SPEC §3.1a](SPEC.md#31a-horizon--a-hard-gate-on-what-profile-b-may-carry)):
+a degree or a land title checked after its key's `notAfter` is rejected as
+`KEY_EXPIRED`, and the archival path that would lift the gate is unspecified.
+Both are worked through in [`docs/USE-CASES.md`](docs/USE-CASES.md).
+
 **A benefit that is easy to miss.** After KH-SQR, an overlay attack that
 *verifies* requires a registered merchant account. That means an identity went
 through onboarding, an account number is embedded in the code, the account can be
@@ -111,8 +128,10 @@ is.
 
 ### P4 — Authorised push payment fraud · **not addressed at all**
 
-The dominant vector. A genuine code, correctly signed, payable to a correctly
-registered account, presented with a false story. **A correct implementation of
+The category toward which attacker effort migrates once forgery is closed on a
+rail whose transfers are final; whether it already dominates Cambodian losses is
+unmeasured. A genuine code, correctly signed, payable to a correctly registered
+account, presented with a false story. **A correct implementation of
 this specification verifies such a code, and must.** Every byte is authentic.
 
 *Why unreachable:* there is no forgery to detect. The falsehood lives in the
@@ -237,7 +256,7 @@ mechanisms, each running one way only:
    stays at maximum.
 
 **KH-SQR contributes to the fifth column of that ledger.** A measure that
-manufactures precisely the confidence the dominant attack feeds on is not a
+manufactures precisely the confidence the unaddressed attack feeds on is not a
 neutral addition. This is the SiteKey result (P6) in dynamic form: users do not
 reliably notice an indicator that is *absent*, and they do generalise from one
 that is *present*.
@@ -338,8 +357,8 @@ does not have.
 Only the categorical rule is evaluated *after* the scan.
 
 **What it does not do:** it closes a channel; it does not reduce the adversary's
-budget. Effort displaces to P4, which is already dominant and which this rule
-leaves entirely intact.
+budget. Effort displaces to P4, toward which it migrates on an irrevocable rail
+anyway and which this rule leaves entirely intact.
 
 ### 4.3 Remove the convertibility of the proceeds — exit controls
 
