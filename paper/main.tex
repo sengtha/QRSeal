@@ -32,6 +32,8 @@
 \usepackage{enumitem}
 \usepackage[hyphens]{url}
 \usepackage[hidelinks,breaklinks]{hyperref}
+% plainnat emits \doi{} for @article/@inproceedings only; make it resolve.
+\providecommand{\doi}[1]{\href{https://doi.org/#1}{doi:\nolinkurl{#1}}}
 
 % Reference URLs are long article slugs. Without this they overrun the measure,
 % badly in two columns and visibly even in one.

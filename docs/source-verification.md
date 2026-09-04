@@ -79,6 +79,47 @@ both corrections are reflected in the paper.
 | No incident count, fraud rate or loss figure for code payments appears in Japan's MPM and CPM guidelines, either fraud-prevention guideline, the summary deck or the operator bylaws, nor on the scheme site or the association's publication index | same, plus the extraction's stated search scope (six documents, the scheme site, the association portal 2019–2026) | **Verified as an absence, with the scope of the search stated** — which is why §9 can say it. The claim is scoped to *the scheme body*: it is not a claim that no Japanese institution publishes fraud statistics. §9 uses it to argue the gap is structural to payment-scheme governance rather than a Cambodian shortfall. |
 | A shared fraud-identifier database said to have been deployed in December 2023 | — | **Not used.** The extraction mentioned it, but it is not in any of the supplied documents and no source was given. The 2019 guideline itself records only a recommendation to build an information-sharing framework, which is what §7 cites. |
 
+## Reference identifiers: DOIs and links
+
+Every reference that has a DOI now carries it, and every reference that has a
+stable publisher page now links to it. Two mechanical facts shaped this:
+
+- **`plainnat` renders the `doi` field for `@article` and `@inproceedings` only.**
+  For `@techreport` and `@misc` it is silently dropped and only `url` renders. Six
+  RFCs and FIPS 186-5 had carried correct DOIs since the first draft and none had
+  ever appeared in the PDF. Those entries now also carry
+  `url = https://doi.org/…`, which renders for every type; `\doi{}` is defined in
+  the preamble to hyperlink for the types that emit it.
+- **No DOI resolver or publisher host is reachable from the environment the
+  paper is built in** — `doi.org`, `api.crossref.org`, `rfc-editor.org`,
+  `nist.gov`, `ieee.org`, `iso.org`, `psr.org.uk`, `nbc.gov.kh`, `emvco.com`,
+  `w3.org`, `eur-lex.europa.eu`, `meti.go.jp` and `paymentsjapan.or.jp` all
+  refuse the connection. **Nothing below was resolved live.** Each identifier was
+  assigned from the publisher's deterministic pattern or a known value, and the
+  author should click each one once.
+
+| Reference | Identifier | Basis |
+|---|---|---|
+| RFC 9285, 1950, 1951, 9052, 9053, 8949 | `10.17487/RFCnnnn` | RFC Editor assigns every RFC this pattern |
+| FIPS 186-5 | `10.6028/NIST.FIPS.186-5` | NIST pattern for FIPS publications |
+| Schechter et al. 2007 | `10.1109/SP.2007.35` | IEEE S&P 2007 proceedings; the only entry the style rendered natively |
+| EU Decision 2021/1073 | ELI `eur-lex.europa.eu/eli/dec_impl/2021/1073/oj` | EU Official Journal documents have no DOI; ELI is the permanent identifier |
+| ISO/IEC 18004:2015 | `iso.org/standard/62021.html` | ISO catalogue number for the 2015 edition. **Least certain of the set**; a later edition (2024) has a different number |
+| W3C Web Cryptography API | dated Recommendation URL, 26 Jan 2017 | The undated `/TR/WebCryptoAPI/` now resolves to a later draft; the dated one is what the entry describes |
+| EMVCo MPM v1.1 | EMVCo specifications page | Document is behind a licence click-through; no deep link exists |
+| PSR, APP scams reimbursement | PSR's APP scams page | Policy statements are reachable from it; a document-level URL was not confirmable |
+| NBC Annual Report 2025 | NBC annual reports page | Same |
+| Author preprints (Zenodo, SSRN) | `10.5281/zenodo.21699053`, `10.2139/ssrn.7366978` | Supplied by the author; the SSRN one confirmed by its landing page |
+
+**Four references still have no link**, because the documents were supplied to
+the authors as files or captures and their canonical locations were not:
+
+- `edc2026qrbill` — the utility's social media post
+- `jpqrmpm`, `jpqrfraud`, `jpqrcard` — the three Payments Japan Association
+  guideline PDFs
+
+The `mef2026telegram` share-link is recorded above with its own caveat.
+
 ## Sources considered and rejected
 
 | Material | Why it was not used |
