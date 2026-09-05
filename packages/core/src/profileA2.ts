@@ -433,3 +433,41 @@ export async function verifyProfileA2(
 
 /** Tags this encoding occupies, for a caller that needs to reserve them. */
 export const V2_TEMPLATE_TAGS: readonly string[] = [V2_META_TAG, V2_SIG_HI_TAG, V2_SIG_LO_TAG];
+
+/**
+ * Which Profile A encoding a scanned payload carries, or `null` when it carries
+ * no signature template at all.
+ *
+ * Both encodings are wire formats a verifier must dispatch on, and neither
+ * declares itself in a header, so the decision is structural. Version 2 is
+ * recognised by a strict two-digit walk whose last three objects are `85`,
+ * `86`, `87` — the same walk a legacy parser performs. Version 1 is recognised
+ * by the presence of template `85` under the three-digit rule. Anything else
+ * is an unsigned EMVCo payload, or not EMVCo at all; the caller decides which
+ * by verifying under the profile this function names, or by treating the code
+ * as unsigned.
+ *
+ * This is a routing hint and never a verdict: a payload this function calls
+ * version 2 can still fail every check in `verifyProfileA2`.
+ */
+export function detectProfileAEncoding(payload: string): 2 | 1 | null {
+  const body = stripCrc(payload);
+  try {
+    const objects = parseDataObjects(body, { extendedLengthTags: NO_EXTENDED_LENGTHS });
+    const tail = objects.slice(-3).map((o) => o.tag);
+    if (tail.join(',') === `${V2_META_TAG},${V2_SIG_HI_TAG},${V2_SIG_LO_TAG}`) return 2;
+  } catch {
+    // Not a valid two-digit walk; fall through to the version 1 rule.
+  }
+  try {
+    // The fixed-offset rule: template 85 runs to the CRC regardless of its
+    // declared length, so the walk must not trust that length either. The
+    // published v1 reference vector declares 200 for 201 characters and is a
+    // valid payload; a length-trusting walk would call it unsigned.
+    const objects = parseDataObjects(body, { lengthAgnosticTag: V2_META_TAG, boundary: body.length });
+    if (findObject(objects, V2_META_TAG) !== undefined) return 1;
+  } catch {
+    // Not version 1 either.
+  }
+  return null;
+}

@@ -14,8 +14,10 @@ import {
   TrustAnchor,
   deriveKid,
   signProfileA,
+  signProfileA2,
   signProfileB,
   verifyProfileA,
+  detectProfileAEncoding,
   verifyProfileA2,
   verifyProfileB,
   type CredentialClaims,
@@ -32,9 +34,10 @@ const USAGE = `kh-sqr — KH-SQR reference tools
       Derive a key identifier from a P-256 public key.
 
   sign-a --payload <str|@file> --key <pkcs8.pem> --kid <hex16> --payee-class <M|I>
-         [--issued-at <unix>] [--expires-at <unix>]
+         [--issued-at <unix>] [--expires-at <unix>] [--encoding <1|2>]
       Sign an EMVCo payment payload under Profile A. Omit --expires-at for a
-      static code; a dynamic code requires it, within 300 seconds.
+      static code; a dynamic code requires it, within 300 seconds. Encoding
+      defaults to 2, the EMVCo-conformant one; 1 is frozen for new issuance.
 
   sign-b --claims <@file.json> --key <pkcs8.pem> --kid <hex16>
       Sign a credential under Profile B.
@@ -93,6 +96,7 @@ const OPTIONS = {
   'payee-class': { type: 'string' },
   'issued-at': { type: 'string' },
   'expires-at': { type: 'string' },
+  encoding: { type: 'string' },
   trustlist: { type: 'string' },
   timestamp: { type: 'string' },
   'root-keys': { type: 'string' },
@@ -166,14 +170,17 @@ async function commandSignA(values: Record<string, string | boolean | undefined>
   if (payeeClass !== 'M' && payeeClass !== 'I') fail('--payee-class must be M or I');
 
   const expiresAt = values['expires-at'] === undefined ? undefined : integer(values, 'expires-at');
-  const signed = await signProfileA({
+  const encoding = integer(values, 'encoding', 2);
+  if (encoding !== 1 && encoding !== 2) fail('--encoding must be 1 or 2');
+  const options = {
     payload: literalOrFile(required(values, 'payload')),
     privateKey: await loadPrivateKey(required(values, 'key')),
     kid: required(values, 'kid'),
     issuedAt: integer(values, 'issued-at', now()),
     ...(expiresAt === undefined ? {} : { expiresAt }),
     payeeClass: payeeClass as PayeeClass,
-  });
+  };
+  const signed = encoding === 2 ? await signProfileA2(options) : await signProfileA(options);
 
   process.stdout.write(
     values['json'] === true
@@ -203,9 +210,12 @@ async function commandVerify(values: Record<string, string | boolean | undefined
   try {
     const trustAnchor = await openAnchor(values);
     const at = integer(values, 'now', now());
+    const encoding = payload.startsWith('KH1:') ? null : detectProfileAEncoding(payload);
     const result = payload.startsWith('KH1:')
       ? await verifyProfileB({ payload, trustAnchor, now: at })
-      : await verifyProfileA({ payload, trustAnchor, now: at });
+      : encoding === 2
+        ? await verifyProfileA2({ payload, trustAnchor, now: at })
+        : await verifyProfileA({ payload, trustAnchor, now: at });
 
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     process.stderr.write(

@@ -15,6 +15,7 @@ import {
   V2_SIGNATURE_PART_LENGTH,
   V2_SIG_HI_TAG,
   V2_SIG_LO_TAG,
+  detectProfileAEncoding,
   signProfileA2,
   verifyProfileA2,
 } from '../src/profileA2.js';
@@ -211,5 +212,37 @@ describe('v2 rejects what v1 rejects', () => {
         payeeClass: 'M',
       }),
     ).rejects.toThrow();
+  });
+});
+
+describe('detectProfileAEncoding', () => {
+  it('names version 2 for every v2 vector and version 1 for every v1 vector', () => {
+    for (const c of suite.cases) {
+      if (c.profile !== 'A' || c.type !== 'verify') continue;
+      const payload = c.input['payload'] as string;
+      const expected = c.input['encodingVersion'] === 2 ? 2 : 1;
+      // Structural rejections that remove template 85 are not Profile A payloads
+      // to a router; every other vector, accepted or rejected, is routable.
+      const detected = detectProfileAEncoding(payload);
+      if (detected === null) {
+        expect(c.expect).toBe('reject');
+        continue;
+      }
+      expect(detected, c.id).toBe(expected);
+    }
+  });
+
+  it('returns null for an unsigned EMVCo payload and for a credential', () => {
+    expect(detectProfileAEncoding(appendCrc(STATIC_BASE))).toBeNull();
+    expect(detectProfileAEncoding('KH1:NOTAPAYMENT')).toBeNull();
+  });
+
+  it('is a routing hint, not a verdict', async () => {
+    const { payload } = await signDynamic();
+    const tampered = payload.slice(0, 40) + (payload[40] === '1' ? '2' : '1') + payload.slice(41);
+    expect(detectProfileAEncoding(tampered)).toBe(2);
+    await expect(
+      verifyProfileA2({ payload: tampered, trustAnchor: await anchorFor(published.state), now: published.state.now }),
+    ).rejects.toMatchObject({ reason: expect.any(String) });
   });
 });

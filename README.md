@@ -841,6 +841,11 @@ too.
 stall sticker, POS screen, degree, land title — with measured symbol sizes, the
 Worker involved, and the two cases the design does not cover.
 
+**Building a wallet, an issuer, or a port:** [`docs/INTEGRATION.md`](docs/INTEGRATION.md)
+is the developer guide — pinning and refreshing trust, the scan pipeline with
+sample code, what the interface must and must not show, signing both code
+kinds, and how to prove a Kotlin or Swift port conforms with the vector file.
+
 **Try it without deploying anything:** [`demo/qrseal-demo.html`](demo/qrseal-demo.html)
 is a single file that runs the real verifier in a browser — all 41 verification
 vectors, the currency-substitution pair, and live tampering. Built by
