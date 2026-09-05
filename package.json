@@ -20,7 +20,8 @@
     "check:profile-a-isolation": "node --experimental-strip-types tools/check-profile-a-isolation.ts",
     "demo:build": "node --experimental-strip-types tools/build-demo.ts",
     "check:no-signing-keys": "node --experimental-strip-types tools/check-no-signing-keys.ts",
-    "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm vectors:check && pnpm check:profile-a-isolation && pnpm check:no-signing-keys"
+    "check:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm vectors:check && pnpm check:profile-a-isolation && pnpm check:no-signing-keys",
+    "demo:check": "node demo/e2e/pwa.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.22.0",
@@ -31,6 +32,7 @@
     "@vitest/snapshot": "^4.1.11",
     "cbor2": "^2.0.1",
     "eslint": "^9.39.1",
+    "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.4",

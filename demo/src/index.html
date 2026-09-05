@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#2E4B8F">
+<meta name="description" content="Issue and verify KH-SQR signed QR codes on this device, offline. A sandbox: its keys protect nothing.">
+<title>QRSeal Sandbox</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="QRSeal">
+<style>
+  :root {
+    --ground: #F5F7FA; --surface: #FFFFFF; --sunk: #EDF0F5;
+    --ink: #141821; --muted: #5C6577; --faint: #8A93A6;
+    --line: #DDE2EB; --line-strong: #C3CBD9;
+    --accent: #2E4B8F; --accent-soft: #E4EAF7;
+    --reject: #A03325; --reject-soft: #F8E7E4;
+    --caution: #8A5B18; --caution-soft: #FBF0DC;
+    --good: #2F6B3A; --good-soft: #E3F1E5;
+    --shadow: 0 1px 2px rgba(20,24,33,.06), 0 8px 24px -12px rgba(20,24,33,.18);
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Khmer", sans-serif;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1319; --surface: #171C24; --sunk: #1E242E;
+      --ink: #E7EBF2; --muted: #99A2B4; --faint: #6E7789;
+      --line: #2A313D; --line-strong: #3A4352;
+      --accent: #89A8E8; --accent-soft: #1C2739;
+      --reject: #E28577; --reject-soft: #331E1A;
+      --caution: #DFAE68; --caution-soft: #2E2416;
+      --good: #8CCB97; --good-soft: #17301C;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px 72px; }
+  a { color: var(--accent); }
+  code, .mono { font-family: var(--mono); font-size: .92em; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .head { max-width: 1040px; margin: 0 auto; padding: 18px 16px 12px; display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: flex-end; justify-content: space-between; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin: 0 0 4px; }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1.15; margin: 0; letter-spacing: -.01em; }
+  .sub { margin: 6px 0 0; color: var(--muted); max-width: 64ch; font-size: 14px; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .pill { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); background: var(--sunk); white-space: nowrap; }
+  .pill.good { color: var(--good); background: var(--good-soft); border-color: transparent; }
+  .pill.warn { color: var(--caution); background: var(--caution-soft); border-color: transparent; }
+
+  nav { display: flex; gap: 2px; max-width: 1040px; margin: 0 auto; padding: 0 16px; overflow-x: auto; }
+  nav button { font: 500 14px/1 var(--sans); padding: 12px 14px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  nav button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  nav button:focus-visible, button.act:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .thesis { margin: 18px 0 0; padding: 12px 14px; border-radius: 3px; background: var(--caution-soft); border-left: 3px solid var(--caution); font-size: 14px; }
+  .thesis b { font-family: var(--serif); font-size: 15.5px; font-weight: 600; }
+
+  section { margin-top: 22px; }
+  section[hidden] { display: none; }
+  h2 { font-family: var(--serif); font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .note { margin: 0 0 14px; color: var(--muted); font-size: 13.5px; max-width: 74ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 3px; box-shadow: var(--shadow); padding: 16px; display: grid; gap: 14px; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } }
+
+  .segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
+  .segmented button { font: 500 13px/1 var(--sans); padding: 8px 12px; border: 0; background: var(--surface); color: var(--muted); cursor: pointer; }
+  .segmented button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+
+  form { display: grid; gap: 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+  label.f { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+  label.f span.l { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%; padding: 9px 11px; font: 14px/1.4 var(--sans); color: var(--ink); background: var(--sunk);
+    border: 1px solid var(--line); border-radius: 3px;
+  }
+  textarea { font-family: var(--mono); font-size: 12.5px; min-height: 96px; resize: vertical; overflow-wrap: anywhere; }
+  .radios { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+  .radios label { display: inline-flex; gap: 6px; align-items: center; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .act { display: inline-block; font: 500 13px/1 var(--sans); padding: 9px 13px; border-radius: 3px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .act:hover { background: var(--sunk); }
+  .act.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .act.danger { color: var(--reject); border-color: var(--reject); }
+  .act:disabled { opacity: .5; cursor: default; }
+  .hint { font-size: 12.5px; color: var(--faint); }
+  .filelabel input { display: none; }
+
+  .qr-box { display: grid; justify-items: center; gap: 10px; }
+  canvas#i-qr { background: #fff; border-radius: 3px; max-width: 100%; height: auto; }
+  .meta { font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-align: center; }
+  .expiry { font-size: 13px; color: var(--caution); text-align: center; }
+
+  .outcome { font-family: var(--serif); font-size: 21px; font-weight: 600; }
+  .outcome.ok { color: var(--accent); }
+  .outcome.no { color: var(--reject); }
+  .outcome.plain { color: var(--muted); }
+  .verdict-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .reason-code { font-family: var(--mono); font-size: 12px; padding: 3px 7px; border-radius: 2px; background: var(--reject-soft); color: var(--reject); }
+  .disclosure { display: grid; margin: 0; border: 1px solid var(--line); border-radius: 3px; }
+  .row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .row:last-child { border-bottom: 0; }
+  .row dt { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+  .row dd { margin: 0; font-size: 14.5px; overflow-wrap: anywhere; }
+  .row dd.big { font-family: var(--serif); font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row.hi { background: var(--caution-soft); }
+  .row.hi dt { color: var(--caution); }
+  @media (max-width: 480px) { .row { grid-template-columns: 1fr; gap: 2px; } }
+  .aside { font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--line-strong); padding-left: 12px; margin: 0; }
+  .aside b { color: var(--ink); font-weight: 500; }
+  pre.raw { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--sunk); padding: 10px; border-radius: 3px; margin: 0; }
+
+  .tlv { font-family: var(--mono); font-size: 12.5px; line-height: 1.9; background: var(--sunk); border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px; overflow-wrap: anywhere; }
+  .tlv .tag { color: var(--accent); font-weight: 600; }
+  .tlv .len { color: var(--faint); }
+  .tlv .seg.mark { background: var(--caution-soft); outline: 1px solid var(--caution); border-radius: 2px; }
+  .tlv .seg.sig { color: var(--muted); }
+  .tlv-note { margin: 8px 0 0; font-size: 12.5px; color: var(--caution); }
+
+  video#s-video { width: 100%; max-height: 60vh; background: #000; border-radius: 3px; }
+
+  .keys { display: grid; gap: 6px; }
+  .key { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); font-size: 13px; }
+  .key.revoked { opacity: .65; }
+  .chip { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; white-space: nowrap; font-weight: 500; }
+  .chip.pass { background: var(--accent-soft); color: var(--accent); }
+  .chip.fail { background: var(--reject-soft); color: var(--reject); }
+
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .pair-card { background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 14px; display: grid; gap: 6px; }
+  .pair-amount { font-family: var(--serif); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pair-tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .pair-tag mark { background: var(--caution-soft); color: var(--caution); padding: 1px 3px; border-radius: 2px; font-weight: 600; }
+  .pair-verdict { font-size: 13px; color: var(--accent); font-weight: 500; }
+  .suite-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin: 10px 0; }
+  .tally { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .tally b { color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+  .cell { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 11.5px; padding: 7px 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; }
+  .cell .id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cell.ok .mk { color: var(--accent); font-weight: 600; }
+  .cell.bad { border-color: var(--reject); background: var(--reject-soft); }
+  .cell.bad .mk { color: var(--reject); }
+
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: min(92vw, 560px); padding: 10px 14px; border-radius: 3px; background: var(--ink); color: var(--ground); font-size: 13.5px; box-shadow: var(--shadow); z-index: 10; }
+  .toast.err { background: var(--reject); color: #fff; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--faint); display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head">
+    <div>
+      <p class="eyebrow">QRSeal · KH-SQR sandbox</p>
+      <h1>Issue a signed code. Scan it. Then decide.</h1>
+      <p class="sub">This device is the whole scheme: it holds the Root, publishes the trust list, signs codes and verifies them, with the real KH-SQR library and no network.</p>
+    </div>
+    <div class="pills">
+      <span class="pill" id="pill-net">online</span>
+      <span class="pill" id="pill-offline">checking offline support…</span>
+      <span class="pill" id="pill-scheme">sandbox</span>
+      <button class="act" id="btn-install" type="button" hidden>Install</button>
+    </div>
+  </div>
+  <nav role="tablist">
+    <button role="tab" id="nav-issue" type="button" aria-selected="true">Issue</button>
+    <button role="tab" id="nav-scan" type="button" aria-selected="false">Scan &amp; verify</button>
+    <button role="tab" id="nav-trust" type="button" aria-selected="false">Trust</button>
+    <button role="tab" id="nav-vectors" type="button" aria-selected="false">Vectors</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="thesis">
+    <b>A verified signature is not a reason to pay.</b>
+    This app never shows a green tick, because the library never returns one. A signature says a registered key produced these bytes. It says nothing about why you were asked to scan them.
+  </div>
+
+  <!-- ============================ ISSUE ============================ -->
+  <section id="tab-issue">
+    <h2>Issue</h2>
+    <p class="note">Signed by this sandbox’s current issuer key, enrolled on this device’s trust list. Print the static code, or show the dynamic one on a screen; then scan it from another device that has imported this scheme, or from this one.</p>
+    <div class="two">
+      <div class="card">
+        <div class="segmented" role="tablist">
+          <button role="tab" id="i-profile-a" type="button" aria-selected="true">Profile A · payment</button>
+          <button role="tab" id="i-profile-b" type="button" aria-selected="false">Profile B · credential</button>
+        </div>
+
+        <form id="form-a" onsubmit="return false">
+          <div class="radios">
+            <label><input type="radio" name="a-kind" id="a-kind-static" checked> Static — printed, no amount</label>
+            <label><input type="radio" name="a-kind" id="a-kind-dynamic"> Dynamic — one transaction, with amount</label>
+          </div>
+          <div class="grid2">
+            <label class="f"><span class="l">Merchant name · tag 59</span><input type="text" id="a-name" value="SOK DARA" maxlength="25"></label>
+            <label class="f"><span class="l">City · tag 60</span><input type="text" id="a-city" value="PHNOM PENH" maxlength="15"></label>
+            <label class="f"><span class="l">Acquirer id · 30/00</span><input type="text" id="a-acquirer" value="abaakhppxxx"></label>
+            <label class="f"><span class="l">Account id · 30/01</span><input type="text" id="a-account" value="855012345678"></label>
+            <label class="f"><span class="l">Merchant category · 52</span><input type="text" id="a-mcc" value="5812" maxlength="4"></label>
+            <label class="f"><span class="l">Payee class</span><select id="a-class"><option value="M">M — merchant</option><option value="I">I — individual</option></select></label>
+          </div>
+          <div id="a-dynamic-only" class="grid2" hidden>
+            <label class="f"><span class="l">Amount · tag 54</span><input type="text" id="a-amount" value="7200" inputmode="decimal"></label>
+            <label class="f"><span class="l">Currency · tag 53</span><select id="a-currency"><option value="KHR">KHR (116)</option><option value="USD">USD (840)</option></select></label>
+            <label class="f"><span class="l">Valid for (seconds, max 300)</span><input type="number" id="a-validity" value="120" min="5" max="300"></label>
+          </div>
+          <p class="hint" id="a-static-note">A static code carries no amount by rule: a printed sticker must not be given a figure the merchant did not choose. The payer enters it.</p>
+          <div class="actions">
+            <button class="act primary" id="a-issue" type="button">Sign and render</button>
+            <label class="hint"><input type="checkbox" id="a-sign" checked> sign it (untick to see what an unsigned code looks like to the verifier)</label>
+          </div>
+        </form>
+
+        <form id="form-b" hidden onsubmit="return false">
+          <div class="grid2">
+            <label class="f"><span class="l">Issuer · claim 1</span><input type="text" id="b-issuer" value="KH.EDU.SANDBOX"></label>
+            <label class="f"><span class="l">Document type · dt</span><input type="text" id="b-type" value="degree"></label>
+            <label class="f"><span class="l">Document id · di</span><input type="text" id="b-docid" value="SBX-2026-000001"></label>
+            <label class="f"><span class="l">Issue date · idt</span><input type="text" id="b-date" value="2026-07-15"></label>
+            <label class="f"><span class="l">Subject name, as printed · sn</span><input type="text" id="b-subject" value="CHAY SOPHEA"></label>
+            <label class="f"><span class="l">Issuing organisation · io</span><input type="text" id="b-org" value="Sandbox University"></label>
+          </div>
+          <label class="filelabel act"><input type="file" id="b-file"> Attach the issued file to bind its SHA-256 (optional)</label>
+          <p class="hint mono" id="b-hash"></p>
+          <p class="hint">Only for documents whose life is shorter than the signing key’s: this sandbox’s keys expire in two years. A degree or a land title is outside Profile B until the specification defines archival verification.</p>
+          <div class="actions"><button class="act primary" id="b-issue" type="button">Sign and render</button></div>
+        </form>
+      </div>
+
+      <div class="card" id="i-out" hidden>
+        <div class="qr-box">
+          <canvas id="i-qr" width="320" height="320" aria-label="Issued QR code"></canvas>
+          <div class="meta" id="i-meta"></div>
+          <div class="expiry" id="i-expiry"></div>
+        </div>
+        <textarea id="i-payload" readonly aria-label="Issued payload"></textarea>
+        <div class="actions">
+          <button class="act" id="i-copy" type="button">Copy payload</button>
+          <button class="act" id="i-download" type="button">Download PNG</button>
+          <button class="act primary" id="i-verify" type="button">Verify it here →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SCAN ============================ -->
+  <section id="tab-scan" hidden>
+    <h2>Scan &amp; verify</h2>
+    <p class="note">Every scan goes through the same pipeline: refuse URL carriers, route by profile and encoding, verify offline against the selected trust list, then show what the specification obliges — never a tick.</p>
+    <div class="two">
+      <div class="card">
+        <div class="actions">
+          <button class="act primary" id="s-start" type="button">Open camera</button>
+          <label class="filelabel act"><input type="file" id="s-file" accept="image/*"> Scan from an image</label>
+        </div>
+        <div id="s-cam" hidden>
+          <video id="s-video" playsinline muted></video>
+          <div class="actions"><span class="hint" id="s-cam-status"></span><button class="act" id="s-stop" type="button">Stop</button></div>
+        </div>
+        <label class="f"><span class="l">or paste a payload</span><textarea id="s-payload" spellcheck="false"></textarea></label>
+        <div class="actions">
+          <button class="act primary" id="s-verify" type="button">Verify</button>
+          <button class="act" id="s-flip" type="button">Flip one character</button>
+          <button class="act" id="s-reset" type="button">Reset</button>
+        </div>
+        <div>
+          <div class="tlv" id="v-tlv"></div>
+          <p class="tlv-note" id="v-tlv-note" hidden></p>
+        </div>
+      </div>
+
+      <div class="card" id="v-result" hidden>
+        <div class="verdict-head">
+          <span class="outcome" id="v-outcome">—</span>
+          <span class="reason-code" id="v-reason" hidden></span>
+          <span style="flex:1"></span>
+          <span class="hint" id="v-timing"></span>
+        </div>
+        <div id="v-body"></div>
+        <div id="v-compare" hidden>
+          <h2 style="font-size:15px">Compare with the paper</h2>
+          <p class="note">Type what is printed on the document. The library compares exact strings and reports each field; it will not summarise them into a verdict.</p>
+          <div class="grid2">
+            <label class="f"><span class="l">Subject name</span><input type="text" id="cmp-subjectName"></label>
+            <label class="f"><span class="l">Document id</span><input type="text" id="cmp-documentId"></label>
+            <label class="f"><span class="l">Issuing organisation</span><input type="text" id="cmp-issuingOrganisation"></label>
+            <label class="f"><span class="l">Issue date</span><input type="text" id="cmp-issueDate"></label>
+          </div>
+          <div class="actions" style="margin-top:8px"><button class="act" id="cmp-run" type="button">Compare</button></div>
+          <div id="cmp-result" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TRUST ============================ -->
+  <section id="tab-trust" hidden>
+    <h2>Trust</h2>
+    <p class="note">The sandbox scheme lives in this browser’s storage. Revoke the issuer key and every code it signed fails. Export the public half as a bundle and another device can verify this device’s codes — and nothing else, because the bundle carries no private key.</p>
+    <div class="two">
+      <div class="card">
+        <h2 style="font-size:15px">This device’s sandbox</h2>
+        <div id="t-sandbox"></div>
+        <div class="actions">
+          <button class="act" id="t-new-issuer" type="button">Enrol a new issuer key</button>
+          <button class="act danger" id="t-revoke" type="button">Revoke current issuer key</button>
+          <button class="act" id="t-restamp" type="button">Re-sign timestamp</button>
+          <button class="act danger" id="t-reset" type="button">Reset sandbox</button>
+        </div>
+        <div class="actions">
+          <button class="act primary" id="t-export" type="button">Copy scheme bundle</button>
+          <button class="act" id="t-download" type="button">Download bundle</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px">Verify against</h2>
+        <div class="radios">
+          <label><input type="radio" name="t-against" id="t-against-sandbox" checked> this device’s sandbox</label>
+          <label><input type="radio" name="t-against" id="t-against-imported"> the imported scheme</label>
+        </div>
+        <div id="t-imported"></div>
+        <label class="f"><span class="l">Paste a scheme bundle</span><textarea id="t-bundle" spellcheck="false" placeholder='{"format":"qrseal-scheme-bundle/1", …}'></textarea></label>
+        <div class="actions">
+          <button class="act primary" id="t-import" type="button">Import</button>
+          <label class="filelabel act"><input type="file" id="t-import-file" accept="application/json,.json"> Load from file</label>
+          <button class="act" id="t-forget" type="button">Forget imported</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ VECTORS ============================ -->
+  <section id="tab-vectors" hidden>
+    <h2>Published vectors</h2>
+    <p class="note">The conformance suite a Kotlin or Swift port is checked against, run in this browser under its own frozen clock and the repository’s published test keys. Most cases are negative: what a verifier must refuse is the harder half.</p>
+    <div class="suite-head">
+      <span class="tally" id="x-tally">Not run yet</span>
+      <button class="act primary" id="x-run" type="button">Run all vectors</button>
+    </div>
+    <div class="grid" id="x-grid"></div>
+    <h2 style="margin-top:26px">Three characters, four thousand times the money</h2>
+    <p class="note">Both genuine, both verify. Same payee, same account, same number; tag 53 differs. It is the one attack in which a valid signature actively helps the attacker, and why the amount and an alphabetic currency are a MUST before authorisation.</p>
+    <div class="pair" id="x-pair"></div>
+  </section>
+
+  <footer>
+    <div><b>This is a sandbox.</b> The Root, timestamp and issuer keys were generated in this browser and are stored in it unprotected. They protect nothing, and a code that verifies here proves nothing outside this device. Nothing on this page is issued by, endorsed by, or agreed with the National Bank of Cambodia or any other authority. KH-SQR is proposed, not adopted.</div>
+    <div>Everything runs locally: <code>packages/core</code> built <code>__BUILD_DATE__</code>, Web Crypto only; QR rendering by <code>qrcode</code>, decoding by the platform detector or <code>jsQR</code>. Source and specification at <a href="https://github.com/sengtha/qrseal">github.com/sengtha/qrseal</a>.</div>
+  </footer>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<script src="./app.js"></script>
+</body>
+</html>

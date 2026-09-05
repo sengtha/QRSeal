@@ -94,9 +94,15 @@ kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
 ```
 
 Profile A reaches seven modules and depends on nothing beyond Web Crypto, so
-the same verification runs unmodified in a browser. A static page plus a
-published `trustlist-edge` demonstrates the entire signing and verification
-path with nothing writable exposed.
+the same verification runs unmodified in a browser. That is what the sandbox
+PWA under `demo/pwa/` is: it generates its own scheme in the browser, issues
+and verifies both profiles, and runs offline. It is served by a fourth,
+assets-only Worker, `workers/demo-pwa`, which holds nothing and exposes
+nothing writable — see [`demo/README.md`](../demo/README.md) and
+[`workers/demo-pwa/DEVELOPMENT.md`](../workers/demo-pwa/DEVELOPMENT.md).
+Because its keys are generated on the device, it does not even need the
+published test Root, and nothing it verifies can be mistaken for a real
+attestation by anyone who reads its footer.
 
 ---
 

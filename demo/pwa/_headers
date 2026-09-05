@@ -1,0 +1,18 @@
+# Served by Cloudflare Workers static assets (workers/demo-pwa).
+# The service worker and the shell must not be held by an HTTP cache, or a
+# new deployment would never reach an installed app. Offline behaviour comes
+# from the service worker's own cache, not from these headers.
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+/index.html
+  Cache-Control: no-cache
+/
+  Cache-Control: no-cache
+/app.js
+  Cache-Control: no-cache
+/demo-data.json
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+  Content-Type: application/manifest+json

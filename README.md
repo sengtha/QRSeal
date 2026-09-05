@@ -846,10 +846,13 @@ is the developer guide — pinning and refreshing trust, the scan pipeline with
 sample code, what the interface must and must not show, signing both code
 kinds, and how to prove a Kotlin or Swift port conforms with the vector file.
 
-**Try it without deploying anything:** [`demo/qrseal-demo.html`](demo/qrseal-demo.html)
-is a single file that runs the real verifier in a browser — all 41 verification
-vectors, the currency-substitution pair, and live tampering. Built by
-`pnpm demo:build`.
+**Try it on a phone, offline:** [`demo/pwa/`](demo/README.md) is a
+progressive web app that runs the real library on the device. It generates a
+sandbox scheme — Root, trust list, issuer key — in the browser, issues signed
+Profile A and Profile B codes, scans them back with the camera, revokes the
+key, exports the scheme to a second device, and runs all 41 vectors. Built by
+`pnpm demo:build`, checked end to end by `pnpm demo:check`, and served by the
+assets-only Worker [`workers/demo-pwa`](workers/demo-pwa/DEVELOPMENT.md).
 
 **Setting one up:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the
 end-to-end order — offline Root ceremony first, then `trustlist-edge`, then the
@@ -929,6 +932,10 @@ Routes: `POST /screen`, `POST /listings`, `POST /removals`,
 `GET /accounts/:id/status`, `GET /delta`, `GET /audit/export`.
 
 Developer guide: [`workers/risklist-api/DEVELOPMENT.md`](workers/risklist-api/DEVELOPMENT.md).
+
+A fourth directory, `workers/demo-pwa`, is not a service: it is an assets-only
+Worker that serves the sandbox PWA under `demo/pwa/`, with no script, no
+binding and no key. Guide: [`workers/demo-pwa/DEVELOPMENT.md`](workers/demo-pwa/DEVELOPMENT.md).
 
 #### The audit log (`src/audit.ts` + `migrations/*.sql`, in both write services)
 

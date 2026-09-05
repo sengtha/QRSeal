@@ -784,5 +784,6 @@ without `--timestamp` and it warns that freeze protection is off.
 - `docs/DEPLOYMENT.md` and `workers/*/DEVELOPMENT.md` — running the three
   services.
 - `docs/EXPOSURE.md` — what a signature fixes and what it does not, by attack.
-- `demo/README.md` — the browser demo, which embeds this library and shows
-  the display rules applied.
+- `demo/README.md` — the sandbox PWA, which embeds this library, issues and
+  verifies both profiles on the device, and is a working example of §1 and §2
+  of this guide (`demo/src/app.ts`).

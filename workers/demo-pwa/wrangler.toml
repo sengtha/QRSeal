@@ -1,0 +1,18 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "qrseal-demo"
+compatibility_date = "2026-08-01"
+workers_dev = false
+
+# Assets only. There is no Worker script: the sandbox runs entirely in the
+# browser, and this deployment does nothing but hand out the files under
+# demo/pwa (built by `pnpm demo:build`). It holds no key, no binding and no
+# state, and CI's no-signing-key check covers this directory like the others.
+#
+# `demo/pwa/_headers` sets Cache-Control for the service worker and the shell.
+[assets]
+directory = "../../demo/pwa"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+[observability]
+enabled = true

@@ -32,6 +32,9 @@ importers:
       eslint:
         specifier: ^9.39.1
         version: 9.39.5
+      jsqr:
+        specifier: ^1.4.0
+        version: 1.4.0
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -55,6 +58,12 @@ importers:
         version: link:../core
 
   packages/core: {}
+
+  workers/demo-pwa:
+    devDependencies:
+      wrangler:
+        specifier: ^4.48.1
+        version: 4.127.1(@cloudflare/workers-types@5.20260830.1)
 
   workers/registry-api:
     devDependencies:
@@ -1302,6 +1311,9 @@ packages:
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
+
+  jsqr@1.4.0:
+    resolution: {integrity: sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -2673,6 +2685,8 @@ snapshots:
   json-schema-traverse@0.4.1: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
+
+  jsqr@1.4.0: {}
 
   keyv@4.5.4:
     dependencies:
