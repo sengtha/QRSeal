@@ -440,22 +440,26 @@ export const V2_TEMPLATE_TAGS: readonly string[] = [V2_META_TAG, V2_SIG_HI_TAG, 
  *
  * Both encodings are wire formats a verifier must dispatch on, and neither
  * declares itself in a header, so the decision is structural. Version 2 is
- * recognised by a strict two-digit walk whose last three objects are `85`,
- * `86`, `87` — the same walk a legacy parser performs. Version 1 is recognised
- * by the presence of template `85` under the three-digit rule. Anything else
- * is an unsigned EMVCo payload, or not EMVCo at all; the caller decides which
- * by verifying under the profile this function names, or by treating the code
- * as unsigned.
+ * recognised by a strict two-digit walk — the one a legacy parser performs —
+ * that reaches a signature template `86` or `87`, which version 1 never
+ * carries. Version 1 is recognised by template `85` under the fixed-offset
+ * rule. Anything else is an unsigned EMVCo payload, or not EMVCo at all; the
+ * caller decides which by verifying under the profile this function names, or
+ * by treating the code as unsigned.
  *
- * This is a routing hint and never a verdict: a payload this function calls
- * version 2 can still fail every check in `verifyProfileA2`.
+ * The version 2 rule is deliberately looser than `verifyProfileA2`'s: a
+ * payload with data appended after template `87` is still routed to version
+ * 2, so that the verifier can reject it for that reason
+ * (`SIGNATURE_TEMPLATE_NOT_LAST`) rather than a version 1 verifier rejecting
+ * it for a less diagnostic one. This is a routing hint and never a verdict.
  */
 export function detectProfileAEncoding(payload: string): 2 | 1 | null {
   const body = stripCrc(payload);
   try {
     const objects = parseDataObjects(body, { extendedLengthTags: NO_EXTENDED_LENGTHS });
-    const tail = objects.slice(-3).map((o) => o.tag);
-    if (tail.join(',') === `${V2_META_TAG},${V2_SIG_HI_TAG},${V2_SIG_LO_TAG}`) return 2;
+    if (findObject(objects, V2_SIG_HI_TAG) !== undefined || findObject(objects, V2_SIG_LO_TAG) !== undefined) {
+      return 2;
+    }
   } catch {
     // Not a valid two-digit walk; fall through to the version 1 rule.
   }
