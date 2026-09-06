@@ -846,8 +846,9 @@ is the developer guide — pinning and refreshing trust, the scan pipeline with
 sample code, what the interface must and must not show, signing both code
 kinds, and how to prove a Kotlin or Swift port conforms with the vector file.
 
-**Try it on a phone, offline:** [`demo/pwa/`](demo/README.md) is a
-progressive web app that runs the real library on the device. It generates a
+**Try it on a phone, offline:** <https://qrseal.sengtha.workers.dev/> is
+[`demo/pwa/`](demo/README.md), a progressive web app that runs the real
+library on the device. It generates a
 sandbox scheme — Root, trust list, issuer key — in the browser, issues signed
 Profile A and Profile B codes, scans them back with the camera, revokes the
 key, exports the scheme to a second device, and runs all 41 vectors. Built by

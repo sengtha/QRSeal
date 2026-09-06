@@ -6,7 +6,8 @@ over HTTPS or `localhost`; the service worker then caches the whole app, and
 it keeps working with the network off. Install it to the home screen if the
 browser offers to.
 
-The repository's own deployment is an assets-only Cloudflare Worker,
+The repository's own deployment is at <https://qrseal.sengtha.workers.dev/>,
+served by an assets-only Cloudflare Worker,
 [`workers/demo-pwa`](../workers/demo-pwa/wrangler.toml).
 
 ## What it does
