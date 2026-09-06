@@ -823,10 +823,12 @@ and the paper's Limitations say.
 same listing and must share one consistency point: split them and a screen could
 read a status an appeal had already lapsed.
 
-**Screen captures behind the paper's claims:**
-[`docs/evidence/`](docs/evidence/README.md) — what each capture shows, where it
-came from, and what was covered before it was committed and why. Some captures
-are deliberately not kept; the manifest says which.
+**What stands behind the paper's claims:**
+[`docs/source-verification.md`](docs/source-verification.md) — every load-bearing
+claim, its source, and how it was checked. Sources are cited by URL; no screen
+capture is kept in this repository, because a public post is its own record and
+a capture would only add the risk of republishing a payment code or a person's
+name.
 
 **If a government adopted this, in what order:**
 [`docs/ADOPTION.md`](docs/ADOPTION.md) — roles, four phases, the gate between
