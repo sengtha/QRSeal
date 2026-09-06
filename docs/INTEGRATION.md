@@ -879,6 +879,9 @@ without `--timestamp` and it warns that freeze protection is off.
 
 ### 4.6 Related documents
 
+- [`AGENTS.md`](../AGENTS.md) — this guide condensed into one page for AI
+  coding agents, with the rules they must not break.
+
 - `SPEC.md` — normative.
 - `docs/USE-CASES.md` — every deployment shape for both profiles, including
   the two that are not supported.

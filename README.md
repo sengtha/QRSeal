@@ -780,6 +780,7 @@ workers/
 vectors/vectors.json   language-neutral conformance suite
 docs/                  measurements, source verification
 paper/                 the preprint
+AGENTS.md              the short guide an AI coding agent reads before helping a developer integrate
 ```
 
 `SPEC.md` is the normative specification, including **Annex C** for the risk
