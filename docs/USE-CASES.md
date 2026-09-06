@@ -531,6 +531,17 @@ signed.
   `KEY_EXPIRED` the moment the issuing university's key passes `notAfter`. See
   [the open question](#p2--the-unresolved-question) below.
 
+**What narrows the second limit: one key per cohort, then destroy it.** The
+trust list can hold any number of university keys under one organisation id,
+and each credential names its own. So the university signs the class of 2026
+under a key registered with a forty-year `notAfter`, destroys the private key
+when the last certificate is signed, and the public record stays on the list.
+Nothing remains to compromise, a compromise before destruction costs one
+cohort rather than every degree ever issued, and the credentials verify for as
+long as the list keeps carrying the record (SPEC §3.1a). The obligation that
+remains is to keep the list published and stamped for forty years, and to say
+how the scheme migrates algorithms over that span, which it does not yet.
+
 ---
 
 ## P2 · B2 — Land title, property deed

@@ -741,6 +741,29 @@ that is understood to expire with its key. Section~\ref{sec:limits} records the
 gap, and the adoption sequence of Section~\ref{sec:adoption} makes closing it a
 decision that precedes enrolling any long-lived issuer.
 
+\paragraph{What narrows the gap: one key per cohort, then destroy it.}
+The gate is stated against a key's validity, and nothing in the specification
+caps that validity or ties an institution to one key. The trust list carries
+any number of records under one organisation identifier, each credential
+names the key that signed it, and keys are added and revoked independently.
+An issuer of long-lived documents can therefore sign each cohort --- a
+graduating year, a batch --- under its own key, registered with a validity as
+long as the documents must verify, and destroy the private key once the
+cohort is signed. After destruction nothing remains to compromise, so a long
+public validity carries no forgery risk and the question whether a signature
+predated the key's expiry never arises; a compromise before destruction costs
+one cohort rather than the institution's history, which is also the finest
+revocation granularity this design can offer. The specification now
+recommends this pattern. It narrows the gap rather than closing it, and the
+remainder is worth stating exactly. What is left is organisational: the trust
+list must keep carrying the public record, and keep being republished within
+the freshness limits, for as long as the documents matter --- a static signed
+file, mirrored, rather than a per-query service, which is a lighter commitment
+than a lookup platform's and a commitment across decades all the same. And
+two questions stay open: how the scheme migrates algorithms over a span in
+which a signature made today must still be trusted, and what a verifier does
+that cannot obtain a fresh list at all.
+
 \paragraph{Both designs meet the same wall, and that is the useful finding.}
 Resolving such a URL produces neither the original document nor a verdict about
 the paper in the reader's hand. It produces a short field list --- issuing
@@ -3394,7 +3417,10 @@ verified fail on deliberately introduced violations.
     an archived key or establishes that the signature predated the expiry.
     Until it does, a degree or a land title is outside the profile as a matter
     of rule, not of advice, and we have not designed the archival mechanism
-    that would bring them in.
+    that would bring them in. Cohort keys with long public validity and
+    destroyed private halves (Section~\ref{sec:verifygov}) satisfy the gate
+    as written and leave the organisational commitment, algorithm migration
+    and the no-fresh-list case open.
 
   \item \textbf{The device-compromise evidence is about a different fraud.}
     Section~\ref{sec:device} documents account takeover, not authorised push

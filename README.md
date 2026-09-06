@@ -102,7 +102,9 @@ third code kind is designed. And Profile B is gated to documents whose life is
 shorter than the signing key's ([SPEC §3.1a](SPEC.md#31a-horizon--a-hard-gate-on-what-profile-b-may-carry)):
 a degree or a land title checked after its key's `notAfter` is rejected as
 `KEY_EXPIRED`, and the archival path that would lift the gate is unspecified.
-Both are worked through in [`docs/USE-CASES.md`](docs/USE-CASES.md).
+What narrows it is one key per cohort with a long public validity and the
+private half destroyed after signing, which the spec now recommends. Both
+gates are worked through in [`docs/USE-CASES.md`](docs/USE-CASES.md).
 
 **A benefit that is easy to miss.** After KH-SQR, an overlay attack that
 *verifies* requires a registered merchant account. That means an identity went

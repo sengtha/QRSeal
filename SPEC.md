@@ -403,6 +403,33 @@ keep its lookup reference, or emit a signed credential beside it that is
 understood to expire with its key (paper §4.3). The archival mechanism that
 would lift this gate is a specification change and is recorded as open in §9.
 
+**Cohort keys narrow the gap without lifting the gate.** Nothing above caps a
+key's `notAfter`, and nothing ties an institution to one key: the trust list
+may carry any number of records under one `organisationId`, each credential
+names the key that signed it, and keys are added and revoked independently. An
+issuer of long-lived documents SHOULD therefore:
+
+1. use one key per cohort — a graduating year, a faculty, a batch — so that
+   revocation, which is per key, removes one cohort and not the institution's
+   history;
+2. register each cohort key with a `notAfter` as long as the documents must
+   verify, and **destroy the private key** once the cohort is signed. After
+   destruction nothing remains to compromise, so a long public validity
+   carries no forgery risk, and the question whether a signature predated the
+   key's expiry does not arise;
+3. treat a compromise before destruction as the loss of that cohort, and
+   reissue it under a fresh key.
+
+The gate is then satisfied as written. What remains is organisational, and an
+issuer MUST accept it knowingly: the trust list must keep carrying the public
+record, and keep being republished and stamped within the freshness limits of
+§4, for as long as the documents matter — a static signed file, mirrored,
+rather than a per-query service, but a commitment across decades all the same.
+Two limits stay open: cryptographic agility, since a signature made today must
+still be trusted when read decades later and this specification does not yet
+say how a scheme migrates algorithms; and the absence of any archival
+mechanism for a verifier that cannot obtain a fresh list at all.
+
 ### 3.2 The payload MUST NOT be a URL
 
 A Profile B payload MUST NOT be an `http` or `https` URL, and a verifier MUST
@@ -578,6 +605,10 @@ not a trustworthy party.
 - The Root key is generated and used **offline**, in a ceremony. It MUST NOT
   exist on any network-reachable machine.
 - Issuer keys live in each institution's HSM.
+- A cohort key for long-lived credentials (§3.1a) is used for one cohort and
+  then destroyed; only its public record persists, on the trust list, for the
+  documents' life. Destruction is part of the issuing ceremony, not an
+  afterthought.
 - The timestamp statement is produced by a signer outside the serving
   infrastructure and uploaded.
 - No online service holds a private key of any kind. Certificate issuance MUST

@@ -609,6 +609,13 @@ it: sign long-lived static stickers under a key with a long `notAfter`, and
 rotate the key that signs dynamic codes freely, because nothing signed under
 it outlives five minutes.
 
+For long-lived credentials, use **cohort keys** (SPEC §3.1a): one key per
+graduating year or batch, registered with a `notAfter` as long as the
+documents must verify, and the private key destroyed once the cohort is
+signed. Register every cohort key under the same `organisationId`, or the
+issuer binding refuses the credentials. A compromise before destruction then
+costs one cohort; after destruction there is nothing to compromise.
+
 ---
 
 ## 3. Porting to another language
