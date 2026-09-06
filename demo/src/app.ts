@@ -547,7 +547,8 @@ function readA(): { payload: string; kind: 'static' | 'dynamic'; payeeClass: 'M'
 
   if (name.length === 0 || name.length > 25) throw new Error('Merchant name: 1 to 25 characters (EMVCo tag 59).');
   if (city.length === 0 || city.length > 15) throw new Error('City: 1 to 15 characters (EMVCo tag 60).');
-  if (!/^[A-Za-z0-9]{1,32}$/.test(acquirer)) throw new Error('Acquirer id: letters and digits only.');
+  // Real acquirer identifiers carry an '@' (e.g. a bank's GUID suffixed with its own code).
+  if (!/^[A-Za-z0-9@._-]{1,32}$/.test(acquirer)) throw new Error('Acquirer id: letters, digits, @ . _ and dash.');
   if (!/^[A-Za-z0-9.-]{1,32}$/.test(account)) throw new Error('Account id: letters, digits, dot and dash.');
   if (!/^\d{4}$/.test(mcc)) throw new Error('Merchant category code: four digits.');
   const numeric = CURRENCY_NUMERIC[currency];
