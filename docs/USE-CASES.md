@@ -217,6 +217,14 @@ stall sticker, STATIC, no amount             ->  signs (355 chars, static)
 Static forbids an amount; dynamic caps life at five minutes. A bill needs both
 an amount and a life measured in weeks, and falls between them.
 
+**Seen in the wild.** A bank-issued KHQR printed on a sheet, examined with this
+repository's parser: point of initiation `12` (dynamic), an amount in USD, and
+in the scheme's own tag-`99` timestamp template an expiry 731 days after
+creation. The scheme accommodates the printed bill by calling it dynamic and
+giving it two years. KH-SQR refuses the same code with
+`EXPIRY_WINDOW_TOO_LONG`. The payload is not in this repository: it is a live
+payment instrument.
+
 **This is a real gap, not a configuration mistake.** Both rules are there for
 good reasons — an amount on an indefinitely-reusable code is a replay waiting to
 happen, and a five-minute window is what makes a dynamic code

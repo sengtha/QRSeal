@@ -382,6 +382,17 @@ corruption and is trivially recomputed by anyone who alters a payload
 deliberately, which is what makes it a checksum rather than a control. Two
 national schemes, two guidelines, the same absence.
 
+One qualification, from an artefact rather than a guideline. A production
+KHQR payload issued by one Cambodian bank, examined with this paper's parser,
+carries a proprietary template in the merchant-account range holding a
+32-byte value that is not a plain hash of any field visible in the payload.
+Whether it is keyed we cannot tell from one sample, and we do not guess. If
+it is, it is an integrity check that only the issuing bank's own application
+can perform: a single-institution control, invisible to every other wallet on
+the rail, which is the shape a scheme-wide signature exists to replace rather
+than an instance of one. The payload itself is not reproduced, because it is
+a live payment instrument.
+
 \paragraph{Layer 2 --- verifier authenticity.}
 Partially solvable. A signature is only as useful as the software reporting it,
 and a counterfeit wallet that draws a green tick for every code defeats layer~1
@@ -532,6 +543,15 @@ code kind would be a specification change, not a setting.
 Section~\ref{sec:limits} records the decision as open, and
 Section~\ref{sec:adoption} as one that must be closed before such issuers
 enrol.
+
+The exclusion is not hypothetical. A bank-issued KHQR code printed on a
+sheet, examined with this paper's parser, declares itself dynamic, carries an
+amount in US dollars, and carries in the scheme's own timestamp template an
+expiry 731 days after its creation. It is a printed bill in everything but
+name, and the scheme accommodates it by giving a ``dynamic'' code a life of
+two years. Under this specification the same code is refused as
+\code{EXPIRY\_WINDOW\_TOO\_LONG}, which is the rule working as written and the
+gap stated in one artefact.
 
 \paragraph{What Profile~A is, stated at its own size.} It is a format that
 becomes useful only once coverage is near-complete, because what it asks a
@@ -969,7 +989,14 @@ The three identifiers are checked against Japan's guideline and not against
 Cambodia's own, which we could not obtain; an implementer should treat them as
 provisional until that check is made, and the adoption sequence of
 Section~\ref{sec:adoption} makes it a gate before anything is deployed
-(Section~\ref{sec:limits}).
+(Section~\ref{sec:limits}). One production KHQR payload we examined shows the
+range is in use: the Cambodian profile places a timestamp template at
+\code{99}, two thirteen-digit millisecond values for creation and expiry, as
+the last data object before the CRC. It carried nothing at \code{85} to
+\code{87}, which one payload cannot establish as an allocation. A KH-SQR
+signer appends its three templates after \code{99}, which the ordering rule
+permits; whether every KHQR parser tolerates data objects after \code{99} is a
+question for the guideline.
 
 We also record an erratum in the version~1 vectors: the reference payload
 declares template \code{85}'s length as 200 where its content is 201
@@ -3303,10 +3330,13 @@ verified fail on deliberately introduced violations.
     Section~\ref{sec:profileA}. A static code may not carry an amount and a
     dynamic one may not live longer than five minutes, so the payable notice a
     utility or a tax office prints is outside the specification, and the
-    issuers affected are national in scale. Closing it is a specification
-    change --- a third code kind, with its own replay and reprint semantics ---
-    that we have not designed, and Section~\ref{sec:adoption} makes the
-    decision a precondition of enrolling such issuers.
+    issuers affected are national in scale. The scheme in use accommodates
+    the case by letting a ``dynamic'' printed code live for two years
+    (Section~\ref{sec:profileA}), which this specification refuses. Closing
+    it is a specification change --- a third code kind, with its own replay
+    and reprint semantics --- that we have not designed, and
+    Section~\ref{sec:adoption} makes the decision a precondition of enrolling
+    such issuers.
 
   \item \textbf{Profile~B is gated to documents shorter-lived than their key.}
     Section~\ref{sec:verifygov}. The key-validity and list-freshness rules
@@ -3377,7 +3407,10 @@ verified fail on deliberately introduced violations.
     identifier between \code{81} and \code{99} anywhere
     \citep{jpqrmpm}. Our three are therefore clear of JPQR. They remain
     unchecked against Cambodia's own guideline, which is the check that matters
-    most and which we could not obtain.
+    most and which we could not obtain. A production payload shows the
+    Cambodian profile using \code{99} for a timestamp
+    (Section~\ref{sec:container}); it carried nothing at \code{85} to
+    \code{87}, and one payload is not an allocation table.
 
   \item \textbf{Truncated key identifiers.} Eight bytes is a size choice, not a
     collision-resistance claim. With $n$ registered keys the expected number
