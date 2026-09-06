@@ -23,6 +23,7 @@ import {
   signProfileA,
   signProfileA2,
   V2_GUID,
+  revocationEntryId,
   signProfileB,
   stripCrc,
   type CredentialClaims,
@@ -171,6 +172,8 @@ interface CaseState {
   readonly heldVersion?: number;
   readonly fetchedAt?: number;
   readonly allowMissingTimestamp?: boolean;
+  /** Which signed revocation lists (by key in the suite's `revocations` map) the verifier holds. */
+  readonly revocations?: string;
 }
 
 interface VerifyCase {
@@ -199,6 +202,10 @@ interface RoundtripCase {
 type Case = VerifyCase | RoundtripCase;
 
 const DEFAULT_STATE: CaseState = { trustList: 'current', timestamp: 'current', now: NOW_VALID };
+/** Profile B verification holds the issuer's declared revocation list, as a deployed verifier would. */
+const B_STATE: CaseState = { ...DEFAULT_STATE, revocations: 'current' };
+const REVOKED_DOCUMENT_ID = 'RUPP-2026-000099';
+const CREDENTIAL_ISSUER = 'kh.gov.mptc.moeys';
 
 /* ------------------------------------------------------------------ *
  * Main
@@ -233,13 +240,35 @@ async function main(): Promise<void> {
   const rolledBackList = listStatement(6, ISSUED_AT + 365 * DAY);
   const expiredList = listStatement(7, ISSUED_AT - 1);
 
-  const timestampStatement = async (version: number, statement: string, expires: number): Promise<string> =>
+  /* --- Revocation list: one withdrawn credential, declared by the timestamp statement --- */
+  const revocationStatement = JSON.stringify({
+    type: 'kh-sqr/revocations/1',
+    issuer: CREDENTIAL_ISSUER,
+    version: 1,
+    issuedAt: ISSUED_AT - 100,
+    entries: [
+      {
+        id: await revocationEntryId(CREDENTIAL_ISSUER, REVOKED_DOCUMENT_ID),
+        revokedAt: ISSUED_AT - 200,
+        reason: 'withdrawn',
+      },
+    ],
+  });
+  const revocationDeclaration = { issuer: CREDENTIAL_ISSUER, version: 1, digest: await digestOf(revocationStatement) };
+
+  const timestampStatement = async (
+    version: number,
+    statement: string,
+    expires: number,
+    revocations: readonly unknown[] = [revocationDeclaration],
+  ): Promise<string> =>
     JSON.stringify({
       type: 'kh-sqr/timestamp/1',
       trustListVersion: version,
       trustListDigest: await digestOf(statement),
       issuedAt: ISSUED_AT - 100,
       expires,
+      revocations,
     });
 
   const trustLists: Record<string, unknown> = {
@@ -247,6 +276,12 @@ async function main(): Promise<void> {
     rolledBack: await signStatement(rolledBackList, root),
     expired: await signStatement(expiredList, root),
     forgedRootSignature: await signStatement(currentList, stranger),
+  };
+
+  const revocations: Record<string, readonly unknown[]> = {
+    current: [await signStatement(revocationStatement, issuer)],
+    /** The same list signed by a key the issuer does not hold: it must not be honoured. */
+    forged: [await signStatement(revocationStatement, stranger)],
   };
 
   const timestamps: Record<string, unknown> = {
@@ -264,6 +299,7 @@ async function main(): Promise<void> {
         trustListDigest: '0'.repeat(64),
         issuedAt: ISSUED_AT - 100,
         expires: ISSUED_AT + 7 * DAY,
+        revocations: [revocationDeclaration],
       }),
       timestampKey,
     ),
@@ -465,6 +501,12 @@ async function main(): Promise<void> {
   })();
 
   const strangerB = await signProfileB({ privateKey: stranger.privateKey, kid: stranger.kid, claims: CLAIMS });
+  // Correctly signed by the registered key, later withdrawn by the issuer.
+  const revokedDocumentB = await signProfileB({
+    privateKey: issuer.privateKey,
+    kid: issuer.kid,
+    claims: { ...CLAIMS, documentId: REVOKED_DOCUMENT_ID },
+  });
   // A registered key signing a credential in another institution's name.
   const wrongIssuerB = await signProfileB({
     privateKey: issuer.privateKey,
@@ -885,7 +927,7 @@ async function main(): Promise<void> {
         'Deflate is not canonical, so conformance requires that this decodes and verifies, not that an ' +
         'encoder reproduces it byte for byte.',
       input: { payload: PUBLISHED_B },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'accept',
       reason: null,
       accepted: {
@@ -902,10 +944,10 @@ async function main(): Promise<void> {
       type: 'verify',
       description: 'A credential produced by this implementation over the same claims.',
       input: { payload: canonicalB },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'accept',
       reason: null,
-      accepted: { kid: issuer.kid, subjectName: 'CHAY SOPHEA', documentId: 'RUPP-2026-004821' },
+      accepted: { kid: issuer.kid, subjectName: 'CHAY SOPHEA', documentId: 'RUPP-2026-004821', credentialStatus: 'clear' },
     },
     {
       id: 'B-reject-deflate-raw',
@@ -915,7 +957,7 @@ async function main(): Promise<void> {
         'Compressed with deflate-raw rather than zlib-wrapped deflate. The byte stream differs and must ' +
         'not inflate.',
       input: { payload: rawDeflated },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'INFLATE_FAILED',
     },
@@ -927,7 +969,7 @@ async function main(): Promise<void> {
         'An https URL where a credential belongs. This profile never carries a URL: doing so would move ' +
         'the trust decision into a browser and ask the user to judge a domain name.',
       input: { payload: 'https://verify.example.gov.kh/c/RUPP-2026-004821' },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'URL_PAYLOAD_REJECTED',
     },
@@ -937,7 +979,7 @@ async function main(): Promise<void> {
       type: 'verify',
       description: 'A payload without the KH1: prefix.',
       input: { payload: 'HC1:' + canonicalB.slice(4) },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'PREFIX_INVALID',
     },
@@ -947,7 +989,7 @@ async function main(): Promise<void> {
       type: 'verify',
       description: 'A character outside the RFC 9285 alphabet.',
       input: { payload: 'KH1:NCFOXN%TSMAHN-H3Q8DJO;;' },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'BASE45_INVALID',
     },
@@ -957,7 +999,7 @@ async function main(): Promise<void> {
       type: 'verify',
       description: 'A character altered inside the compressed COSE structure.',
       input: { payload: tamperedB },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: null,
     },
@@ -967,7 +1009,7 @@ async function main(): Promise<void> {
       type: 'verify',
       description: 'Signed by a key that is not in the trust list.',
       input: { payload: strangerB },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'UNKNOWN_KID',
     },
@@ -977,7 +1019,7 @@ async function main(): Promise<void> {
       type: 'verify',
       description: 'Signed by a revoked key.',
       input: { payload: revokedB },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'KEY_REVOKED',
     },
@@ -990,9 +1032,48 @@ async function main(): Promise<void> {
         'institution the key is not registered to. Without this rule any enrolled key could issue ' +
         'in any name, and the only defence would be a reader noticing two names that differ.',
       input: { payload: wrongIssuerB },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'reject',
       reason: 'ISSUER_KEY_MISMATCH',
+    },
+    {
+      id: 'B-reject-revoked-credential',
+      profile: 'B',
+      type: 'verify',
+      description:
+        'A correctly signed credential whose issuer has since withdrawn it. The signature still ' +
+        'verifies; the issuer\'s signed revocation list, declared by the current timestamp statement, ' +
+        'carries the hash of its document number. Offline verification is not blind to withdrawal.',
+      input: { payload: revokedDocumentB },
+      state: B_STATE,
+      expect: 'reject',
+      reason: 'CREDENTIAL_REVOKED',
+    },
+    {
+      id: 'B-reject-revocations-withheld',
+      profile: 'B',
+      type: 'verify',
+      description:
+        'The timestamp statement declares a revocation list for this issuer, and the verifier does ' +
+        'not hold it. Withholding a list would otherwise be how a withdrawn credential stays valid; ' +
+        'a verifier must fail closed until it obtains the declared version.',
+      input: { payload: canonicalB },
+      state: DEFAULT_STATE,
+      expect: 'reject',
+      reason: 'REVOCATIONS_MISSING',
+    },
+    {
+      id: 'B-reject-revocations-forged',
+      profile: 'B',
+      type: 'verify',
+      description:
+        'The declared revocation list, signed by a key that is not registered to the issuer it ' +
+        'names. It must be refused rather than honoured: anyone able to publish an unsigned or ' +
+        'mis-signed list could withdraw another institution\'s credentials.',
+      input: { payload: canonicalB },
+      state: { ...B_STATE, revocations: 'forged' },
+      expect: 'reject',
+      reason: 'REVOCATIONS_SIGNATURE_INVALID',
     },
 
     /* ---------- Roundtrip ---------- */
@@ -1037,7 +1118,7 @@ async function main(): Promise<void> {
       type: 'roundtrip',
       description: 'Encode, sign, then decode and verify a credential.',
       input: { issuerScalar: PUBLISHED_ISSUER_SCALAR, kid: issuer.kid, claims: CLAIMS },
-      state: DEFAULT_STATE,
+      state: B_STATE,
       expect: 'accept',
       reason: null,
     },
@@ -1074,6 +1155,7 @@ async function main(): Promise<void> {
     },
     trustLists,
     timestamps,
+    revocations,
     cases,
   };
 

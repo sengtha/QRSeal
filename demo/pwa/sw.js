@@ -4,7 +4,7 @@
  * no API. The cache name carries a hash of the build, so a new deployment
  * installs a new cache and the old one is deleted on activation.
  */
-const VERSION = '9b7461929c15';
+const VERSION = 'f437e3b8b73a';
 const PRECACHE = ["./","./index.html","./app.js","./demo-data.json","./manifest.webmanifest","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./icon.svg"];
 const CACHE = `qrseal-${VERSION}`;
 

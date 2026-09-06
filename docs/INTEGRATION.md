@@ -69,15 +69,16 @@ rotation is planned, so that the next list still opens.
 
 ### 1.3 Fetch, persist, refresh
 
-The edge service is read-only and serves three JSON artefacts:
+The edge service is read-only and serves four JSON resources:
 
 | Route | What | Refresh |
 |---|---|---|
 | `GET /trustlist/current` | signed trust list; header `x-kh-sqr-version` | daily |
-| `GET /timestamp/current` | signed statement naming the current list version and digest; valid 7 days | daily, and always before the timestamp expires |
+| `GET /timestamp/current` | signed statement naming the current list version and digest, and declaring every issuer's revocation list; valid 7 days | daily, and always before the timestamp expires |
+| `GET /revocations/current` | a JSON array of issuer-signed revocation lists, one per issuer that publishes one | with the timestamp |
 | `GET /applications/current` | application trust list (verifier authenticity) | daily |
 
-Alias paths under `/.well-known/kh-sqr/` serve the first two. `HEAD` and
+Alias paths under `/.well-known/kh-sqr/` serve the first three. `HEAD` and
 `If-None-Match` work. Each artefact has the shape:
 
 ```json
@@ -87,13 +88,14 @@ Alias paths under `/.well-known/kh-sqr/` serve the first two. `HEAD` and
 Treat `statement` as an opaque string. The signature covers its exact bytes,
 and the library parses that same string; you never re-serialise it.
 
-**Persist four things** between runs, in application storage that survives
+**Persist five things** between runs, in application storage that survives
 restarts:
 
 | Field | Why |
 |---|---|
 | the trust-list artefact | verification is offline; this is what you verify against |
 | the timestamp artefact | freeze protection; without a fresh one the verifier stops |
+| the revocation lists | per-credential withdrawal; a credential whose issuer's declared list you lack is refused |
 | `fetchedAt` (Unix seconds) | cache age is measured from here; the limit is 30 days |
 | `heldVersion` | rollback protection: a list numbered below this is refused |
 
@@ -103,25 +105,27 @@ A fetch loop that respects the rules:
 import { TrustAnchor } from '@kh-sqr/core';
 
 interface TrustState {
-  trustList: unknown; timestamp: unknown; fetchedAt: number; heldVersion: number | undefined;
+  trustList: unknown; timestamp: unknown; revocations: unknown[];
+  fetchedAt: number; heldVersion: number | undefined;
 }
 
 async function refreshTrust(origin: string, held: TrustState | null, now: number): Promise<TrustState> {
-  const [trustList, timestamp] = await Promise.all([
+  const [trustList, timestamp, revocations] = await Promise.all([
     fetch(`${origin}/trustlist/current`).then((r) => r.json()),
     fetch(`${origin}/timestamp/current`).then((r) => r.json()),
+    fetch(`${origin}/revocations/current`).then((r) => r.json() as Promise<unknown[]>),
   ]);
   // Open before persisting. A list that does not open is not held.
   const anchor = await TrustAnchor.open({
-    trustList, timestamp, rootKeys: ROOT_KEYS, timestampKeys: TIMESTAMP_KEYS,
+    trustList, timestamp, revocations, rootKeys: ROOT_KEYS, timestampKeys: TIMESTAMP_KEYS,
     heldVersion: held?.heldVersion, fetchedAt: now, now,
   });
-  return { trustList, timestamp, fetchedAt: now, heldVersion: anchor.version };
+  return { trustList, timestamp, revocations, fetchedAt: now, heldVersion: anchor.version };
 }
 
 async function openHeld(held: TrustState, now: number): Promise<TrustAnchor> {
   return TrustAnchor.open({
-    trustList: held.trustList, timestamp: held.timestamp,
+    trustList: held.trustList, timestamp: held.timestamp, revocations: held.revocations,
     rootKeys: ROOT_KEYS, timestampKeys: TIMESTAMP_KEYS,
     heldVersion: held.heldVersion, fetchedAt: held.fetchedAt, now,
   });
@@ -130,9 +134,11 @@ async function openHeld(held: TrustState, now: number): Promise<TrustAnchor> {
 
 `TrustAnchor.open` performs every list-level check: Root signature, version
 monotonicity, list expiry, cache age, timestamp signature, timestamp expiry,
-and that the timestamp names this exact list version and digest. If it
-returns, the anchor is usable. If it throws, the reason tells you which rule
-failed (§1.7).
+and that the timestamp names this exact list version and digest. Each
+revocation list you pass is checked the same way: signed by a key registered
+to the issuer it names, at most 30 days old, not below the version you held,
+and matching the timestamp's declaration. If it returns, the anchor is usable.
+If it throws, the reason tells you which rule failed (§1.7).
 
 **Refresh from the background, never from the payment path.** Verification
 takes an anchor you already hold and performs no network access (SPEC §6). A
@@ -302,7 +308,10 @@ persists, verification is unavailable.
 `TRUSTLIST_MALFORMED` `TRUSTLIST_SIGNATURE_INVALID` `TRUSTLIST_ROLLBACK`
 `TRUSTLIST_EXPIRED` `TRUSTLIST_STALE` `TIMESTAMP_MALFORMED`
 `TIMESTAMP_SIGNATURE_INVALID` `TIMESTAMP_EXPIRED` `TIMESTAMP_TARGET_MISMATCH`
-`TIMESTAMP_MISSING`
+`TIMESTAMP_MISSING` `REVOCATIONS_MALFORMED` `REVOCATIONS_SIGNATURE_INVALID`
+`REVOCATIONS_STALE` `REVOCATIONS_ROLLBACK` `REVOCATIONS_MISSING` (the
+timestamp declares a revocation list for this credential's issuer and you did
+not pass it: fetch `/revocations/current` and retry)
 
 **The key is the problem.** Refuse. `UNKNOWN_KID` on a list older than a day
 may be a newly enrolled issuer, so refresh and retry once before refusing.
@@ -335,6 +344,12 @@ merchant to show a fresh code; mention the clock if it recurs.
 `PREFIX_INVALID` `BASE45_INVALID` `INFLATE_FAILED` `CBOR_INVALID` `COSE_INVALID`
 `CLAIM_MISSING` `CLAIM_TYPE_INVALID` `URL_PAYLOAD_REJECTED`
 
+**The issuer withdrew it.** The signature is genuine; the issuer's signed
+revocation list names this document. Refuse, and say that the issuer, not the
+code, is the reason. The message carries the reason and date from the list.
+
+`CREDENTIAL_REVOKED`
+
 The library's own messages never contain payload content, and yours must not
 either (SPEC §8, last clause). Log the reason and a timestamp; never the code.
 
@@ -361,9 +376,14 @@ function presentCredential(a: CredentialAssertion, readFromPaper: PrintedDocumen
     // A mismatch means the code was not issued for this document.
   }
 
-  // Always 'unchecked'. Verification is offline; the library cannot know
-  // whether this diploma was withdrawn last week.
-  console.log(`Standing: ${a.credentialStatus === 'unchecked' ? 'signature valid, standing unknown' : a.credentialStatus}`);
+  // 'clear' when the issuer's revocation list was held and does not name this
+  // document; 'unchecked' when the issuer publishes no list. A withdrawn
+  // credential never reaches here: verifyProfileB throws CREDENTIAL_REVOKED.
+  if (a.credentialStatus === 'clear' && a.revocationList !== null) {
+    console.log(`Standing: clear as of revocation list v${a.revocationList.version} (${new Date(a.revocationList.issuedAt * 1000).toISOString()})`);
+  } else {
+    console.log('Standing: signature valid, standing unchecked — this issuer publishes no revocation list');
+  }
 }
 ```
 
@@ -372,10 +392,19 @@ Case is significant, because the subject name is specified as the name *as
 printed*. Where the operator reads the paper by eye, show both strings; where
 you OCR the paper, expect to show both strings anyway.
 
-`credentialStatus` is always `'unchecked'` and an interface MUST NOT present
-an unchecked credential as current (SPEC §8, clause 6). If your deployment
-also has a lookup service for the issuer's record, consult it and report
-three states: current, withdrawn, or *signature valid, standing unknown*.
+**Standing.** `credentialStatus` is `'clear'` when the issuer's revocation
+list (SPEC §4.5) was held and does not name this document, and
+`'unchecked'` when the timestamp statement declares no list for the issuer.
+A `clear` credential may be shown as current *as of* the list's version and
+date, which `revocationList` carries; an `unchecked` one must not be shown
+as current (SPEC §8, clause 6). Two refusals belong to the same mechanism:
+`CREDENTIAL_REVOKED` when the list names the document, and
+`REVOCATIONS_MISSING` when the timestamp declares a list you did not pass,
+because a verifier that could be kept from the list would otherwise pass every
+withdrawn credential as unchecked. Withdrawal reaches an offline verifier with
+its next timestamp refresh, so a device out of contact can be up to seven days
+behind; if your deployment also has a lookup service for the issuer's record,
+consult it when online and prefer its answer.
 
 **The horizon gate.** A credential is verifiable only while its signing key
 is within its validity window on the trust list, and only while a trust list
@@ -600,14 +629,13 @@ a lookup service, the honest pattern is both: keep the lookup for revocation
 and correction, and emit the signed credential beside it for offline
 verification within the key's life.
 
-### 2.5 Rotation and revocation
+### 2.5 Rotation and key revocation
 
-Revocation is per **key**, and it invalidates everything the key ever
+Key revocation is per **key**, and it invalidates everything the key ever
 signed. That is right for a compromised key and wrong for one withdrawn
-document, which is why Profile B has no per-credential revocation. Plan for
-it: sign long-lived static stickers under a key with a long `notAfter`, and
-rotate the key that signs dynamic codes freely, because nothing signed under
-it outlives five minutes.
+document, which §2.6 handles separately. Plan for it: sign long-lived static
+stickers under a key with a long `notAfter`, and rotate the key that signs
+dynamic codes freely, because nothing signed under it outlives five minutes.
 
 For long-lived credentials, use **cohort keys** (SPEC §3.1a): one key per
 graduating year or batch, registered with a `notAfter` as long as the
@@ -615,6 +643,44 @@ documents must verify, and the private key destroyed once the cohort is
 signed. Register every cohort key under the same `organisationId`, or the
 issuer binding refuses the credentials. A compromise before destruction then
 costs one cohort; after destruction there is nothing to compromise.
+
+### 2.6 Withdrawing one credential (Profile B)
+
+A rescinded degree, a corrected date, a suspended licence: the document is
+withdrawn, the key is fine. Publish a **revocation list** (SPEC §4.5): a
+signed statement naming each withdrawn document by a salted hash of its
+document number, so the list discloses nothing about who holds what.
+
+```sh
+# entries.json: [{ "documentId": "RUPP-2026-000099", "reason": "withdrawn" }]
+kh-sqr build-revocations --issuer kh.gov.mptc.moeys --entries @entries.json \
+  --version 3 --key issuer-current.pem --kid 27403764C95F4F5B > revocations-v3.json
+```
+
+Or in code, with `revocationEntryId(issuer, documentId)` producing each
+entry's `id` and any ES256 signer over the statement string, exactly as for a
+credential. Then:
+
+- **Sign with a current key registered to your `organisationId` for Profile
+  B.** The verifier refuses a list signed by any other key
+  (`REVOCATIONS_SIGNATURE_INVALID`). A cohort key whose private half was
+  destroyed cannot sign one; your current key does, and it withdraws
+  credentials signed by any of your keys, because entries name documents.
+- **Increase `version` every time.** A verifier that held version 3 refuses
+  version 2 (`REVOCATIONS_ROLLBACK`). Keep every entry that is still
+  withdrawn; the list is the complete current state, not a delta.
+- **Re-sign at least every 30 days** even when nothing changed. A list older
+  than that is refused as stale, like the trust list.
+- **Hand it to the scheme operator**, whose timestamp signer declares its
+  version and digest in the next timestamp statement. Until it is declared it
+  is not in force; once it is declared, a verifier that lacks it refuses your
+  credentials rather than passing them (`REVOCATIONS_MISSING`), so publish
+  before the declaration goes out.
+
+The entry for a document is the same whether or not a credential was ever
+issued for it, so you can withdraw a document number pre-emptively, and a
+re-issued credential with the same number is withdrawn too: use `corrected`
+as the reason and a new document number for the replacement.
 
 ---
 
@@ -634,9 +700,10 @@ Report what you find.
 | `keys` | test key pairs by name, with `scalar` (private), `x`, `y`, `kid`, `pem` |
 | `pinned` | `rootKeys` and `timestampKeys`, the `PinnedKey` records a verifier ships |
 | `trustLists` | signed trust-list artefacts by state name: `current`, `rolledBack`, `expired`, `forgedRootSignature` |
-| `timestamps` | signed timestamp artefacts by state name: `current`, `expired`, `rolledBack`, `expiredList`, `farFuture` |
+| `timestamps` | signed timestamp artefacts by state name: `current`, `expired`, `rolledBack`, `expiredList`, `farFuture`, `mismatchedDigest`; each declares the `current` revocation list |
+| `revocations` | named sets of signed revocation lists: `current` (signed by the issuer's key) and `forged` (the same list, signed by a stranger) |
 | `time` | the reference clock the vectors were generated against |
-| `cases` | 47 cases, 35 of them rejections |
+| `cases` | 50 cases, 38 of them rejections |
 
 Each case:
 
@@ -653,8 +720,8 @@ Each case:
 ```
 
 To run a `verify` case: build a trust anchor from `state` (the named trust
-list and timestamp, the pinned keys, `now`, and `heldVersion` / `fetchedAt`
-when present), then verify `input.payload` under `profile` and, for Profile
+list and timestamp, the pinned keys, `now`, the named `revocations` set, and
+`heldVersion` / `fetchedAt` when present), then verify `input.payload` under `profile` and, for Profile
 A, `input.encodingVersion` (2, or absent for 1). The outcome must match
 `expect`, and a rejection must carry exactly `reason`. An accepting case may
 carry `accepted`, a few fields the result must contain.
@@ -715,6 +782,9 @@ normative (SPEC §2.8):
 | `A-reject-revoked-key` vs `A-reject-unknown-kid` | Collapsing the two. An operator needs to tell withdrawn from never-existed. |
 | `B-reject-https-payload` | Not running the URL check. |
 | `B-reject-issuer-key-mismatch` | Accepting a valid signature without checking that the issuer claim matches the signing key's registered organisation. Any enrolled key could then issue in any name. |
+| `B-reject-revoked-credential` | Checking the signature and stopping. The issuer withdrew this document; its salted hash is on the declared list. |
+| `B-reject-revocations-withheld` | Treating a missing list as "unchecked". The timestamp declares one; a verifier kept from it must refuse, or withholding the list is how a withdrawn credential stays valid. |
+| `B-reject-revocations-forged` | Honouring a list without binding its signer to the issuer it names. Any enrolled key could then withdraw another institution's credentials. |
 | `B-reject-deflate-raw` | Using raw deflate instead of zlib-wrapped. |
 | `B-reject-base45-alphabet` | Accepting characters outside the base45 alphabet. |
 
@@ -737,7 +807,7 @@ normative (SPEC §2.8):
 ```bash
 pnpm install
 pnpm build          # packages/core/dist and packages/cli/dist
-pnpm test           # 47 vectors plus unit tests
+pnpm test           # 50 vectors plus unit tests
 ```
 
 Consume it as a workspace dependency, or bundle it: `tools/build-demo.ts`
@@ -749,8 +819,10 @@ browser demo embeds it. The package is ESM, `sideEffects: false`, and exports
 
 | Export | Signature | Notes |
 |---|---|---|
-| `TrustAnchor.open(opts)` | `→ Promise<TrustAnchor>` | `trustList`, `timestamp`, `rootKeys`, `timestampKeys`, `now`; optional `heldVersion`, `fetchedAt`, `allowMissingTimestamp` (testing only) |
+| `TrustAnchor.open(opts)` | `→ Promise<TrustAnchor>` | `trustList`, `timestamp`, `rootKeys`, `timestampKeys`, `now`; optional `revocations` (signed lists), `heldRevocationVersions`, `heldVersion`, `fetchedAt`, `allowMissingTimestamp` (testing only) |
 | `anchor.version` `.issuedAt` `.expires` `.digest` | | persist `version` as the next `heldVersion` |
+| `anchor.revocationStatus(issuer, entryId)` | `→ RevocationStatus` | `unchecked`, `clear`, `withheld` or `revoked`; `verifyProfileB` calls it for you |
+| `revocationEntryId(issuer, documentId)` | `→ Promise<string>` | the salted hash a revocation list names a document by |
 | `anchor.resolve(kid, profile, now)` | `→ Promise<CryptoKey[]>` | every usable candidate; throws the most specific key reason |
 | `assertNotUrlCarrier(s)` | `→ void` | throws `URL_PAYLOAD_REJECTED`; run on every scan |
 | `detectProfileAEncoding(payload)` | `→ 2 \| 1 \| null` | routing hint, not a verdict |
@@ -766,8 +838,9 @@ browser demo embeds it. The package is ESM, `sideEffects: false`, and exports
 `encodingVersion: 2` and `lengthEncoding: 'emvco-two-digit'`.
 
 `CredentialAssertion` carries `kid`, `issuer`, `issuedAt`, `documentType`,
-`documentHash`, `mustMatchPrintedDocument`, `credentialStatus: 'unchecked'`,
-and `compareWithPrintedDocument(fields) → TransplantCheck`.
+`documentHash`, `mustMatchPrintedDocument`, `credentialStatus: 'clear' |
+'unchecked'`, `revocationList: { version, issuedAt } | null`, and
+`compareWithPrintedDocument(fields) → TransplantCheck`.
 
 ### 4.3 Signing
 
@@ -792,10 +865,11 @@ parser it uses for signed ones.
 kid              --public-key <spki.pem>
 sign-a           --payload <text|@file> --key <pkcs8.pem> --kid <hex> --payee-class M|I [--issued-at <s>] [--expires-at <s>] [--encoding 1|2]
 sign-b           --claims <json|@file> --key <pkcs8.pem> --kid <hex>
-verify           --payload <text|@file> --trustlist @f --root-keys @f --timestamp @f --timestamp-keys @f [--now <s>] [--held-version <n>] [--fetched-at <s>]
+verify           --payload <text|@file> --trustlist @f --root-keys @f --timestamp @f --timestamp-keys @f [--revocations @f]... [--now <s>] [--held-version <n>] [--fetched-at <s>]
 run-vectors      --file vectors/vectors.json
 build-trustlist  --keys @f --version <n> --key <root.pem> --kid <hex> [--validity-seconds <s>]
-build-timestamp  --trustlist @f --key <ts.pem> --kid <hex> [--validity-seconds <s>]
+build-timestamp  --trustlist @f --key <ts.pem> --kid <hex> [--validity-seconds <s>] [--revocations @f]...
+build-revocations --issuer <id> --entries @f --version <n> --key <issuer.pem> --kid <hex> [--issued-at <s>]
 ```
 
 `verify` exits 0 with the attestation as JSON, or 1 with

@@ -1,6 +1,7 @@
 # `trustlist-edge` — developer guide
 
-Serves the trust list, the timestamp statement and the application trust list.
+Serves the trust list, the timestamp statement, the application trust list and
+the issuer-signed revocation lists the timestamp declares.
 Read-only, and keyless by construction.
 
 **Serves solution S0** (QRSeal signing) together with `registry-api`: this half
@@ -105,7 +106,7 @@ cd workers/trustlist-edge
 echo '{"statement":"{}","signature":{}}' > /tmp/tl.json
 npx wrangler r2 object put kh-sqr-artifacts/trustlist/v7.json --file=/tmp/tl.json --local
 npx wrangler kv key put --binding=POINTER --local current \
-  '{"version":7,"trustListKey":"trustlist/v7.json","timestampKey":"timestamp/1756512000.json","applicationsKey":"applications/v3.json","updatedAt":1756512000}'
+  '{"version":7,"trustListKey":"trustlist/v7.json","timestampKey":"timestamp/1756512000.json","applicationsKey":"applications/v3.json","revocationKeys":{},"updatedAt":1756512000}'
 ```
 
 The `--local` state lives under `.wrangler/state/`. Delete that directory to
@@ -132,6 +133,8 @@ curl -si -X POST localhost:8787/trustlist/current    # 405, before routing
 | `GET /timestamp/current` | `max-age=60, must-revalidate` | |
 | `GET /.well-known/kh-sqr/timestamp` | as above | alias |
 | `GET /applications/current` | `max-age=300, must-revalidate` | |
+| `GET /revocations/current` | `max-age=60, must-revalidate` | a JSON array of every issuer-signed revocation list the pointer names; `x-kh-sqr-revocation-issuers` counts them |
+| `GET /.well-known/kh-sqr/revocations` | as above | alias |
 
 `HEAD` works on all of them. `If-None-Match` against the R2 `httpEtag` returns
 304 with the headers intact.
@@ -194,8 +197,11 @@ There is deliberately no publication route. New artefacts arrive by an out-of-ba
 job that writes to R2 and then updates the KV pointer:
 
 1. Upload the versioned object (`trustlist/v{n}.json`).
-2. Upload the timestamp statement and application list.
-3. **Last**, write the pointer naming all three.
+2. Upload the application list and each issuer's revocation list
+   (`revocations/{issuer}/v{n}.json`), then the timestamp statement that
+   declares those lists by digest.
+3. **Last**, write the pointer naming all of them (`revocationKeys` maps each
+   issuer identifier to its object).
 
 Order matters. The pointer is the commit: writing it before its objects exist
 produces a window in which `/trustlist/current` 404s while `/health` claims a

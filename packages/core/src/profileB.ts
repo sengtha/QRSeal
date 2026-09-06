@@ -35,13 +35,16 @@ import {
   InflateFailedError,
   MalformedKidError,
   PrefixInvalidError,
+  CredentialRevokedError,
   IssuerKeyMismatchError,
+  RevocationsMissingError,
   SignatureInvalidError,
   UrlPayloadRejectedError,
 } from './errors.js';
 import { bytesToHex, hexToBytes, isUppercaseHex } from './hex.js';
 import { KID_BYTES, KID_HEX_LENGTH } from './kid.js';
-import type { TrustAnchor, TrustedKeyRecord } from './trustlist.js';
+import type { RevocationStatus, TrustAnchor, TrustedKeyRecord } from './trustlist.js';
+import { revocationEntryId } from './trustlist.js';
 
 /** The only prefix this profile accepts. */
 export const PREFIX = 'KH1:';
@@ -250,24 +253,39 @@ export class CredentialAssertion {
    */
   public readonly mustMatchPrintedDocument: PrintedDocumentFields;
   /**
-   * Whether this particular credential has been withdrawn by its issuer.
+   * Whether this particular credential has been withdrawn by its issuer, as
+   * far as the trust anchor could tell.
    *
-   * Always `'unchecked'`. Verification is offline by construction, so this
-   * library cannot know whether a degree was rescinded or a licence
-   * suspended after it was signed. A signature is a statement that was true
-   * when it was made; it does not become false when the issuer changes their
-   * mind, and nothing in the payload can carry news that postdates it.
+   * `'clear'` means the verifier held the issuer's signed revocation list and
+   * this credential is not on it — as of that list, whose version and issue
+   * time are in `revocationList`. `'unchecked'` means no revocation list for
+   * this issuer was held and the timestamp statement declares none, so the
+   * standing is simply unknown: a signature is a statement that was true when
+   * it was made, and nothing in the payload can carry news that postdates it.
+   * A revoked credential never reaches this class; verification throws
+   * `CREDENTIAL_REVOKED` instead, and a withheld list throws
+   * `REVOCATIONS_MISSING`.
    *
    * The field exists rather than being omitted so that a caller cannot mistake
    * silence for assurance. An interface MUST NOT present an unchecked
-   * credential as current. Key revocation (see `trustlist.ts`) is a different
-   * and much blunter thing: it invalidates everything an issuer ever signed,
-   * which is right for a compromised key and wrong for one withdrawn diploma.
+   * credential as current, and MUST show the list's age beside a clear one.
+   * Key revocation (see `trustlist.ts`) is a different and much blunter thing:
+   * it invalidates everything an issuer ever signed, which is right for a
+   * compromised key and wrong for one withdrawn diploma.
    */
-  public readonly credentialStatus = 'unchecked' as const;
+  public readonly credentialStatus: 'unchecked' | 'clear';
+  /** The revocation list a `'clear'` status is as of; null when unchecked. */
+  public readonly revocationList: { readonly version: number; readonly issuedAt: number } | null;
 
-  public constructor(kid: string, claims: CredentialClaims) {
+  public constructor(kid: string, claims: CredentialClaims, status: RevocationStatus) {
     this.kid = kid;
+    if (status.state === 'clear') {
+      this.credentialStatus = 'clear';
+      this.revocationList = { version: status.listVersion, issuedAt: status.listIssuedAt };
+    } else {
+      this.credentialStatus = 'unchecked';
+      this.revocationList = null;
+    }
     this.issuer = claims.issuer;
     this.issuedAt = claims.issuedAt;
     this.documentType = claims.documentType;
@@ -362,5 +380,14 @@ export async function verifyProfileB(options: VerifyProfileBOptions): Promise<Cr
   // meaningful once the signer is known.
   if (claims.issuer !== signer.subject.organisationId) throw new IssuerKeyMismatchError();
 
-  return new CredentialAssertion(kid, claims);
+  // Per-credential standing, from the issuer's signed revocation list if the
+  // anchor holds one. The entry is a hash, so the list never names a document.
+  const status = options.trustAnchor.revocationStatus(claims.issuer, await revocationEntryId(claims.issuer, claims.documentId));
+  if (status.state === 'revoked') {
+    // The message carries the reason class and date, never payload content.
+    throw new CredentialRevokedError(`${status.reason} by the issuer at ${status.revokedAt}`);
+  }
+  if (status.state === 'withheld') throw new RevocationsMissingError();
+
+  return new CredentialAssertion(kid, claims, status);
 }

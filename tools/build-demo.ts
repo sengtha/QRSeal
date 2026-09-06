@@ -33,6 +33,7 @@ interface Suite {
   pinned: unknown;
   trustLists: Record<string, unknown>;
   timestamps: Record<string, unknown>;
+  revocations: Record<string, unknown>;
   time: { issuedAt: number; expiresAt: number; nowValid: number };
   cases: readonly {
     id: string;
@@ -116,6 +117,7 @@ const data = {
   pinned: suite.pinned,
   trustLists: suite.trustLists,
   timestamps: suite.timestamps,
+  revocations: suite.revocations,
   pair: { khr: await sign('116'), usd: await sign('840'), state: pick('A2-accept-dynamic').state },
   suite: verifiable.map((c) => ({
     id: c.id,

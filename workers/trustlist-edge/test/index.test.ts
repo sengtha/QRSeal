@@ -10,6 +10,7 @@ const POINTER = {
   trustListKey: 'trustlist/v7.json',
   timestampKey: 'timestamp/1756512000.json',
   applicationsKey: 'applications/v3.json',
+  revocationKeys: { 'kh.edu.example': 'revocations/kh.edu.example/v2.json' },
   updatedAt: 1_756_512_000,
 };
 
@@ -26,6 +27,10 @@ beforeEach(async () => {
   await typed.ARTIFACTS.put(POINTER.trustListKey, JSON.stringify({ statement: '{}', signature: {} }));
   await typed.ARTIFACTS.put(POINTER.timestampKey, JSON.stringify({ statement: '{}', signature: {} }));
   await typed.ARTIFACTS.put(POINTER.applicationsKey, JSON.stringify({ applications: [] }));
+  await typed.ARTIFACTS.put(
+    POINTER.revocationKeys['kh.edu.example'],
+    JSON.stringify({ statement: '{"type":"kh-sqr/revocations/1"}', signature: {} }),
+  );
 });
 
 describe('trustlist-edge', () => {
@@ -65,6 +70,33 @@ describe('trustlist-edge', () => {
     const response = await call('/timestamp/current');
     const maxAge = Number(/max-age=(\d+)/.exec(response.headers.get('cache-control') ?? '')?.[1]);
     expect(maxAge).toBeLessThanOrEqual(60);
+  });
+
+  it('serves every declared revocation list, cached as briefly as the timestamp', async () => {
+    const response = await call('/revocations/current');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-kh-sqr-revocation-issuers')).toBe('1');
+    const maxAge = Number(/max-age=(\d+)/.exec(response.headers.get('cache-control') ?? '')?.[1]);
+    expect(maxAge).toBeLessThanOrEqual(60);
+    const lists = await response.json<{ statement: string }[]>();
+    expect(lists).toHaveLength(1);
+    expect(lists[0]!.statement).toContain('kh-sqr/revocations/1');
+    const again = await call('/.well-known/kh-sqr/revocations', { headers: { 'if-none-match': response.headers.get('etag')! } });
+    expect(again.status).toBe(304);
+  });
+
+  it('serves an empty array, not an error, when no issuer has published a list', async () => {
+    const withoutLists: Partial<typeof POINTER> = { ...POINTER };
+    delete withoutLists.revocationKeys;
+    await typed.POINTER.put('current', JSON.stringify(withoutLists));
+    const response = await call('/revocations/current');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual([]);
+  });
+
+  it('fails closed when a declared revocation list is missing from storage', async () => {
+    await typed.ARTIFACTS.delete(POINTER.revocationKeys['kh.edu.example']);
+    expect((await call('/revocations/current')).status).toBe(503);
   });
 
   it('honours conditional requests', async () => {

@@ -852,8 +852,9 @@ kinds, and how to prove a Kotlin or Swift port conforms with the vector file.
 [`demo/pwa/`](demo/README.md), a progressive web app that runs the real
 library on the device. It generates a
 sandbox scheme — Root, trust list, issuer key — in the browser, issues signed
-Profile A and Profile B codes, scans them back with the camera, revokes the
-key, exports the scheme to a second device, and runs all 44 vectors. Built by
+Profile A and Profile B codes, scans them back with the camera, withdraws one
+credential by revocation list, revokes the key, exports the scheme to a second
+device, and runs all 47 verification vectors. Built by
 `pnpm demo:build`, checked end to end by `pnpm demo:check`, and served by the
 assets-only Worker [`workers/demo-pwa`](workers/demo-pwa/DEVELOPMENT.md).
 
@@ -1138,7 +1139,7 @@ pnpm test           # core: 97 tests including the 41-case conformance suite
 pnpm --filter @kh-sqr/risklist-api test   # workers run in workerd, not a shim
 ```
 
-The conformance suite is 47 cases, 35 of them negative, spanning both container
+The conformance suite is 50 cases, 38 of them negative, spanning both container
 encodings. Negative cases are the
 point: an implementation that accepts a well-formed payload has demonstrated very
 little; one that rejects each malformation for the right stated reason has

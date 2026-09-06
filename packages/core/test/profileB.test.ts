@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { UrlPayloadRejectedError } from '../src/errors.js';
 import type { CredentialAssertion} from '../src/profileB.js';
 import { assertNotUrlCarrier, verifyProfileB } from '../src/profileB.js';
+import { TrustAnchor } from '../src/trustlist.js';
 import { anchorFor, suite } from './support/anchors.js';
 
 const vector = suite.cases.find((c) => c.id === 'B-accept-published-reference')!;
@@ -100,12 +101,27 @@ describe('URL carriers', () => {
   });
 });
 
-describe('credential status is never asserted', () => {
-  it('reports unchecked, because offline verification cannot know', async () => {
+describe('credential status is never asserted beyond what the anchor holds', () => {
+  it('reports clear, as of the held revocation list, when the issuer publishes one', async () => {
     const result = await assertion();
-    // Not omitted, and not 'active'. A caller must be able to see that status
-    // was not established, so silence cannot be mistaken for assurance. The
-    // existing boolean test above covers the shape; this pins the value.
+    // Not omitted, and not 'active'. A caller must be able to see what the
+    // status rests on: here the issuer's signed revocation list, whose version
+    // and issue time travel with the result. The boolean test above covers
+    // the shape; this pins the value.
+    expect(result.credentialStatus).toBe('clear');
+    expect(result.revocationList).not.toBeNull();
+  });
+
+  it('reports unchecked when no revocation list is held and none is declared', async () => {
+    const trustAnchor = await TrustAnchor.open({
+      trustList: suite.trustLists[vector.state.trustList],
+      rootKeys: suite.pinned.rootKeys,
+      timestampKeys: suite.pinned.timestampKeys,
+      now: vector.state.now,
+      allowMissingTimestamp: true,
+    });
+    const result = await verifyProfileB({ payload: vector.input['payload'] as string, trustAnchor, now: vector.state.now });
     expect(result.credentialStatus).toBe('unchecked');
+    expect(result.revocationList).toBeNull();
   });
 });

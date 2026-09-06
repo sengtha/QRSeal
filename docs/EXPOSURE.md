@@ -112,16 +112,19 @@ the argument, not a disclaimer attached to it.
 | **D1** printed payment code | **KH-SQR Profile A, static** — sign once at enrolment, print once | Closes P1 outright. Keeps the printed sticker, so the stall with no device is not excluded |
 | **D2** per-transaction screen | **KH-SQR Profile A, dynamic** | P1 was already closed by the medium. The signature adds authenticated amount and currency (P9) and closes replay of a photographed screen |
 | **D3** printed bill with an amount | **Nothing yet — see below** | Not expressible in KH-SQR today |
-| **D4** lookup reference | **Both.** Keep the lookup; emit a signed credential beside it | The lookup keeps per-credential revocation and correction, which a signature cannot do. The signature adds offline verification, archival life and reader privacy. Neither replaces the other |
+| **D4** lookup reference | **Both.** Keep the lookup; emit a signed credential beside it | The lookup answers at the moment of the query; the signature answers offline, and the issuer's signed revocation list carries withdrawal to offline verifiers with up to seven days' latency. The signature adds offline verification, archival life and reader privacy. Neither replaces the other |
 | **D5** visual seal only | **KH-SQR Profile B** | There is nothing to preserve. A badge is reproducible by anyone with a printer |
 
 **D4 is the row to read twice.** The honest recommendation is not replacement.
-A lookup platform can revoke one rescinded degree and correct one wrong date;
-KH-SQR can do neither, because revocation is per key and invalidates everything
-that key ever signed. Emitting a signed credential *alongside* the lookup code
-costs the platform nothing in its own path and lets a verifier report three
-states rather than two: current, withdrawn, or **signature valid, standing
-unknown**.
+A lookup platform withdraws one rescinded degree or corrects one wrong date
+and the change is visible on the next query. KH-SQR carries the same
+withdrawal by the issuer's signed revocation list (SPEC §4.5), which reaches
+an offline verifier with its next timestamp refresh — so an offline check can
+be up to seven days behind, and a verifier the list is kept from refuses the
+credential rather than passing it. Emitting a signed credential *alongside*
+the lookup code costs the platform nothing in its own path and lets a
+verifier report the standing the lookup would have given, and when it cannot,
+**clear as of a dated list** rather than a bare tick.
 
 ---
 

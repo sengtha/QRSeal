@@ -65,7 +65,14 @@ export type RejectionReason =
   | 'CLAIM_MISSING'
   | 'CLAIM_TYPE_INVALID'
   | 'ISSUER_KEY_MISMATCH'
-  | 'ACQUIRER_KEY_MISMATCH';
+  | 'ACQUIRER_KEY_MISMATCH'
+  // --- revocation lists (Profile B) ---
+  | 'REVOCATIONS_MALFORMED'
+  | 'REVOCATIONS_SIGNATURE_INVALID'
+  | 'REVOCATIONS_STALE'
+  | 'REVOCATIONS_ROLLBACK'
+  | 'REVOCATIONS_MISSING'
+  | 'CREDENTIAL_REVOKED';
 
 /** Base class for every normative rejection. */
 export class KhSqrError extends Error {
@@ -158,3 +165,11 @@ export const ClaimMissingError = define('ClaimMissingError', 'CLAIM_MISSING', 'a
 export const ClaimTypeInvalidError = define('ClaimTypeInvalidError', 'CLAIM_TYPE_INVALID', 'a claim has the wrong CBOR type');
 export const IssuerKeyMismatchError = define('IssuerKeyMismatchError', 'ISSUER_KEY_MISMATCH', 'the issuer claim is not the organisation the signing key is registered to');
 export const AcquirerKeyMismatchError = define('AcquirerKeyMismatchError', 'ACQUIRER_KEY_MISMATCH', 'a merchant-account identifier in the payload is not one the signing key is registered for');
+
+/* --- revocation lists --- */
+export const RevocationsMalformedError = define('RevocationsMalformedError', 'REVOCATIONS_MALFORMED', 'revocation list structure is invalid');
+export const RevocationsSignatureInvalidError = define('RevocationsSignatureInvalidError', 'REVOCATIONS_SIGNATURE_INVALID', 'revocation list is not signed by a key registered to the issuer it names');
+export const RevocationsStaleError = define('RevocationsStaleError', 'REVOCATIONS_STALE', 'revocation list is older than the maximum cache age');
+export const RevocationsRollbackError = define('RevocationsRollbackError', 'REVOCATIONS_ROLLBACK', 'offered revocation list version is lower than the version held');
+export const RevocationsMissingError = define('RevocationsMissingError', 'REVOCATIONS_MISSING', 'the timestamp statement names a revocation list for this issuer that the verifier does not hold');
+export const CredentialRevokedError = define('CredentialRevokedError', 'CREDENTIAL_REVOKED', 'the issuer has withdrawn this credential');

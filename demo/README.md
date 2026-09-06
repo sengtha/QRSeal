@@ -21,8 +21,8 @@ browser. From then on:
 |---|---|
 | **Issue** | Sign a Profile A payment code — static (printed, no amount) or dynamic (one transaction, amount and currency, at most 300 s) — or a Profile B credential, under the sandbox's current issuer key. Renders the QR, reports its symbol version, and offers the payload and a PNG. Untick *sign it* to see an unsigned code. |
 | **Scan & verify** | Camera, image file, or pasted payload. Every scan runs the pipeline from [`docs/INTEGRATION.md`](../docs/INTEGRATION.md) §1.4: refuse URL carriers, route by profile and encoding, verify offline, then show what SPEC.md §8 obliges — the amount and alphabetic currency together, the payee, the four credential fields to compare with the paper — and never a tick. *Flip one character* shows what tampering looks like. |
-| **Trust** | The sandbox's keys and list. **Revoke** the issuer key and every code it signed fails with `KEY_REVOKED`. **Enrol** a new one and issue again. **Export** the scheme bundle — public keys, trust list, timestamp, nothing private — and **import** it on a second device, which can then verify the first device's codes and nothing else. |
-| **Vectors** | The published conformance suite, all 44 verification cases, run in the browser under the suite's frozen clock and test keys, with the currency-substitution pair beside it. |
+| **Trust** | The sandbox's keys and list. **Withdraw** one issued credential and only that credential fails, with `CREDENTIAL_REVOKED`: the issuer key signs a new revocation list and the timestamp statement declares it. **Revoke** the issuer key and every code it signed fails with `KEY_REVOKED`. **Enrol** a new one and issue again. **Export** the scheme bundle — public keys, trust list, timestamp, revocation list, nothing private — and **import** it on a second device, which can then verify the first device's codes and nothing else. |
+| **Vectors** | The published conformance suite, all 47 verification cases, run in the browser under the suite's frozen clock and test keys, with the currency-substitution pair beside it. |
 
 The verification path is the library's. `tools/build-demo.ts` bundles
 `packages/core` with esbuild, so the page cannot drift from the specification:
@@ -44,9 +44,11 @@ Three arguments the paper makes that a page makes better:
 
 1. **A signature verifies, and that settles almost nothing.** The page refuses
    to render a green tick because the library refuses to return a boolean.
-2. **Revocation is per key.** One click, and everything the key ever signed
-   is refused — right for a compromised key, wrong for one withdrawn diploma,
-   which is why Profile B has no per-credential revocation.
+2. **Two kinds of revocation, two granularities.** Revoke the key and
+   everything it ever signed is refused — right for a compromised key.
+   Withdraw one credential and the issuer's signed revocation list names that
+   document alone; a verifier the list is kept from refuses rather than
+   passes, because the timestamp statement says the list exists.
 3. **Currency substitution (P9).** Two genuine codes, same payee, same
    number; tag 53 differs.
 
@@ -62,8 +64,8 @@ pnpm demo:build     # typechecks demo/src, writes demo/pwa/
 pnpm demo:check     # drives the built app in headless Chromium (needs Playwright)
 ```
 
-`demo:check` issues, verifies, flips, decodes a rendered PNG, revokes,
-re-enrols, exports to a second browser profile and imports, runs the vectors,
+`demo:check` issues, verifies, flips, decodes a rendered PNG, withdraws one
+credential, revokes the key, re-enrols, exports to a second browser profile and imports, runs the vectors,
 then goes offline and reloads. It is the test that the app does what this
 file says.
 

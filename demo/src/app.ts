@@ -26,6 +26,7 @@ import {
   digestStatement,
   findObject,
   parseDataObjects,
+  revocationEntryId,
   serialiseDataObject,
   signProfileA2,
   signProfileB,
@@ -93,6 +94,21 @@ interface SandboxIssuer extends StoredKey {
   readonly notAfter: number;
 }
 
+/** A credential this device issued: enough to name it in a revocation list, nothing more. */
+interface IssuedCredential {
+  readonly documentId: string;
+  readonly subjectName: string;
+  readonly documentType: string;
+  readonly issuedAt: number;
+  readonly kid: string;
+}
+
+interface WithdrawnCredential {
+  readonly documentId: string;
+  readonly revokedAt: number;
+  readonly reason: 'withdrawn' | 'corrected';
+}
+
 interface Sandbox {
   schema?: number;
   readonly createdAt: number;
@@ -104,6 +120,12 @@ interface Sandbox {
   timestamp: SignedArtifact | null;
   /** When the current list was published. This is the verifier's `fetchedAt`. */
   publishedAt: number;
+  /** Credentials issued here, so that one can be withdrawn by name. */
+  issued: IssuedCredential[];
+  withdrawn: WithdrawnCredential[];
+  /** The issuer's revocation list, signed by the active issuer key; null when no key can sign one. */
+  revocations: SignedArtifact | null;
+  revocationVersion: number;
 }
 
 /** A scheme exported from another device: public material only. */
@@ -113,6 +135,8 @@ interface ImportedScheme {
   readonly timestampKeys: readonly PinnedKey[];
   readonly trustList: SignedArtifact;
   readonly timestamp: SignedArtifact;
+  /** Every revocation list the timestamp declares; absent in bundles exported before revocation existed. */
+  readonly revocations?: readonly SignedArtifact[];
   readonly importedAt: number;
 }
 
@@ -131,7 +155,7 @@ const SANDBOX_ISSUER_ID = 'KH.EDU.SANDBOX';
  */
 const SANDBOX_ACQUIRERS: readonly string[] = ['abaakhppxxx', '@abaa'];
 /** Bumped when the published list's shape changes; an older sandbox republishes on load. */
-const SANDBOX_SCHEMA = 3;
+const SANDBOX_SCHEMA = 4;
 const IMPORTED_KEY = 'qrseal.imported.v1';
 const VERIFY_AGAINST_KEY = 'qrseal.verifyAgainst.v1';
 const LIST_LIFE_SECONDS = 365 * 24 * 60 * 60;
@@ -164,18 +188,58 @@ function saveSandbox(sb: Sandbox): void {
   localStorage.setItem(SANDBOX_KEY, JSON.stringify(sb));
 }
 
+/**
+ * Sign the issuer's revocation list with the active issuer key. The list names
+ * every withdrawn credential by a salted hash of its document number, and the
+ * timestamp statement then declares it, so a verifier that lacks it fails
+ * closed rather than reporting the credential as merely unchecked.
+ */
+async function publishRevocations(sb: Sandbox): Promise<void> {
+  const issuer = activeIssuer(sb);
+  if (issuer === null) {
+    sb.revocations = null;
+    return;
+  }
+  const entries = [];
+  for (const w of sb.withdrawn) {
+    entries.push({ id: await revocationEntryId(SANDBOX_ISSUER_ID, w.documentId), revokedAt: w.revokedAt, reason: w.reason });
+  }
+  const statement = JSON.stringify({
+    type: 'kh-sqr/revocations/1',
+    issuer: SANDBOX_ISSUER_ID,
+    version: sb.revocationVersion,
+    issuedAt: nowSec(),
+    entries,
+  });
+  sb.revocations = await signArtifact(statement, issuer);
+}
+
 async function stamp(sb: Sandbox): Promise<void> {
   if (sb.trustList === null) throw new Error('no trust list to stamp');
   const issuedAt = nowSec();
+  const revocations =
+    sb.revocations === null
+      ? []
+      : [{ issuer: SANDBOX_ISSUER_ID, version: sb.revocationVersion, digest: await digestStatement(sb.revocations.statement) }];
   const statement = JSON.stringify({
     type: 'kh-sqr/timestamp/1',
     trustListVersion: sb.version,
     trustListDigest: await digestStatement(sb.trustList.statement),
     issuedAt,
     expires: issuedAt + TIMESTAMP_LIFE_SECONDS,
+    revocations,
   });
   sb.timestamp = await signArtifact(statement, sb.timestampSigner);
   saveSandbox(sb);
+}
+
+/** Withdraw one issued credential: a new list version, signed, then declared by a fresh timestamp. */
+async function withdraw(sb: Sandbox, documentId: string): Promise<void> {
+  if (sb.withdrawn.some((w) => w.documentId === documentId)) return;
+  sb.withdrawn.push({ documentId, revokedAt: nowSec(), reason: 'withdrawn' });
+  sb.revocationVersion += 1;
+  await publishRevocations(sb);
+  await stamp(sb);
 }
 
 /** Publish a new trust-list version from the current issuer set, then stamp it. */
@@ -203,6 +267,9 @@ async function publish(sb: Sandbox): Promise<void> {
   sb.trustList = await signArtifact(statement, sb.root);
   sb.publishedAt = issuedAt;
   sb.schema = SANDBOX_SCHEMA;
+  // The list is re-signed with whichever key is active now: revoking the key
+  // that signed the previous one would otherwise take the list down with it.
+  await publishRevocations(sb);
   await stamp(sb);
 }
 
@@ -222,6 +289,10 @@ async function createSandbox(): Promise<Sandbox> {
     trustList: null,
     timestamp: null,
     publishedAt: 0,
+    issued: [],
+    withdrawn: [],
+    revocations: null,
+    revocationVersion: 1,
   };
   sb.issuers.push(await newIssuer(sb));
   await publish(sb);
@@ -237,6 +308,11 @@ async function loadSandbox(): Promise<Sandbox> {
     sb = null;
   }
   if (sb === null || sb.trustList === null || sb.timestamp === null) return createSandbox();
+  // Fields a sandbox stored before revocation lists existed.
+  sb.issued ??= [];
+  sb.withdrawn ??= [];
+  sb.revocations ??= null;
+  sb.revocationVersion ??= 1;
 
   const now = nowSec();
   if (sb.schema !== SANDBOX_SCHEMA || now - sb.publishedAt > REPUBLISH_AFTER_SECONDS) {
@@ -280,6 +356,7 @@ async function openAnchor(sb: Sandbox, now: number): Promise<{ anchor: TrustAnch
         timestamp: imp.timestamp,
         rootKeys: imp.rootKeys,
         timestampKeys: imp.timestampKeys,
+        revocations: imp.revocations ?? [],
         fetchedAt: imp.importedAt,
         now,
       });
@@ -292,6 +369,7 @@ async function openAnchor(sb: Sandbox, now: number): Promise<{ anchor: TrustAnch
     timestamp: sb.timestamp,
     rootKeys: [{ kid: sb.root.kid, x: sb.root.x, y: sb.root.y }],
     timestampKeys: [{ kid: sb.timestampSigner.kid, x: sb.timestampSigner.x, y: sb.timestampSigner.y }],
+    revocations: sb.revocations === null ? [] : [sb.revocations],
     heldVersion: sb.version,
     fetchedAt: sb.publishedAt,
     now,
@@ -368,6 +446,15 @@ function adviceFor(reason: RejectionReason): string {
   }
   if (reason === 'ISSUER_KEY_MISMATCH') {
     return 'The signature is genuine, but the key that made it is registered to a different organisation from the one the credential names. A registered issuer signed in someone else’s name. Refuse.';
+  }
+  if (reason === 'CREDENTIAL_REVOKED') {
+    return 'The signature is genuine and the issuer has since withdrawn this credential: its document number is on the issuer’s signed revocation list. Refuse. This is the one thing a signature alone can never tell you.';
+  }
+  if (reason === 'REVOCATIONS_MISSING') {
+    return 'The timestamp statement declares a revocation list for this issuer and the verifier does not hold it. Without the list a withdrawn credential would pass, so the verifier fails closed. A wallet would fetch the declared list and retry.';
+  }
+  if (reason.startsWith('REVOCATIONS_')) {
+    return 'The issuer’s revocation list is malformed, mis-signed, stale or rolled back. The verifier refuses to check credentials against a list it cannot trust; refresh it.';
   }
   if (reason === 'CODE_EXPIRED' || reason === 'ISSUED_IN_FUTURE') {
     return 'A dynamic code lives at most 300 seconds. Ask for a fresh one. If it recurs on fresh codes, a device clock is wrong.';
@@ -464,7 +551,13 @@ function renderOutcome(outcome: ScanOutcome, source: string, ms: number, sb: San
         row('Issue date', m.issueDate, { hi: true }) +
         row('Document hash', c.documentHash, { mono: true }) +
         row('Signed by', issuerNameFor(c.kid, sb), { mono: true }) +
-        row('Standing', 'signature valid, standing unknown — verification is offline and cannot know whether this document was withdrawn') +
+        row(
+          'Standing',
+          c.credentialStatus === 'clear' && c.revocationList !== null
+            ? `clear — not on the issuer’s revocation list v${c.revocationList.version}, signed ${fmtTime(c.revocationList.issuedAt)}. Offline, the list is as current as the last timestamp that declared it.`
+            : 'unchecked — this issuer publishes no revocation list, so a withdrawal could not be seen offline',
+          { hi: c.credentialStatus !== 'clear' },
+        ) +
         `</dl>`;
       compare.hidden = false;
       $('cmp-result').innerHTML = '';
@@ -677,7 +770,12 @@ async function issueB(sb: Sandbox): Promise<void> {
     if (typeof val === 'string' && val.length === 0) throw new Error(`${k} is required.`);
   }
   const payload = await signProfileB({ privateKey: await signingKey(issuer), kid: issuer.kid, claims });
-  await showIssued(payload, null, `Profile B credential, signed by ${issuer.name}`);
+  sb.issued = sb.issued.filter((c) => c.documentId !== claims.documentId);
+  sb.issued.push({ documentId: claims.documentId, subjectName: claims.subjectName, documentType: claims.documentType, issuedAt: claims.issuedAt, kid: issuer.kid });
+  saveSandbox(sb);
+  renderTrust(sb);
+  const standing = sb.withdrawn.some((w) => w.documentId === claims.documentId) ? ' — this document id is on the revocation list, so it will be refused' : '';
+  await showIssued(payload, null, `Profile B credential, signed by ${issuer.name}${standing}`);
 }
 
 let documentHashHex: string | null = null;
@@ -805,13 +903,34 @@ function renderTrust(sb: Sandbox): void {
     row('Payment keys bound to', `${SANDBOX_ACQUIRERS.join(', ')} — a code's account template must name one of these (exactly, or ending in the @ suffix), or it is refused`, { mono: true }) +
     row('Trust list', `version ${sb.version}, published ${fmtTime(sb.publishedAt)}, expires ${list.expires === undefined ? '?' : fmtTime(list.expires)}`) +
     row('Timestamp statement', ts.expires === undefined ? '?' : `valid until ${fmtTime(ts.expires)} — re-signed automatically while this app runs`) +
+    row(
+      'Revocation list',
+      sb.revocations === null
+        ? 'none — no active issuer key can sign one, so credentials verify as unchecked'
+        : `version ${sb.revocationVersion}, ${sb.withdrawn.length} withdrawn, signed by ${issuerNameFor(sb.revocations.signature.kid, sb)} and declared by the timestamp statement`,
+    ) +
     `</dl>` +
     `<div class="keys">${sb.issuers
       .map(
         (i) =>
           `<div class="key ${i.status}"><span class="key-name">${esc(i.name)}</span><span class="mono">${i.kid}</span><span class="chip ${i.status === 'active' ? 'pass' : 'fail'}">${i.status}</span></div>`,
       )
-      .join('')}</div>`;
+      .join('')}</div>` +
+    `<h3 class="sub">Credentials issued here</h3>` +
+    (sb.issued.length === 0
+      ? `<p class="hint">None yet. Issue a Profile B credential and it appears here, where it can be withdrawn.</p>`
+      : `<div class="keys" id="t-issued">${sb.issued
+          .map((c) => {
+            const gone = sb.withdrawn.find((w) => w.documentId === c.documentId);
+            return (
+              `<div class="key cred ${gone === undefined ? 'issued' : 'withdrawn'}" data-docid="${esc(c.documentId)}">` +
+              `<span class="key-name">${esc(c.documentId)} · ${esc(c.subjectName)}</span>` +
+              `<span class="chip ${gone === undefined ? 'pass' : 'fail'}">${gone === undefined ? 'issued' : 'withdrawn'}</span>` +
+              (gone === undefined ? `<button class="act danger small" type="button" data-withdraw="${esc(c.documentId)}">Withdraw</button>` : `<span class="mono">${fmtTime(gone.revokedAt)}</span>`) +
+              `</div>`
+            );
+          })
+          .join('')}</div>`);
 
   const imp = loadImported();
   const which = verifyAgainst();
@@ -828,6 +947,7 @@ function renderTrust(sb: Sandbox): void {
       row('Imported', fmtTime(imp.importedAt)) +
       row('Trust list', `version ${ilist.version ?? '?'}, ${ilist.keys?.length ?? 0} key(s)`) +
       row('Root keys pinned', imp.rootKeys.map((k) => k.kid).join(', '), { mono: true }) +
+      row('Revocation lists', `${imp.revocations?.length ?? 0} held — a credential whose issuer's declared list is missing is refused, not passed`) +
       `</dl>`;
   }
 }
@@ -841,6 +961,7 @@ function exportBundle(sb: Sandbox): string {
       timestampKeys: [{ kid: sb.timestampSigner.kid, x: sb.timestampSigner.x, y: sb.timestampSigner.y }],
       trustList: sb.trustList,
       timestamp: sb.timestamp,
+      revocations: sb.revocations === null ? [] : [sb.revocations],
       exportedAt: nowSec(),
     },
     null,
@@ -860,6 +981,7 @@ async function importBundle(text: string): Promise<ImportedScheme> {
     timestampKeys: parsed.timestampKeys,
     trustList: parsed.trustList,
     timestamp: parsed.timestamp,
+    revocations: Array.isArray(parsed.revocations) ? parsed.revocations : [],
     importedAt: nowSec(),
   };
   // Open it before keeping it. A bundle that does not open is not a scheme.
@@ -868,6 +990,7 @@ async function importBundle(text: string): Promise<ImportedScheme> {
     timestamp: scheme.timestamp,
     rootKeys: scheme.rootKeys,
     timestampKeys: scheme.timestampKeys,
+    revocations: scheme.revocations ?? [],
     fetchedAt: scheme.importedAt,
     now: nowSec(),
   });
@@ -885,6 +1008,7 @@ interface DemoData {
   pinned: { rootKeys: PinnedKey[]; timestampKeys: PinnedKey[] };
   trustLists: Record<string, unknown>;
   timestamps: Record<string, unknown>;
+  revocations: Record<string, readonly unknown[]>;
   pair: { khr: string; usd: string; state: VectorState };
   suite: { id: string; profile: 'A' | 'B'; expect: 'accept' | 'reject'; reason: string | null; encodingVersion: number; payload: string; state: VectorState }[];
 }
@@ -894,6 +1018,7 @@ interface VectorState {
   now: number;
   heldVersion?: number;
   fetchedAt?: number;
+  revocations?: string;
 }
 
 let demoData: DemoData | null = null;
@@ -914,6 +1039,7 @@ async function vectorAnchor(data: DemoData, state: VectorState): Promise<TrustAn
     now: state.now,
     ...(state.heldVersion === undefined ? {} : { heldVersion: state.heldVersion }),
     ...(state.fetchedAt === undefined ? {} : { fetchedAt: state.fetchedAt }),
+    ...(state.revocations === undefined ? {} : { revocations: data.revocations[state.revocations] ?? [] }),
   });
 }
 
@@ -1192,6 +1318,14 @@ async function main(): Promise<void> {
     renderTrust(sb);
     setText('pill-scheme', `sandbox list v${sb.version}`);
     toast(`${issuer.name} revoked; every code it signed now fails with KEY_REVOKED`);
+  });
+  $('t-sandbox').addEventListener('click', async (e) => {
+    const button = (e.target as HTMLElement).closest<HTMLElement>('[data-withdraw]');
+    if (button === null) return;
+    const documentId = button.dataset['withdraw'] ?? '';
+    await withdraw(sb, documentId);
+    renderTrust(sb);
+    toast(`${documentId} withdrawn; revocation list v${sb.revocationVersion} signed and declared`);
   });
   $('t-restamp').addEventListener('click', async () => {
     await stamp(sb);

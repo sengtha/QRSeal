@@ -130,7 +130,7 @@ try {
   await page.click('#i-verify');
   await page.waitForFunction(() => document.getElementById('v-outcome').textContent === 'Signature verified');
   body = await page.textContent('#v-body');
-  check('credential verifies and shows the four fields', body.includes('CHAY SOPHEA') && body.includes('SBX-2026-000001') && body.includes('standing unknown'));
+  check('credential verifies, shows the four fields, and is clear of the revocation list', body.includes('CHAY SOPHEA') && body.includes('SBX-2026-000001') && body.includes('clear — not on the issuer’s revocation list v1'));
   await page.fill('#cmp-subjectName', 'CHAY SOPHEA');
   await page.fill('#cmp-documentId', 'SBX-2026-000001');
   await page.fill('#cmp-issuingOrganisation', 'Sandbox University');
@@ -174,6 +174,29 @@ try {
   check('a registered key signing in another issuer’s name is refused with ISSUER_KEY_MISMATCH', true);
   await page.click('#nav-issue');
   await page.fill('#b-issuer', 'KH.EDU.SANDBOX');
+
+  out('withdrawing one credential');
+  await page.click('#nav-trust');
+  await page.waitForFunction(() => document.querySelector('#t-issued .cred.issued[data-docid="SBX-2026-000001"]') !== null);
+  await page.click('#t-issued button[data-withdraw="SBX-2026-000001"]');
+  await page.waitForFunction(() => document.querySelector('#t-issued .cred.withdrawn[data-docid="SBX-2026-000001"]') !== null);
+  const trust = await page.textContent('#t-sandbox');
+  check('the revocation list advances to version 2 with one entry', trust.includes('version 2, 1 withdrawn'), trust);
+  await page.click('#nav-scan');
+  await page.fill('#s-payload', credential);
+  await page.click('#s-verify');
+  await page.waitForFunction(() => document.getElementById('v-reason').textContent === 'CREDENTIAL_REVOKED');
+  check('the withdrawn credential is refused with CREDENTIAL_REVOKED, signature intact', true);
+  await page.click('#nav-issue');
+  await page.fill('#b-docid', 'SBX-2026-000002');
+  await page.click('#b-issue');
+  await page.waitForFunction((old) => document.getElementById('i-payload').value !== old && document.getElementById('i-payload').value.startsWith('KH1:'), credential);
+  await page.click('#i-verify');
+  await page.waitForFunction(() => document.getElementById('v-outcome').textContent === 'Signature verified');
+  body = await page.textContent('#v-body');
+  check('a different credential from the same issuer stays clear under list v2', body.includes('revocation list v2'));
+  await page.click('#nav-issue');
+  await page.fill('#b-docid', 'SBX-2026-000001');
 
   out('revocation and re-enrolment');
   await page.click('#nav-trust');
@@ -230,6 +253,10 @@ try {
   await page2.click('#s-verify');
   await page2.waitForFunction(() => document.getElementById('v-reason').textContent === 'KEY_REVOKED');
   check('the imported list carries the revocation too', true);
+  await page2.fill('#s-payload', credential);
+  await page2.click('#s-verify');
+  await page2.waitForFunction(() => /^(KEY_REVOKED|CREDENTIAL_REVOKED)$/.test(document.getElementById('v-reason').textContent));
+  check('the bundle carries the revocation list, so the withdrawn credential is refused there too', true);
   await ctx2.close();
 
   out('published vectors');
@@ -237,7 +264,7 @@ try {
   await page.click('#x-run');
   await page.waitForFunction(() => /^\d+ of \d+ vectors pass/.test(document.getElementById('x-tally').textContent), null, { timeout: 60000 });
   const tally = await page.textContent('#x-tally');
-  check('all published vectors pass in the browser', tally.startsWith('44 of 44'), tally);
+  check('all published vectors pass in the browser', tally.startsWith('47 of 47'), tally);
   await page.waitForFunction(() => document.querySelectorAll('#x-pair .pair-card').length === 2);
   const pair = await page.textContent('#x-pair');
   check('currency pair renders both verified codes', pair.includes('7200 KHR') && pair.includes('7200 USD'));
@@ -254,7 +281,7 @@ try {
   check('verification works offline', true);
   await page.click('#nav-vectors');
   await page.click('#x-run');
-  await page.waitForFunction(() => /^44 of 44/.test(document.getElementById('x-tally').textContent), null, { timeout: 60000 });
+  await page.waitForFunction(() => /^47 of 47/.test(document.getElementById('x-tally').textContent), null, { timeout: 60000 });
   check('vector data is served from the cache offline', true);
 
   check('no uncaught page errors', errors.length === 0, errors.join(' | '));

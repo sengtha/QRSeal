@@ -88,7 +88,7 @@ and verifies both reference payloads anyway. So the whole Profile A story is
 testable by anyone, offline, with no attack surface:
 
 ```sh
-kh-sqr run-vectors --file vectors/vectors.json   # 47 cases, 35 negative
+kh-sqr run-vectors --file vectors/vectors.json   # 50 cases, 38 negative
 kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
   --root-keys @root-keys.json --timestamp @timestamp-1.json
 ```
@@ -159,9 +159,17 @@ kh-sqr build-trustlist --keys @keys.json --version 1 \
 
 # 5. Sign a timestamp statement over it. This is the freshness signal;
 #    it is valid for seven days and must be reissued before it expires.
+#    Pass every issuer's current revocation list (SPEC §4.5), and the
+#    statement declares each by version and digest; a verifier then refuses a
+#    credential whose declared list it does not hold, rather than passing it.
 kh-sqr build-timestamp --trustlist @trustlist-v1.json \
+  --revocations @revocations-moeys-v3.json \
   --key timestamp.pkcs8.pem --kid <TS_KID> > timestamp-1.json
 ```
+
+An issuer produces its revocation list with its own current key, not in this
+ceremony (`kh-sqr build-revocations`, [`docs/INTEGRATION.md`](INTEGRATION.md)
+§2.6), and hands the signed file to whoever runs the timestamp signer.
 
 The timestamp signer is a **separate key from the Root**, held outside
 Cloudflare. Reissuing the timestamp is a recurring operational duty, not a
@@ -298,7 +306,7 @@ kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
   --root-keys @root-keys.json --timestamp @timestamp-1.json
 
 # The whole conformance suite against this implementation
-kh-sqr run-vectors --file vectors/vectors.json      # 47 cases, 35 negative
+kh-sqr run-vectors --file vectors/vectors.json      # 50 cases, 38 negative
 
 # S3/S4 — posture only; every other route needs a client certificate
 curl -s https://<risklist-host>/health | jq

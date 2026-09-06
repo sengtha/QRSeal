@@ -138,7 +138,8 @@ one by a character without breaking the signature.
   long cycle, reprint on a known date.
 - **Key revocation.** Checked first and absolute: every code that key ever
   signed stops verifying immediately, including physical stock already on ten
-  thousand counters. There is no way to revoke one sticker.
+  thousand counters. There is no way to revoke one sticker: the revocation
+  list of SPEC §4.5 names credentials, not payment codes.
 
 ---
 
@@ -414,8 +415,8 @@ list of who graduated if compelled to, because it has never been told.
 | Central interaction per certificate | one submission each | **none** |
 | What the centre needs from a university | every record | one public key, once |
 | What a university needs from the centre | the platform, permanently | the trust list |
-| Centre can revoke one certificate | **yes** | no |
-| Centre can correct one certificate | **yes** | no |
+| Who can withdraw one certificate | the centre | **the university, by signed revocation list**, reaching offline verifiers with its next timestamp refresh |
+| Who can correct one certificate | the centre | **the university**: withdraw the old number as `corrected`, issue a new one |
 | Centre sees who verified whom | yes | **nothing to see** |
 
 ### The trade, stated plainly
@@ -429,9 +430,10 @@ takes on is real:
 - It must generate and protect a signing key, ideally in an HSM.
 - It must run signing software as part of its graduation process.
 - If its key is compromised, **every diploma it has ever signed** is invalidated
-  at once, because revocation is per key and not per credential.
-- It cannot withdraw a single rescinded degree — `credentialStatus` is always
-  `unchecked`.
+  at once, because key revocation is per key and not per credential.
+- To withdraw a single rescinded degree it must sign and publish a revocation
+  list (SPEC §4.5), and keep re-signing it at least monthly; a verifier that
+  is offline honours the list as of its last refresh.
 
 Under the lookup model the platform operator carries all four, and the
 university types data into a form.
@@ -485,8 +487,8 @@ generates no such record, because there is no request. The paper names this
 **The paper does not propose replacing the platform.** A service already holding
 the authoritative record could emit a signed credential *alongside* its lookup
 code at no cost to the lookup path — gaining longevity, offline operation and
-reader privacy, and able to report three states rather than two: current,
-withdrawn, or *signature valid, standing unknown*.
+reader privacy, and able to report withdrawal offline through its own signed
+revocation list, or *clear as of a dated list* when that is all it knows.
 
 ### The catch, and it is the same property
 
@@ -522,10 +524,12 @@ signed.
 
 **Two limits, both structural:**
 
-- **`credentialStatus` is always `'unchecked'`.** Verification is offline, so
-  the library cannot know whether a degree was rescinded after signing. A
-  withdrawn diploma still verifies. `SPEC.md` §8 requires an interface report
-  this as `unchecked` rather than presenting the credential as current.
+- **Withdrawal is as fresh as the last refresh.** Verification is offline,
+  so a rescinded degree is caught only once the issuer's signed revocation
+  list (SPEC §4.5) has been declared by a timestamp statement the verifier
+  holds; a device out of contact can be up to seven days behind. An issuer
+  that publishes no list leaves `credentialStatus` at `'unchecked'`, and
+  `SPEC.md` §8 requires an interface not to present that as current.
 - **Key expiry defeats the forty years.** `profileB.ts` resolves keys through
   the same `resolve(kid, profile, now)` as Profile A, so a diploma fails with
   `KEY_EXPIRED` the moment the issuing university's key passes `notAfter`. See
@@ -559,9 +563,11 @@ A business licence valid one year, a permit valid thirty days. **The most
 comfortable P2 case**, because the credential's own life is shorter than any
 plausible key lifetime, so the expiry problem does not arise.
 
-`credentialStatus: 'unchecked'` still bites — a suspended licence verifies — and
-here it bites harder than for a diploma, because suspension is an ordinary
-administrative event rather than a rarity.
+Suspension is an ordinary administrative event here rather than a rarity, so
+the revocation list (SPEC §4.5) is not optional for this case: the authority
+signs a new list on every suspension and the refresh window is the exposure.
+An authority that publishes none leaves every suspended licence verifying as
+`unchecked`.
 
 ---
 

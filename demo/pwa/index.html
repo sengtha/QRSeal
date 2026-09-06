@@ -136,6 +136,8 @@
   .chip { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; white-space: nowrap; font-weight: 500; }
   .chip.pass { background: var(--accent-soft); color: var(--accent); }
   .chip.fail { background: var(--reject-soft); color: var(--reject); }
+  .act.small { padding: 4px 10px; font-size: 12px; }
+  h3.sub { font-size: 13px; margin: 14px 0 6px; font-weight: 600; }
 
   .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
   .pair-card { background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 14px; display: grid; gap: 6px; }
@@ -309,7 +311,7 @@
   <!-- ============================ TRUST ============================ -->
   <section id="tab-trust" hidden>
     <h2>Trust</h2>
-    <p class="note">The sandbox scheme lives in this browser’s storage. Revoke the issuer key and every code it signed fails. Export the public half as a bundle and another device can verify this device’s codes — and nothing else, because the bundle carries no private key.</p>
+    <p class="note">The sandbox scheme lives in this browser’s storage. Revoke the issuer key and every code it signed fails; withdraw one credential and only that credential fails, because the issuer’s signed revocation list names it and the timestamp statement declares the list. Export the public half as a bundle and another device can verify this device’s codes — and nothing else, because the bundle carries no private key.</p>
     <div class="two">
       <div class="card">
         <h2 style="font-size:15px">This device’s sandbox</h2>

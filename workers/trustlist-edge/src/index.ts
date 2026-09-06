@@ -32,6 +32,13 @@ interface Pointer {
   readonly trustListKey: string;
   readonly timestampKey: string;
   readonly applicationsKey: string;
+  /**
+   * Revocation lists, one per credential issuer, keyed by the issuer
+   * identifier the list names. Each is signed by that issuer, not by Root, and
+   * the current timestamp statement declares every one of them by digest — so
+   * a verifier can tell a list that was withheld from a list that never was.
+   */
+  readonly revocationKeys?: Readonly<Record<string, string>>;
   readonly updatedAt: number;
 }
 
@@ -56,6 +63,40 @@ function json(body: unknown, init: ResponseInit = {}): Response {
 
 function problem(status: number, detail: string): Response {
   return json({ error: detail }, { status });
+}
+
+/**
+ * Serve every published revocation list as one JSON array of signed
+ * artefacts, in issuer order. It carries the timestamp's cache lifetime for the
+ * same reason the timestamp does: a stale list is how a withdrawn credential
+ * stays valid.
+ */
+async function serveRevocations(env: Env, pointer: Pointer, request: Request): Promise<Response> {
+  const keys = Object.entries(pointer.revocationKeys ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  const lists: unknown[] = [];
+  for (const [issuer, key] of keys) {
+    const object = await env.ARTIFACTS.get(key);
+    if (object === null) return problem(503, `revocation list for ${issuer} is named but not published`);
+    lists.push(JSON.parse(await object.text()) as unknown);
+  }
+  const body = JSON.stringify(lists);
+  const etag = `"${await digestHex(body)}"`;
+  if (request.headers.get('if-none-match') === etag) {
+    return new Response(null, { status: 304, headers: { etag, 'cache-control': TIMESTAMP } });
+  }
+  return new Response(request.method === 'HEAD' ? null : body, {
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': TIMESTAMP,
+      etag,
+      'x-kh-sqr-revocation-issuers': String(keys.length),
+    },
+  });
+}
+
+async function digestHex(text: string): Promise<string> {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function serveObject(
@@ -132,6 +173,11 @@ export default {
         return serveObject(env, pointer.timestampKey, TIMESTAMP, request);
       case '/applications/current':
         return serveObject(env, pointer.applicationsKey, CURRENT, request);
+      case '/revocations/current':
+      case '/.well-known/kh-sqr/revocations':
+        // Every declared list, so a verifier fetches one resource and then
+        // holds exactly what the timestamp statement says it must hold.
+        return serveRevocations(env, pointer, request);
       default:
         return problem(404, 'no such resource');
     }

@@ -20,6 +20,7 @@ import {
   detectProfileAEncoding,
   verifyProfileA2,
   verifyProfileB,
+  revocationEntryId,
   type CredentialClaims,
   type PayeeClass,
   type PinnedKey,
@@ -44,9 +45,12 @@ const USAGE = `kh-sqr — KH-SQR reference tools
 
   verify --payload <str|@file> --trustlist <@file> --root-keys <@file>
          [--timestamp <@file>] [--timestamp-keys <@file>] [--now <unix>]
-         [--held-version <n>] [--fetched-at <unix>]
+         [--held-version <n>] [--fetched-at <unix>] [--revocations <@file>]...
       Verify a payload of either profile. The profile is detected from the
       payload. Exits 0 on acceptance, 1 on rejection, printing the reason.
+      Pass every revocation list the timestamp statement declares; a Profile B
+      credential is refused (REVOCATIONS_MISSING) when its issuer's declared
+      list is absent, so that withholding a list cannot un-withdraw a credential.
 
   build-trustlist --keys <@file.json> --version <n> --expires <unix>
                   --key <pkcs8.pem> --kid <hex16> [--issued-at <unix>]
@@ -54,7 +58,16 @@ const USAGE = `kh-sqr — KH-SQR reference tools
 
   build-timestamp --trustlist <@file> --key <pkcs8.pem> --kid <hex16>
                   [--issued-at <unix>] [--validity-seconds <n>]
-      Produce a signed timestamp statement over a trust list.
+                  [--revocations <@file>]...
+      Produce a signed timestamp statement over a trust list. Each signed
+      revocation list given is declared (issuer, version, digest) so that
+      verifiers know which lists they must hold.
+
+  build-revocations --issuer <id> --entries <@file.json> --version <n>
+                    --key <pkcs8.pem> --kid <hex16> [--issued-at <unix>]
+      Produce an issuer-signed revocation list. The entries file is a JSON
+      array of {documentId, reason: "withdrawn"|"corrected", revokedAt?};
+      only a salted hash of each document number is published.
 
   run-vectors --file <vectors.json>
       Run a conformance suite against this implementation.
@@ -63,6 +76,8 @@ A verified signature proves who produced a code. It does not tell you whether
 the payment is one you should make.
 `;
 
+type Values = Record<string, string | boolean | string[] | undefined>;
+
 const now = (): number => Math.floor(Date.now() / 1000);
 
 function fail(message: string): never {
@@ -70,13 +85,13 @@ function fail(message: string): never {
   process.exit(2);
 }
 
-function required(values: Record<string, string | boolean | undefined>, name: string): string {
+function required(values: Values, name: string): string {
   const value = values[name];
   if (typeof value !== 'string') fail(`--${name} is required`);
   return value;
 }
 
-function integer(values: Record<string, string | boolean | undefined>, name: string, fallback?: number): number {
+function integer(values: Values, name: string, fallback?: number): number {
   const value = values[name];
   if (typeof value !== 'string') {
     if (fallback !== undefined) return fallback;
@@ -110,7 +125,18 @@ const OPTIONS = {
   'validity-seconds': { type: 'string' },
   file: { type: 'string' },
   json: { type: 'boolean' },
+  revocations: { type: 'string', multiple: true },
+  issuer: { type: 'string' },
+  entries: { type: 'string' },
 } as const;
+
+/** Every `--revocations` argument, parsed. */
+function revocationLists(values: Values): unknown[] {
+  const given = values['revocations'];
+  if (given === undefined) return [];
+  const paths = Array.isArray(given) ? given : [String(given)];
+  return paths.map((path) => JSON.parse(literalOrFile(path)) as unknown);
+}
 
 const encoder = new TextEncoder();
 const hex = (bytes: Uint8Array): string =>
@@ -126,7 +152,7 @@ async function signStatement(statement: string, keyPath: string, kid: string): P
   );
 }
 
-async function openAnchor(values: Record<string, string | boolean | undefined>): Promise<TrustAnchor> {
+async function openAnchor(values: Values): Promise<TrustAnchor> {
   const trustList = JSON.parse(literalOrFile(required(values, 'trustlist'))) as unknown;
   const rootKeys = JSON.parse(literalOrFile(required(values, 'root-keys'))) as PinnedKey[];
   const timestampRaw = typeof values['timestamp'] === 'string' ? literalOrFile(values['timestamp']) : undefined;
@@ -143,6 +169,7 @@ async function openAnchor(values: Record<string, string | boolean | undefined>):
     now: integer(values, 'now', now()),
     ...(values['held-version'] === undefined ? {} : { heldVersion: integer(values, 'held-version') }),
     ...(values['fetched-at'] === undefined ? {} : { fetchedAt: integer(values, 'fetched-at') }),
+    revocations: revocationLists(values),
     // Only an explicit absence of a timestamp turns freeze protection off,
     // and the verify command says so on stderr when it happens.
     allowMissingTimestamp: timestampRaw === undefined,
@@ -153,7 +180,7 @@ async function openAnchor(values: Record<string, string | boolean | undefined>):
  * Commands
  * ------------------------------------------------------------------ */
 
-async function commandKid(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandKid(values: Values): Promise<void> {
   const material = await loadPublicKey(required(values, 'public-key'));
   process.stdout.write(
     values['json'] === true
@@ -165,7 +192,7 @@ async function commandKid(values: Record<string, string | boolean | undefined>):
   if (viaCore !== material.kid) fail('internal inconsistency in key identifier derivation');
 }
 
-async function commandSignA(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandSignA(values: Values): Promise<void> {
   const payeeClass = required(values, 'payee-class');
   if (payeeClass !== 'M' && payeeClass !== 'I') fail('--payee-class must be M or I');
 
@@ -189,7 +216,7 @@ async function commandSignA(values: Record<string, string | boolean | undefined>
   );
 }
 
-async function commandSignB(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandSignB(values: Values): Promise<void> {
   const claims = JSON.parse(literalOrFile(required(values, 'claims'))) as CredentialClaims;
   const payload = await signProfileB({
     privateKey: await loadPrivateKey(required(values, 'key')),
@@ -199,7 +226,7 @@ async function commandSignB(values: Record<string, string | boolean | undefined>
   process.stdout.write(`${payload}\n`);
 }
 
-async function commandVerify(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandVerify(values: Values): Promise<void> {
   const payload = literalOrFile(required(values, 'payload'));
   if (values['timestamp'] === undefined) {
     process.stderr.write(
@@ -235,7 +262,7 @@ async function commandVerify(values: Record<string, string | boolean | undefined
   }
 }
 
-async function commandBuildTrustlist(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandBuildTrustlist(values: Values): Promise<void> {
   const keys = JSON.parse(literalOrFile(required(values, 'keys'))) as TrustedKeyRecord[];
   const statement = JSON.stringify({
     type: 'kh-sqr/trustlist/1',
@@ -249,19 +276,62 @@ async function commandBuildTrustlist(values: Record<string, string | boolean | u
   );
 }
 
-async function commandBuildTimestamp(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandBuildTimestamp(values: Values): Promise<void> {
   const artifact = JSON.parse(literalOrFile(required(values, 'trustlist'))) as {
     statement: string;
   };
   const list = JSON.parse(artifact.statement) as { version: number };
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(artifact.statement)));
   const issuedAt = integer(values, 'issued-at', now());
+  const revocations = [];
+  for (const list of revocationLists(values)) {
+    const signed = list as { statement?: unknown };
+    if (typeof signed.statement !== 'string') fail('--revocations must name a signed revocation list');
+    const parsed = JSON.parse(signed.statement) as { type?: unknown; issuer?: unknown; version?: unknown };
+    if (parsed.type !== 'kh-sqr/revocations/1' || typeof parsed.issuer !== 'string' || typeof parsed.version !== 'number') {
+      fail('--revocations must name a kh-sqr/revocations/1 statement');
+    }
+    const listDigest = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(signed.statement)));
+    revocations.push({ issuer: parsed.issuer, version: parsed.version, digest: hex(listDigest) });
+  }
   const statement = JSON.stringify({
     type: 'kh-sqr/timestamp/1',
     trustListVersion: list.version,
     trustListDigest: hex(digest),
     issuedAt,
     expires: issuedAt + integer(values, 'validity-seconds', 7 * 24 * 60 * 60),
+    ...(revocations.length === 0 ? {} : { revocations }),
+  });
+  process.stdout.write(
+    `${await signStatement(statement, required(values, 'key'), required(values, 'kid'))}\n`,
+  );
+}
+
+async function commandBuildRevocations(values: Values): Promise<void> {
+  const issuer = required(values, 'issuer');
+  const issuedAt = integer(values, 'issued-at', now());
+  const given = JSON.parse(literalOrFile(required(values, 'entries'))) as {
+    documentId: string;
+    reason: 'withdrawn' | 'corrected';
+    revokedAt?: number;
+  }[];
+  if (!Array.isArray(given)) fail('--entries must be a JSON array');
+  const entries = [];
+  for (const entry of given) {
+    if (typeof entry.documentId !== 'string' || entry.documentId.length === 0) fail('each entry needs a documentId');
+    if (entry.reason !== 'withdrawn' && entry.reason !== 'corrected') fail('reason must be "withdrawn" or "corrected"');
+    entries.push({
+      id: await revocationEntryId(issuer, entry.documentId),
+      revokedAt: entry.revokedAt ?? issuedAt,
+      reason: entry.reason,
+    });
+  }
+  const statement = JSON.stringify({
+    type: 'kh-sqr/revocations/1',
+    issuer,
+    version: integer(values, 'version'),
+    issuedAt,
+    entries,
   });
   process.stdout.write(
     `${await signStatement(statement, required(values, 'key'), required(values, 'kid'))}\n`,
@@ -279,6 +349,7 @@ interface SuiteCase {
     now: number;
     heldVersion?: number;
     fetchedAt?: number;
+    revocations?: string;
   };
   readonly expect: 'accept' | 'reject';
   readonly reason: string | null;
@@ -288,6 +359,7 @@ interface Suite {
   readonly pinned: { rootKeys: PinnedKey[]; timestampKeys: PinnedKey[] };
   readonly trustLists: Record<string, unknown>;
   readonly timestamps: Record<string, unknown>;
+  readonly revocations?: Record<string, readonly unknown[]>;
   readonly cases: readonly SuiteCase[];
 }
 
@@ -299,7 +371,7 @@ interface Suite {
  * skipped here because they need the issuer's private key, which the suite
  * publishes but which a verifier has no business loading.
  */
-async function commandRunVectors(values: Record<string, string | boolean | undefined>): Promise<void> {
+async function commandRunVectors(values: Values): Promise<void> {
   const suite = readJsonFile<Suite>(required(values, 'file'));
   let passed = 0;
   const failures: string[] = [];
@@ -318,6 +390,7 @@ async function commandRunVectors(values: Record<string, string | boolean | undef
         now: state.now,
         ...(state.heldVersion === undefined ? {} : { heldVersion: state.heldVersion }),
         ...(state.fetchedAt === undefined ? {} : { fetchedAt: state.fetchedAt }),
+        ...(state.revocations === undefined ? {} : { revocations: suite.revocations?.[state.revocations] ?? [] }),
       });
       const payload = vector.input['payload'] as string;
       if (vector.profile === 'A') {
@@ -370,6 +443,7 @@ async function main(): Promise<void> {
     case 'verify': return commandVerify(values);
     case 'build-trustlist': return commandBuildTrustlist(values);
     case 'build-timestamp': return commandBuildTimestamp(values);
+    case 'build-revocations': return commandBuildRevocations(values);
     case 'run-vectors': return commandRunVectors(values);
     default:
       process.stderr.write(`unknown command: ${command}\n\n${USAGE}`);

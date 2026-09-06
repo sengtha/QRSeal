@@ -98,7 +98,7 @@ registered account, is presented under a false pretext.
 This paper reports \textbf{QRSeal}, a project in two halves. \textbf{KH-SQR}
 is a signature specification for payment codes and document credentials, with
 an MIT-licensed reference implementation and a language-neutral conformance
-suite of forty-seven cases, thirty-five of them negative. \textbf{S0--S6} are
+suite of fifty cases, thirty-eight of them negative. \textbf{S0--S6} are
 institutional proposals, numbered rather than named because they are reference
 designs and not evaluated interventions. Neither is a standard: KH-SQR is
 proposed here, not adopted anywhere, and nothing in it is issued by or agreed
@@ -224,7 +224,7 @@ substantive section --- to make that reading difficult.
   \item KH-SQR, the specification: a normative document and a working, MIT-licensed reference
     implementation covering a payment profile bound to EMVCo payloads and a
     standalone credential profile, with a language-neutral conformance suite of
-    forty-seven cases, thirty-five negative, across both container encodings
+    fifty cases, thirty-eight negative, across both container encodings
     \citep{khsqr2026repo}. Two qualifications belong here rather than only in
     Section~\ref{sec:limits}. The payment profile is a format that becomes
     useful only after a coverage programme this paper does not design
@@ -591,6 +591,7 @@ limitations because a specification with a conformance suite is otherwise easy
 to read as ready to deploy, and this one is not.
 
 \subsection{Profile B: credential}
+\label{sec:profileB}
 
 Profile B signs a document attestation as a standalone payload:
 \begin{gather*}
@@ -655,6 +656,36 @@ merchant-account identifiers it may sign for, so that a compromised or rogue
 issuer key can sign codes only for its own institution's accounts
 (Section~\ref{sec:profileA}).
 
+The same binding is what makes per-credential withdrawal possible offline. An
+issuer publishes a \emph{revocation list}: a signed statement naming each
+withdrawn document by the SHA-256 of a domain string, the issuer identifier
+and the document number, so that the list discloses no document number and an
+identifier under one issuer means nothing under another. The list is signed by
+a key the trust list registers to that same issuer for Profile~B, so an
+institution can withdraw only its own credentials; it carries a version that
+must increase; and the timestamp statement declares every current list by
+issuer, version and digest. A verifier computes the identifier for the
+credential in front of it after the signature and the issuer binding have
+passed, and reports one of four standings: revoked, and the credential is
+refused (\code{CREDENTIAL\_REVOKED}); clear, with the version and date of the
+list it was cleared against; withheld, when the timestamp declares a list the
+verifier does not hold, and the credential is refused rather than passed
+(\code{REVOCATIONS\_MISSING}); or unchecked, when the issuer publishes no
+list. The third standing is the one that matters. Without it the cheapest
+attack on a withdrawn credential would be to keep the verifier from ever
+receiving the list, and a verifier that treated absence as ``nothing to
+check'' would pass every withdrawn credential. The suite pins the three
+refusals: a withdrawn credential, a declared list withheld, and a list signed
+by a key not registered to the issuer it names
+(\code{B-reject-\allowbreak revoked-\allowbreak credential},
+\code{B-reject-\allowbreak revocations-\allowbreak withheld},
+\code{B-reject-\allowbreak revocations-\allowbreak forged}). What the
+mechanism cannot do is make an offline verifier current: a withdrawal reaches
+it with the next timestamp statement, and a device out of contact for the
+statement's seven-day validity accepts a credential withdrawn inside that
+window. Section~\ref{sec:verifygov} returns to what that latency costs
+against a live lookup.
+
 \subsection{Carrying the credential, or carrying a reference to it}
 \label{sec:verifygov}
 
@@ -706,23 +737,30 @@ link previews. The leak is silent, because copying the key requires only having
 seen the document. This is a property of the carrier, not a claim about any
 operator's handling of it.
 
-\paragraph{What a reference buys, and we cannot match it: revocation.} An online
-record can be corrected or withdrawn the moment an institution decides, and the
-next reader sees the current state. A signature is a statement that was true
-when made; it does not become false when the issuer changes their mind, and
-nothing in a payload can carry news that postdates it.
+\paragraph{What a reference buys, and we match only with a lag: revocation.}
+An online record can be corrected or withdrawn the moment an institution
+decides, and the next reader sees the current state. A signature is a
+statement that was true when made; it does not become false when the issuer
+changes their mind, and nothing in a payload can carry news that postdates it.
 
-Our design does less here than we had implied. The trust list revokes
-\emph{keys}, and a revoked key invalidates everything its holder ever signed ---
-right for a compromised key, useless for one withdrawn diploma among four
-hundred thousand. There is no per-credential revocation in this specification,
-and adding one honestly means adding a live service, which is the dependency the
-offline design exists to remove. What we do instead is refuse to paper over it:
-the result carries a \code{credentialStatus} field whose only value is
-\code{unchecked}, present rather than omitted because an absent field reads as
-nothing to worry about. For a credential that can be withdrawn and must be
-checked without a network, no signature scheme --- ours included --- gives the
-reader what a lookup gives them.
+An earlier version of this paper stopped there and reported that the design
+had no per-credential revocation, only the trust list's revocation of
+\emph{keys} --- right for a compromised key, useless for one withdrawn diploma
+among four hundred thousand --- and that adding one honestly meant adding a
+live service, which is the dependency the offline design exists to remove.
+The second half of that was wrong, and a reader of the sandbox said so. The
+news that postdates a signature does not have to be fetched at the moment of
+verification; it can be carried the way the trust list itself is carried, as
+a signed artefact the verifier holds and refreshes, and the timestamp
+statement can declare it so that a verifier kept from it fails closed. That is
+the revocation list of Section~\ref{sec:profileB}. What remains true is the
+lag. A lookup answers as of the query; the list answers as of the last
+timestamp the verifier holds, which may be seven days old, and an issuer that
+publishes no list leaves its credentials \code{unchecked}, a value the result
+carries rather than omits because an absent field reads as nothing to worry
+about. For a credential that can be withdrawn and must be checked without a
+network, the reader gets what a lookup gives them delayed by the refresh
+window, and not less than that.
 
 \paragraph{The horizon is a gate, not a scope note.} A second limit sits beside
 revocation and is easier to overlook. A verifier in this specification resolves
@@ -752,9 +790,10 @@ long as the documents must verify, and destroy the private key once the
 cohort is signed. After destruction nothing remains to compromise, so a long
 public validity carries no forgery risk and the question whether a signature
 predated the key's expiry never arises; a compromise before destruction costs
-one cohort rather than the institution's history, which is also the finest
-revocation granularity this design can offer. The specification now
-recommends this pattern. It narrows the gap rather than closing it, and the
+one cohort rather than the institution's history. The specification now
+recommends this pattern, and a destroyed cohort key does not prevent
+withdrawal of a single document afterwards, because the revocation list is
+signed by the issuer's current key and names documents rather than keys. It narrows the gap rather than closing it, and the
 remainder is worth stating exactly. What is left is organisational: the trust
 list must keep carrying the public record, and keep being republished within
 the freshness limits, for as long as the documents matter --- a static signed
@@ -793,10 +832,12 @@ mistaken for one.
 \paragraph{What we propose.} Not a replacement. The two compose: a platform that
 already holds the authoritative record could emit a signed, offline-verifiable
 credential alongside the lookup code at no cost to the lookup path, gaining
-archival longevity, offline operation and reader privacy, and reporting three
-states rather than two --- current, withdrawn, or \emph{signature valid,
-standing unknown}. The design in this paper is a specification for that second
-artefact, and the rest of this section returns to it.
+archival longevity, offline operation and reader privacy, and reporting what
+the lookup would have reported --- current or withdrawn --- as of a dated
+revocation list rather than as of the query, and \emph{signature valid,
+standing unchecked} where the issuer publishes none. The design in this paper
+is a specification for that second artefact, and the rest of this section
+returns to it.
 
 \subsection{Trust hierarchy and the fail-closed verifier}
 
@@ -826,7 +867,8 @@ signature does not verify under the Root is refused before any of these applies
 (\code{A-reject-\allowbreak trustlist-\allowbreak forged-\allowbreak signature}).
 
 The timestamp statement is a separate signed object with a seven-day validity,
-naming the current trust list's version and digest. It exists because expiry
+naming the current trust list's version and digest, and declaring each
+issuer's current revocation list the same way. It exists because expiry
 alone does not defend against an attacker who can withhold updates: a hostile
 network can pin a verifier to an old but still-valid list, so that a key revoked
 yesterday keeps verifying. This is TUF's timestamp role, adopted for the same
@@ -888,7 +930,7 @@ integration.
 \subsection{Conformance suite}
 
 The conformance suite is the artefact we expect to outlast the TypeScript. It is
-a single JSON file of forty-seven cases, thirty-five of them negative and
+a single JSON file of fifty cases, thirty-eight of them negative and
 spanning both container encodings, each carrying an
 identifier, a profile, a case type, an input, the trust state and time at which
 it is evaluated, the expected outcome and, for a rejection, the expected
@@ -903,8 +945,10 @@ byte mutated \emph{outside} it, an expired dynamic code, a static code carrying
 an amount, an unknown key identifier, a revoked key, a rolled-back trust list, a
 trust list past its cache age, an expired timestamp statement, an
 \code{https} payload, a \code{deflate-raw} compression, a credential signed
-by a registered key in another institution's name and a payment code paying
-into an account its signing key is not registered for --- each for the
+by a registered key in another institution's name, a payment code paying
+into an account its signing key is not registered for, a credential its
+issuer has withdrawn, a credential whose declared revocation list was withheld
+and a revocation list signed in another institution's name --- each for the
 correct stated reason --- has demonstrated most of the specification.
 
 Two case types are distinguished. A \emph{verify} case asserts that a recorded
@@ -2885,9 +2929,12 @@ person.
     first reporting period complete.
   \item \textbf{Foundation.} The Root ceremony is performed; the registry,
     three independent publishers and the timestamp signer are deployed; first
-    issuers enrol. Visual uniformity for printed codes and S2 are enacted, both
-    independent of coverage. Screening deploys in advisory mode. Gate: a list
-    at three mirrors, a timestamp on schedule, a rotation rehearsed.
+    issuers enrol, and each credential issuer publishes a revocation list,
+    empty if need be, so that the withhold-the-list attack is closed from the
+    first credential. Visual uniformity for printed codes and S2 are enacted,
+    both independent of coverage. Screening deploys in advisory mode. Gate: a
+    list at three mirrors, a timestamp on schedule, a rotation rehearsed, a
+    withdrawal rehearsed.
   \item \textbf{Silent coverage.} Every new code is signed and existing codes
     are reprinted by exposure, while no verifier changes visible behaviour: an
     unsigned code in this phase is an unenrolled merchant. Wallets show payee,
@@ -3421,6 +3468,21 @@ verified fail on deliberately introduced violations.
     destroyed private halves (Section~\ref{sec:verifygov}) satisfy the gate
     as written and leave the organisational commitment, algorithm migration
     and the no-fresh-list case open.
+
+  \item \textbf{Withdrawal reaches an offline verifier late, and only if the
+    issuer publishes.} Section~\ref{sec:profileB}. The revocation list closes
+    the gap this paper's first version reported as unclosable, but with two
+    residues. A verifier honours the list as of the last timestamp statement
+    it holds, so a credential withdrawn inside the statement's seven-day
+    validity verifies as clear on a device that has not refreshed; shortening
+    the validity shortens the window at the cost of refresh frequency, and
+    nothing offline makes it zero. And an issuer that publishes no list
+    leaves its credentials \code{unchecked}, which the interface must not
+    present as current but which a reader may still take as a tick. The
+    mechanism has been exercised in the sandbox and the suite, not in any
+    deployment, and the operational duty it creates --- an issuer re-signing
+    its list at least monthly, and the timestamp signer declaring it --- has
+    not been costed.
 
   \item \textbf{The device-compromise evidence is about a different fraud.}
     Section~\ref{sec:device} documents account takeover, not authorised push

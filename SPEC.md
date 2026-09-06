@@ -559,10 +559,14 @@ list:
 ```json
 { "type": "kh-sqr/timestamp/1", "trustListVersion": 7,
   "trustListDigest": "<SHA-256 of the trust list statement, 64 hex>",
-  "issuedAt": …, "expires": … }
+  "issuedAt": …, "expires": …,
+  "revocations": [ { "issuer": "kh.gov.mptc.moeys", "version": 3,
+                     "digest": "<SHA-256 of that revocation list statement>" } ] }
 ```
 
-Validity is 7 days. It is signed by a key distinct from the Root, because the
+`revocations` declares every current per-credential revocation list (§4.5), one
+entry per issuer, by version and digest. It MAY be absent or empty when no
+issuer publishes a list. Validity is 7 days. It is signed by a key distinct from the Root, because the
 timestamp signer is online and short-lived while the Root is offline.
 
 A verifier MUST reject when the freshest timestamp statement it holds has
@@ -582,6 +586,92 @@ independence: one provider, one account, one governance failure. See
 `README.md` for the status of the reference deployment, which does not conform
 to this clause and does not claim to.
 
+### 4.5 Revocation list — per-credential withdrawal
+
+The trust list revokes *keys*. That is the right granularity for a compromised
+HSM and the wrong one for a single rescinded degree, a corrected date, or a
+licence suspended for a year: revoking the key withdraws everything the issuer
+ever signed with it. Offline verification cannot consult the issuer's record
+at scan time, so this section gives the issuer a signed, offline-distributable
+record of its own withdrawals.
+
+A **revocation list** is a signed artefact in the same envelope as the trust
+list (`{ statement, signature }`):
+
+```json
+{ "type": "kh-sqr/revocations/1", "issuer": "kh.gov.mptc.moeys",
+  "version": 3, "issuedAt": …,
+  "entries": [ { "id": "<64 hex>", "revokedAt": …, "reason": "withdrawn" } ] }
+```
+
+- `issuer` is the organisation identifier the list speaks for: the value a
+  credential's claim `1` and the signing key's `subject.organisationId` carry.
+- `version` is a positive integer that MUST increase with every publication by
+  this issuer. `issuedAt` is a Unix time.
+- Each entry's `id` is the uppercase hex SHA-256 of the UTF-8 string
+  `kh-sqr/revocation/1` `\n` *issuer* `\n` *documentId*. The list therefore
+  names a withdrawn document without publishing its number, and an identifier
+  under one issuer is meaningless under another. `reason` is `withdrawn` (the
+  document no longer stands) or `corrected` (a replacement with the same
+  document number was issued; the earlier code is void). Both are refusals.
+
+**Signature.** The list MUST be signed by a key on the trust list whose
+`profiles` include `B` and whose `subject.organisationId` equals `issuer`, and
+which is usable at the time of verification. The binding is the one §3.1
+imposes on the credential itself: an issuer can withdraw only its own
+credentials, and no key registered to another institution can withdraw them.
+A cohort key whose private half was destroyed (§3.1a) cannot sign a list; the
+issuer's current key does, and it withdraws credentials signed by any of the
+issuer's keys, because entries name documents, not keys.
+
+**Declaration.** The current timestamp statement (§4.3) declares each list by
+issuer, version and digest. This is what makes withholding detectable: a list
+is not merely absent from the verifier, it is absent *against a declaration*.
+
+**Verification.** A verifier holding a revocation list MUST check it before
+using it, in this order:
+
+1. Structure (`REVOCATIONS_MALFORMED`); at most one list per issuer.
+2. Signature under a key bound to `issuer` as above
+   (`REVOCATIONS_SIGNATURE_INVALID`). A key that is unknown, revoked or outside
+   its validity gives the same reason.
+3. Age: `issuedAt` MUST NOT be more than 30 days before the verification time
+   (`REVOCATIONS_STALE`), the same bound the trust list carries.
+4. Monotonicity: a version below the version previously held for this issuer
+   is refused (`REVOCATIONS_ROLLBACK`).
+5. Agreement with the timestamp statement's declaration for this issuer, by
+   version and digest (`TIMESTAMP_TARGET_MISMATCH`).
+
+Then, for every Profile B credential, **after** the signature and the issuer
+binding of §3.1 have been checked, the verifier computes the entry identifier
+from the credential's issuer and document number and reports one of four
+standings in `credentialStatus`:
+
+| Standing | Condition | Result |
+|---|---|---|
+| revoked | the identifier is on the issuer's list | reject, `CREDENTIAL_REVOKED` |
+| clear | the issuer's list is held and the identifier is absent | accept, `credentialStatus: 'clear'`, with the list's version and `issuedAt` in `revocationList` |
+| withheld | the timestamp statement declares a list for this issuer that the verifier does not hold | reject, `REVOCATIONS_MISSING` |
+| unchecked | no list is declared for this issuer | accept, `credentialStatus: 'unchecked'`, `revocationList: null` |
+
+The `withheld` row is the point. Without it, the cheapest attack on a
+withdrawn credential would be to keep the verifier from ever receiving the
+list, and the verifier would report the credential as merely unchecked. With
+it, a declared list that is missing is a refusal, in the same way that a
+missing timestamp statement is.
+
+**Latency.** Offline, a verifier honours the list as of the last timestamp
+statement it holds. A withdrawal therefore reaches a verifier no later than
+the next refresh after the issuer publishes and the timestamp signer declares,
+and a verifier out of contact for up to seven days may accept a credential
+withdrawn in that window. This is the same window key revocation has, and
+§9 records it.
+
+**Publication.** Revocation lists are published beside the trust list (§4.4),
+under the same three-mirror requirement. An issuer publishes a new version by
+signing it and handing it to the timestamp signer; a list the timestamp
+statement does not declare is not in force.
+
 ## 5. Rejection reasons
 
 Every rejection carries a stable, machine-readable reason. These strings are
@@ -593,8 +683,8 @@ exercises appears in `vectors/vectors.json`.
 ## 6. Verification is offline
 
 Verification MUST NOT perform network access. Everything needed is supplied by
-the caller: the trust list, the timestamp statement, the pinned keys, and the
-time.
+the caller: the trust list, the timestamp statement, the revocation lists it
+declares, the pinned keys, and the time.
 
 A verifier that fetches during verification can be stalled or steered by
 whoever controls the network at the moment of payment, who at a market stall is
@@ -609,6 +699,9 @@ not a trustworthy party.
   then destroyed; only its public record persists, on the trust list, for the
   documents' life. Destruction is part of the issuing ceremony, not an
   afterthought.
+- A revocation list (§4.5) is signed by the issuer's current key, under the
+  same custody as its credentials. The timestamp signer declares it; it never
+  signs it.
 - The timestamp statement is produced by a signer outside the serving
   infrastructure and uploaded.
 - No online service holds a private key of any kind. Certificate issuance MUST
@@ -641,15 +734,17 @@ dropped.
    currency is unrecognised and MUST NOT imply the local one.
 5. A Profile B verifier MUST require the caller to handle the printed-document
    comparison fields (§3.3).
-6. A Profile B result MUST carry a per-credential status field, and offline
-   verification MUST report it as `unchecked`. An implementation MUST NOT omit
-   the field, and MUST NOT present an `unchecked` credential as current. This
-   specification defines no per-credential revocation mechanism: the trust list
-   revokes *keys*, which invalidates everything an issuer ever signed and is
-   the wrong granularity for a single withdrawn document. A deployment needing
-   revocation must consult the issuer's own record, and must report
-   *signature valid, standing unknown* when it cannot.
-6. An implementation MUST NOT log payload contents.
+6. A Profile B result MUST carry a per-credential status field
+   (`credentialStatus`), `clear` or `unchecked` as §4.5 defines them, and an
+   implementation MUST NOT omit it. A `clear` credential MAY be presented as
+   current, together with the version and date of the revocation list it was
+   checked against, because that is the limit of what was checked. An
+   `unchecked` credential MUST NOT be presented as current: the issuer publishes
+   no list, and the interface MUST say *signature valid, standing unchecked*.
+   An implementation MUST NOT reduce a refusal for `CREDENTIAL_REVOKED` to a
+   generic failure; the holder is entitled to know that the issuer, not the
+   code, is the reason.
+7. An implementation MUST NOT log payload contents.
 
 ### 8.1 Why clauses 3 and 4 are MUST
 
@@ -709,6 +804,13 @@ still encounter it.
   tax and fee collection — are national in scale. Closing this is a third code
   kind with its own replay and reprint semantics, not a setting, and it has not
   been designed.
+- **Withdrawals inside the refresh window.** A revocation list (§4.5) reaches
+  an offline verifier with its next timestamp statement, and a verifier may
+  hold a statement for up to seven days. A credential withdrawn inside that
+  window verifies as `clear` on a device that has not refreshed. The bound is
+  the timestamp validity, and a deployment that needs a shorter one shortens
+  the validity, at the cost of more frequent refresh; nothing offline can
+  make it zero.
 - **Credentials that outlive their key.** §3.1a gates Profile B to documents
   shorter-lived than the signing key, because the archival verification path —
   how a verifier decades out obtains and trusts the issuer's key and dates the

@@ -23,6 +23,11 @@
 import {
   AcquirerKeyMismatchError,
   KeyExpiredError,
+  KhSqrError,
+  RevocationsMalformedError,
+  RevocationsRollbackError,
+  RevocationsSignatureInvalidError,
+  RevocationsStaleError,
   KeyNotYetValidError,
   KeyProfileMismatchError,
   KeyRevokedError,
@@ -118,6 +123,72 @@ export interface TimestampStatement {
   readonly trustListDigest: string;
   readonly issuedAt: number;
   readonly expires: number;
+  /**
+   * The current revocation list of each issuer that publishes one, so that a
+   * withheld or rolled-back revocation list is caught the way a withheld
+   * trust list is. Absent when no issuer publishes one.
+   */
+  readonly revocations?: readonly { readonly issuer: string; readonly version: number; readonly digest: string }[];
+}
+
+/* ------------------------------------------------------------------ *
+ * Revocation lists — per-credential withdrawal, published like the trust list
+ * ------------------------------------------------------------------ *
+ *
+ * Key revocation invalidates everything a key ever signed, which is right for
+ * a compromised key and wrong for one withdrawn diploma. A revocation list is
+ * the per-credential instrument: a signed statement by the issuer, published
+ * beside the trust list, refreshed on the same cadence and verified offline
+ * against the same trust anchor. It is not a live service, and it is not the
+ * dependency the offline design exists to remove.
+ *
+ * Entries are hashes, not document identifiers: a public list of withdrawn
+ * identifiers would tell the world which named person lost a degree. Only a
+ * party holding the credential can compute the entry to look for.
+ */
+
+export type RevocationReason = 'withdrawn' | 'corrected';
+
+export interface RevocationEntry {
+  /** `revocationEntryId(issuer, documentId)`: 64 uppercase hex characters. */
+  readonly id: string;
+  readonly revokedAt: number;
+  readonly reason: RevocationReason;
+}
+
+export interface RevocationStatement {
+  readonly type: 'kh-sqr/revocations/1';
+  /** The `organisationId` of the issuer, which the signing key must be registered to. */
+  readonly issuer: string;
+  /** Monotonic per issuer. */
+  readonly version: number;
+  readonly issuedAt: number;
+  readonly entries: readonly RevocationEntry[];
+}
+
+/** Domain separator for revocation entry identifiers. */
+export const REVOCATION_ID_DOMAIN = 'kh-sqr/revocation/1';
+
+/** The entry a revocation list carries for one credential: SHA-256 over the domain, issuer and document identifier. */
+export async function revocationEntryId(issuer: string, documentId: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    encoder.encode(`${REVOCATION_ID_DOMAIN}\n${issuer}\n${documentId}`) as BufferSource,
+  );
+  return bytesToHex(new Uint8Array(digest));
+}
+
+/** What the trust anchor knows about one credential's standing. */
+export type RevocationStatus =
+  | { readonly state: 'unchecked' }
+  | { readonly state: 'withheld'; readonly declaredVersion: number }
+  | { readonly state: 'clear'; readonly listVersion: number; readonly listIssuedAt: number }
+  | { readonly state: 'revoked'; readonly revokedAt: number; readonly reason: RevocationReason; readonly listVersion: number };
+
+interface HeldRevocationList {
+  readonly version: number;
+  readonly issuedAt: number;
+  readonly entries: ReadonlyMap<string, RevocationEntry>;
 }
 
 /** A signed artifact: an opaque statement string plus a detached signature. */
@@ -199,6 +270,15 @@ export interface OpenTrustAnchorOptions {
    * sets this has removed its freeze protection.
    */
   readonly allowMissingTimestamp?: boolean;
+  /**
+   * Signed revocation lists held, one per issuer, as served. Each is
+   * validated against the trust list opened here: signed by a key registered
+   * to the issuer it names, within cache age, not rolled back, and matching
+   * what the timestamp statement declares for that issuer.
+   */
+  readonly revocations?: readonly unknown[];
+  /** Highest revocation list version held per issuer, for rollback protection. */
+  readonly heldRevocationVersions?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -211,6 +291,9 @@ export interface OpenTrustAnchorOptions {
  */
 export class TrustAnchor {
   private readonly keys: ReadonlyMap<string, readonly TrustedKeyRecord[]>;
+  private readonly revocations = new Map<string, HeldRevocationList>();
+  /** Issuers whose current revocation list the timestamp statement declares. */
+  private readonly declaredRevocations = new Map<string, { version: number; digest: string }>();
 
   public readonly version: number;
   public readonly issuedAt: number;
@@ -255,20 +338,32 @@ export class TrustAnchor {
 
     const digest = await digestStatement(artifact.statement);
 
+    let timestamp: TimestampStatement | null = null;
     if (options.timestamp === undefined || options.timestamp === null) {
       if (options.allowMissingTimestamp !== true) throw new TimestampMissingError();
     } else {
-      await TrustAnchor.checkTimestamp(options, statement, digest);
+      timestamp = await TrustAnchor.checkTimestamp(options, statement, digest);
     }
 
-    return new TrustAnchor(statement, digest);
+    const anchor = new TrustAnchor(statement, digest);
+    if (timestamp?.revocations !== undefined) {
+      if (!Array.isArray(timestamp.revocations)) throw new TimestampMalformedError();
+      for (const d of timestamp.revocations) {
+        if (typeof d.issuer !== 'string' || !Number.isSafeInteger(d.version) || !isUppercaseHex(d.digest, 64)) {
+          throw new TimestampMalformedError();
+        }
+        anchor.declaredRevocations.set(d.issuer, { version: d.version, digest: d.digest });
+      }
+    }
+    for (const list of options.revocations ?? []) await anchor.holdRevocationList(list, options);
+    return anchor;
   }
 
   private static async checkTimestamp(
     options: OpenTrustAnchorOptions,
     statement: TrustListStatement,
     digest: string,
-  ): Promise<void> {
+  ): Promise<TimestampStatement> {
     const malformed = (): never => {
       throw new TimestampMalformedError();
     };
@@ -285,6 +380,84 @@ export class TrustAnchor {
     if (!constantTimeEqual(ts.trustListDigest, digest)) {
       throw new TimestampTargetMismatchError('timestamp attests a different trust list digest');
     }
+    return ts;
+  }
+
+  /**
+   * Validate one revocation list against this anchor and keep it.
+   *
+   * The signer must be a key registered, for Profile B, to the very issuer the
+   * list names — the same binding a credential's issuer claim is held to — so
+   * that one institution cannot publish withdrawals in another's name.
+   */
+  private async holdRevocationList(value: unknown, options: OpenTrustAnchorOptions): Promise<void> {
+    const malformed = (): never => {
+      throw new RevocationsMalformedError();
+    };
+    const artifact = assertSignedArtifact(value, malformed);
+    const statement = parseStatement<RevocationStatement>(artifact, 'kh-sqr/revocations/1', malformed);
+    if (typeof statement.issuer !== 'string' || statement.issuer.length === 0) malformed();
+    if (!Number.isSafeInteger(statement.version) || statement.version < 1) malformed();
+    if (!Number.isSafeInteger(statement.issuedAt)) malformed();
+    if (!Array.isArray(statement.entries)) malformed();
+    const entries = new Map<string, RevocationEntry>();
+    for (const e of statement.entries) {
+      if (typeof e !== 'object' || e === null) malformed();
+      if (!isUppercaseHex(e.id, 64) || !Number.isSafeInteger(e.revokedAt)) malformed();
+      if (e.reason !== 'withdrawn' && e.reason !== 'corrected') malformed();
+      entries.set(e.id, { id: e.id, revokedAt: e.revokedAt, reason: e.reason });
+    }
+    if (this.revocations.has(statement.issuer)) malformed();
+
+    // Signed by a key registered to the issuer named, usable now, for Profile B.
+    let candidates: { key: CryptoKey; record: TrustedKeyRecord }[];
+    try {
+      candidates = await this.resolveRecords(artifact.signature.kid, 'B', options.now);
+    } catch (error) {
+      if (error instanceof KhSqrError) throw new RevocationsSignatureInvalidError();
+      throw error;
+    }
+    const message = encoder.encode(artifact.statement);
+    const rawSignature = hexToBytes(artifact.signature.value);
+    let signed = false;
+    for (const { key, record } of candidates) {
+      if (record.subject.organisationId !== statement.issuer) continue;
+      if (await verifyEs256(key, rawSignature, message)) { signed = true; break; }
+    }
+    if (!signed) throw new RevocationsSignatureInvalidError();
+
+    if (options.now - statement.issuedAt > MAX_TRUSTLIST_CACHE_AGE_SECONDS) throw new RevocationsStaleError();
+    const held = options.heldRevocationVersions?.[statement.issuer];
+    if (held !== undefined && statement.version < held) {
+      throw new RevocationsRollbackError(`offered version ${statement.version} is below held version ${held}`);
+    }
+    const declared = this.declaredRevocations.get(statement.issuer);
+    if (declared !== undefined) {
+      const digest = await digestStatement(artifact.statement);
+      if (declared.version !== statement.version || !constantTimeEqual(declared.digest, digest)) {
+        throw new TimestampTargetMismatchError('timestamp attests a different revocation list for this issuer');
+      }
+    }
+    this.revocations.set(statement.issuer, { version: statement.version, issuedAt: statement.issuedAt, entries });
+  }
+
+  /**
+   * The standing of one credential, by the entry identifier a revocation list
+   * would carry for it. `withheld` means the timestamp statement declares a
+   * list for this issuer that this anchor was not given — the freeze case —
+   * and a verifier must refuse rather than report the credential as unchecked.
+   */
+  public revocationStatus(issuer: string, entryId: string): RevocationStatus {
+    const list = this.revocations.get(issuer);
+    if (list === undefined) {
+      const declared = this.declaredRevocations.get(issuer);
+      return declared === undefined ? { state: 'unchecked' } : { state: 'withheld', declaredVersion: declared.version };
+    }
+    const entry = list.entries.get(entryId);
+    if (entry !== undefined) {
+      return { state: 'revoked', revokedAt: entry.revokedAt, reason: entry.reason, listVersion: list.version };
+    }
+    return { state: 'clear', listVersion: list.version, listIssuedAt: list.issuedAt };
   }
 
   /** Every record carrying this key identifier, in list order. */

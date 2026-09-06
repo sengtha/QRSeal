@@ -20,6 +20,8 @@ export interface Suite {
   };
   readonly trustLists: Record<string, unknown>;
   readonly timestamps: Record<string, unknown>;
+  /** Named sets of signed revocation lists, one entry per issuer. */
+  readonly revocations: Record<string, readonly unknown[]>;
   readonly cases: readonly VectorCase[];
 }
 
@@ -29,6 +31,8 @@ export interface CaseState {
   readonly now: number;
   readonly heldVersion?: number;
   readonly fetchedAt?: number;
+  /** Name of the revocation-list set the verifier holds, if any. */
+  readonly revocations?: string;
 }
 
 export interface VectorCase {
@@ -56,5 +60,6 @@ export async function anchorFor(state: CaseState): Promise<TrustAnchor> {
     now: state.now,
     ...(state.heldVersion === undefined ? {} : { heldVersion: state.heldVersion }),
     ...(state.fetchedAt === undefined ? {} : { fetchedAt: state.fetchedAt }),
+    ...(state.revocations === undefined ? {} : { revocations: suite.revocations[state.revocations] }),
   });
 }
