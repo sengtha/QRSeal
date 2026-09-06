@@ -34,6 +34,7 @@ import {
   serialiseDataObject,
   stripCrc,
   type DataObject,
+  merchantAccountIdentifiers,
 } from './emvco.js';
 import {
   CodeExpiredError,
@@ -57,7 +58,8 @@ import {
 } from './errors.js';
 import { asciiToBytes, bytesToHex, hexToBytes, isUppercaseHex } from './hex.js';
 import { KID_HEX_LENGTH, RAW_SIGNATURE_LENGTH, looksLikeDer, verifyEs256 } from './kid.js';
-import type { TrustAnchor } from './trustlist.js';
+import type { TrustAnchor, TrustedKeyRecord } from './trustlist.js';
+import { assertAcquirerBinding } from './trustlist.js';
 
 /* ------------------------------------------------------------------ *
  * Sub-tags of template 85
@@ -439,14 +441,19 @@ export async function verifyProfileA(options: VerifyProfileAOptions): Promise<Pa
     if (fields.expiresAt - fields.issuedAt > MAX_DYNAMIC_VALIDITY_SECONDS) throw new ExpiryWindowTooLongError();
   }
 
-  const keys = await trustAnchor.resolve(fields.kid, 'A', now);
+  const candidates = await trustAnchor.resolveRecords(fields.kid, 'A', now);
   const message = asciiToBytes(signingInput);
   const rawSignature = hexToBytes(fields.signature);
-  let verified = false;
-  for (const key of keys) {
-    if (await verifyEs256(key, rawSignature, message)) { verified = true; break; }
+  let signer: TrustedKeyRecord | null = null;
+  for (const { key, record } of candidates) {
+    if (await verifyEs256(key, rawSignature, message)) { signer = record; break; }
   }
-  if (!verified) throw new SignatureInvalidError();
+  if (signer === null) throw new SignatureInvalidError();
+
+  // The signature proves which registered key signed. The binding proves the
+  // key was registered for the accounts the code pays into, so a compromised
+  // issuer key cannot vouch for another institution's accounts.
+  assertAcquirerBinding(signer, merchantAccountIdentifiers(envelope.objects).map((m) => m.guid));
 
   if (fields.issuedAt > now + skew) throw new IssuedInFutureError();
   if (fields.expiresAt !== null && now > fields.expiresAt) throw new CodeExpiredError();

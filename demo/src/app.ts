@@ -123,8 +123,15 @@ const SANDBOX_KEY = 'qrseal.sandbox.v1';
  * the credential with ISSUER_KEY_MISMATCH; the Issue form defaults to it.
  */
 const SANDBOX_ISSUER_ID = 'KH.EDU.SANDBOX';
+/**
+ * The merchant-account identifiers every sandbox issuer key may sign for: the
+ * exact value the Issue form defaults to, and a bank suffix for account-style
+ * identifiers such as merchant@abaa. A code naming anything else is refused
+ * with ACQUIRER_KEY_MISMATCH.
+ */
+const SANDBOX_ACQUIRERS: readonly string[] = ['abaakhppxxx', '@abaa'];
 /** Bumped when the published list's shape changes; an older sandbox republishes on load. */
-const SANDBOX_SCHEMA = 2;
+const SANDBOX_SCHEMA = 3;
 const IMPORTED_KEY = 'qrseal.imported.v1';
 const VERIFY_AGAINST_KEY = 'qrseal.verifyAgainst.v1';
 const LIST_LIFE_SECONDS = 365 * 24 * 60 * 60;
@@ -184,6 +191,7 @@ async function publish(sb: Sandbox): Promise<void> {
     notBefore: i.notBefore,
     notAfter: i.notAfter,
     subject: { name: i.name, organisationId: SANDBOX_ISSUER_ID },
+    acquirers: SANDBOX_ACQUIRERS,
   }));
   const statement = JSON.stringify({
     type: 'kh-sqr/trustlist/1',
@@ -354,6 +362,9 @@ function adviceFor(reason: RejectionReason): string {
   }
   if (reason.startsWith('KEY_')) {
     return 'The signing key is known and not usable. Refuse. Everything this key ever signed is affected — revocation is per key, not per code.';
+  }
+  if (reason === 'ACQUIRER_KEY_MISMATCH') {
+    return 'The signature is genuine, but the code pays into an account at an institution the signing key is not registered for. A registered key vouched for someone else’s account. Refuse.';
   }
   if (reason === 'ISSUER_KEY_MISMATCH') {
     return 'The signature is genuine, but the key that made it is registered to a different organisation from the one the credential names. A registered issuer signed in someone else’s name. Refuse.';
@@ -791,6 +802,7 @@ function renderTrust(sb: Sandbox): void {
     row('Root key', sb.root.kid, { mono: true }) +
     row('Timestamp signer', sb.timestampSigner.kid, { mono: true }) +
     row('Issuer organisation id', `${SANDBOX_ISSUER_ID} — a credential's issuer claim must equal this, or it is refused`, { mono: true }) +
+    row('Payment keys bound to', `${SANDBOX_ACQUIRERS.join(', ')} — a code's account template must name one of these (exactly, or ending in the @ suffix), or it is refused`, { mono: true }) +
     row('Trust list', `version ${sb.version}, published ${fmtTime(sb.publishedAt)}, expires ${list.expires === undefined ? '?' : fmtTime(list.expires)}`) +
     row('Timestamp statement', ts.expires === undefined ? '?' : `valid until ${fmtTime(ts.expires)} — re-signed automatically while this app runs`) +
     `</dl>` +

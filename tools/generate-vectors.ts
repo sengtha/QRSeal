@@ -97,6 +97,10 @@ const keyRecord = (key: TestKeyPair, o: KeyRecordOptions) => ({
   // are registered to it; a second key under the same organisation is the
   // rotated-and-withdrawn one.
   subject: { name: o.name, organisationId: 'kh.gov.mptc.moeys' },
+  // The merchant-account identifiers a Profile A key may sign for: the exact
+  // scheme-style GUID the reference payloads carry, and a bank suffix for
+  // account-style identifiers of the form merchant@bank.
+  acquirers: ['abaakhppxxx', '@abaa'],
 });
 
 /* ------------------------------------------------------------------ *
@@ -304,6 +308,26 @@ async function main(): Promise<void> {
     issuedAt: ISSUED_AT,
     expiresAt: EXPIRES_AT,
     payeeClass: 'M',
+  });
+
+  // A registered key signing for an account at an institution it is not
+  // registered for: the identifier at sub-tag 00 is not bound to the key.
+  const v2ForeignAcquirer = await signProfileA2({
+    payload: DYNAMIC_BASE.replace('0011abaakhppxxx', '0011otherbnkxxx'),
+    privateKey: issuer.privateKey,
+    kid: issuer.kid,
+    issuedAt: ISSUED_AT,
+    expiresAt: EXPIRES_AT,
+    payeeClass: 'M',
+  });
+  // An account-style identifier, merchant@bank, bound through the registered
+  // bank suffix rather than an exact value.
+  const v2SuffixBound = await signProfileA2({
+    payload: STATIC_BASE.replace('30310011abaakhppxxx', '29320012sokdara@abaa'),
+    privateKey: issuer.privateKey,
+    kid: issuer.kid,
+    issuedAt: ISSUED_AT,
+    payeeClass: 'I',
   });
 
   const v2Static = await signProfileA2({
@@ -532,6 +556,34 @@ async function main(): Promise<void> {
       expect: 'reject',
       reason: 'SIGNATURE_SUBTAG_MALFORMED',
       accepted: null,
+    },
+    {
+      id: 'A2-reject-acquirer-key-mismatch',
+      profile: 'A',
+      type: 'verify',
+      description:
+        'A valid signature by a registered key over a payload whose merchant-account template names ' +
+        'an identifier the key is not registered for. Without this rule a compromised or rogue issuer ' +
+        'key could sign codes paying into any account at any institution.',
+      input: { payload: v2ForeignAcquirer.payload, encodingVersion: 2 },
+      state: DEFAULT_STATE,
+      expect: 'reject',
+      reason: 'ACQUIRER_KEY_MISMATCH',
+      accepted: null,
+    },
+    {
+      id: 'A2-accept-bank-suffix-binding',
+      profile: 'A',
+      type: 'verify',
+      description:
+        'An account-style identifier of the form merchant@bank at sub-tag 00, bound to the key through ' +
+        'its registered @bank suffix rather than an exact value. The form a scheme whose identifiers ' +
+        'are per-merchant needs.',
+      input: { payload: v2SuffixBound.payload, encodingVersion: 2 },
+      state: DEFAULT_STATE,
+      expect: 'accept',
+      reason: null,
+      accepted: { kid: issuer.kid, codeKind: 'static' },
     },
     {
       id: 'A-accept-canonical-dynamic',

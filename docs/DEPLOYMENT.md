@@ -88,7 +88,7 @@ and verifies both reference payloads anyway. So the whole Profile A story is
 testable by anyone, offline, with no attack surface:
 
 ```sh
-kh-sqr run-vectors --file vectors/vectors.json   # 45 cases, 34 negative
+kh-sqr run-vectors --file vectors/vectors.json   # 47 cases, 35 negative
 kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
   --root-keys @root-keys.json --timestamp @timestamp-1.json
 ```
@@ -147,7 +147,10 @@ kh-sqr kid --public-key issuer-acleda.pub.pem
 
 # 3. Assemble keys.json — one TrustedKeyRecord per issuer:
 #    { "kid", "x", "y", "profiles", "status", "notBefore", "notAfter",
-#      "subject": { "name", "organisationId" } }
+#      "subject": { "name", "organisationId" }, "acquirers": [ ... ] }
+#    organisationId is what the issuer's Profile B credentials must name;
+#    acquirers lists the merchant-account identifiers its Profile A codes may
+#    pay into (exact values, or "@bank" suffixes). Both are trust decisions.
 #    x and y are 64 uppercase hex characters each.
 
 # 4. Sign the trust list with the Root key.
@@ -295,7 +298,7 @@ kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
   --root-keys @root-keys.json --timestamp @timestamp-1.json
 
 # The whole conformance suite against this implementation
-kh-sqr run-vectors --file vectors/vectors.json      # 45 cases, 34 negative
+kh-sqr run-vectors --file vectors/vectors.json      # 47 cases, 35 negative
 
 # S3/S4 — posture only; every other route needs a client certificate
 curl -s https://<risklist-host>/health | jq

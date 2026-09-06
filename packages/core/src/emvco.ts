@@ -146,6 +146,31 @@ export function parseDataObjects(payload: string, options: ParseOptions = {}): D
   return objects;
 }
 
+/** Merchant Account Information templates occupy this range; sub-tag 00 is the GUID. */
+export const MERCHANT_ACCOUNT_TEMPLATE_MIN = 26;
+export const MERCHANT_ACCOUNT_TEMPLATE_MAX = 51;
+export const MERCHANT_ACCOUNT_GUID_SUBTAG = '00';
+
+/**
+ * The identifier at sub-tag 00 of each merchant-account template, in payload
+ * order. A template whose value does not parse as sub-objects, or has no
+ * sub-tag 00, yields null: it names no acquirer a verifier could bind to.
+ */
+export function merchantAccountIdentifiers(
+  objects: readonly DataObject[],
+): { readonly tag: string; readonly guid: string | null }[] {
+  return objects
+    .filter((o) => Number(o.tag) >= MERCHANT_ACCOUNT_TEMPLATE_MIN && Number(o.tag) <= MERCHANT_ACCOUNT_TEMPLATE_MAX)
+    .map((o) => {
+      try {
+        const sub = parseDataObjects(o.value, { extendedLengthTags: new Set() });
+        return { tag: o.tag, guid: findObject(sub, MERCHANT_ACCOUNT_GUID_SUBTAG)?.value ?? null };
+      } catch {
+        return { tag: o.tag, guid: null };
+      }
+    });
+}
+
 /** Look up a single object by tag. */
 export function findObject(objects: readonly DataObject[], tag: string): DataObject | undefined {
   return objects.find((o) => o.tag === tag);

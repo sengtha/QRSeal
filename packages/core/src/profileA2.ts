@@ -52,6 +52,7 @@ import {
   serialiseDataObject,
   stripCrc,
   type DataObject,
+  merchantAccountIdentifiers,
 } from './emvco.js';
 import {
   CodeExpiredError,
@@ -73,7 +74,8 @@ import {
 } from './errors.js';
 import { asciiToBytes, bytesToHex, hexToBytes, isUppercaseHex } from './hex.js';
 import { KID_HEX_LENGTH, verifyEs256 } from './kid.js';
-import type { TrustAnchor } from './trustlist.js';
+import type { TrustAnchor, TrustedKeyRecord } from './trustlist.js';
+import { assertAcquirerBinding } from './trustlist.js';
 import {
   ALGORITHM,
   DEFAULT_CLOCK_SKEW_SECONDS,
@@ -404,14 +406,18 @@ export async function verifyProfileA2(
 
   const signature = signatureHalf(objects, V2_SIG_HI_TAG) + signatureHalf(objects, V2_SIG_LO_TAG);
 
-  const keys = await trustAnchor.resolve(kid, 'A', now);
+  const candidates = await trustAnchor.resolveRecords(kid, 'A', now);
   const message = asciiToBytes(signingInput);
   const rawSignature = hexToBytes(signature);
-  let verified = false;
-  for (const key of keys) {
-    if (await verifyEs256(key, rawSignature, message)) { verified = true; break; }
+  let signer: TrustedKeyRecord | null = null;
+  for (const { key, record } of candidates) {
+    if (await verifyEs256(key, rawSignature, message)) { signer = record; break; }
   }
-  if (!verified) throw new SignatureInvalidError();
+  if (signer === null) throw new SignatureInvalidError();
+
+  // As in version 1: the key must be registered for every account the code
+  // pays into, checked once the signer is known.
+  assertAcquirerBinding(signer, merchantAccountIdentifiers(objects).map((m) => m.guid));
 
   if (issuedAt > now + skew) throw new IssuedInFutureError();
   if (expiresAt !== null && now > expiresAt) throw new CodeExpiredError();

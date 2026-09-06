@@ -309,7 +309,9 @@ may be a newly enrolled issuer, so refresh and retry once before refusing.
 
 `UNKNOWN_KID` `KEY_REVOKED` `KEY_EXPIRED` `KEY_NOT_YET_VALID`
 `KEY_PROFILE_MISMATCH` `KEY_MALFORMED` `ISSUER_KEY_MISMATCH` (a registered key
-signed a credential in another institution's name)
+signed a credential in another institution's name) `ACQUIRER_KEY_MISMATCH` (a
+registered key signed a payment code paying into an account it is not
+registered for)
 
 **The code is tampered, forged, or foreign.** Refuse. Tell the payer the code
 did not verify and not to pay it. These are the reasons the negative test
@@ -469,8 +471,12 @@ const kid = await deriveKidFromCoordinates(xHex, yHex);
    **cannot issue**: it holds no key, and its only outputs are a queue and an
    audit log.
 3. The offline ceremony authority signs a new trust list that includes your
-   key, with a `notBefore`, `notAfter` and the profiles you are authorised
-   for, and publishes it through the edge service.
+   key, with a `notBefore`, `notAfter`, the profiles you are authorised for,
+   the `organisationId` your Profile B credentials must name, and the
+   `acquirers` your Profile A codes may pay into — the exact value your
+   scheme puts at sub-tag 00 of the merchant-account template, or an `@bank`
+   suffix where that value is a per-merchant `merchant@bank` identifier — and
+   publishes it through the edge service.
 4. Poll `GET /csr/{id}` for `issued`, then confirm your key appears in
    `GET /trustlist/current`. Only then sign anything a payer will see.
 
@@ -491,6 +497,10 @@ your scheme already produces — with three constraints:
   expiry. `STATIC_CODE_WITH_AMOUNT` / `STATIC_CODE_WITH_EXPIRY`.
 - **A dynamic code MUST carry an expiry** at most 300 seconds after issuance.
   `DYNAMIC_CODE_MISSING_EXPIRY` / `EXPIRY_WINDOW_TOO_LONG`.
+- **Every merchant-account template must name an identifier your key is
+  registered for**, at sub-tag 00. Signing does not check this; every
+  verifier does, and rejects with `ACQUIRER_KEY_MISMATCH`. Your key cannot
+  vouch for another institution's accounts, which is the point.
 
 A trailing CRC on the input is discarded and recomputed. The payload must not
 already contain templates 85, 86 or 87.
@@ -619,7 +629,7 @@ Report what you find.
 | `trustLists` | signed trust-list artefacts by state name: `current`, `rolledBack`, `expired`, `forgedRootSignature` |
 | `timestamps` | signed timestamp artefacts by state name: `current`, `expired`, `rolledBack`, `expiredList`, `farFuture` |
 | `time` | the reference clock the vectors were generated against |
-| `cases` | 45 cases, 34 of them rejections |
+| `cases` | 47 cases, 35 of them rejections |
 
 Each case:
 
@@ -677,7 +687,10 @@ normative (SPEC §2.8):
 5. Signature, over a **substring** of the received payload. Version 1: up to
    and including the five characters `99128`. Version 2: up to the first
    character of template `86`. Never re-serialise parsed fields.
-6. Time: issuance skew, then expiry. Signature before expiry is deliberate: a
+6. Acquirer binding: every merchant-account template (26–51) names, at
+   sub-tag 00, an identifier the signing key's record lists in `acquirers`,
+   exactly or by a registered `@bank` suffix.
+7. Time: issuance skew, then expiry. Signature before expiry is deliberate: a
    tampered payload should report tampering, not staleness.
 
 ### 3.4 The traps the negative cases exist for
@@ -688,6 +701,7 @@ normative (SPEC §2.8):
 | `A-reject-mutation-outside-signed-region` | Skipping the CRC check. It catches corruption before any cryptography runs. |
 | `A-reject-der-signature` | Accepting DER. Variable length breaks the fixed-offset rule. |
 | `A2-reject-foreign-guid` | Accepting any GUID at sub-tag 00 rather than this scheme's. |
+| `A2-reject-acquirer-key-mismatch`, `A2-accept-bank-suffix-binding` | Skipping the acquirer binding, or implementing only the exact form of it. A compromised issuer key could then sign codes paying into any account anywhere. |
 | `A-reject-static-with-amount`, `A-reject-expiry-window-too-long`, `A-reject-dynamic-without-expiry` | Signing what the code kind forbids. |
 | `A-reject-trustlist-rollback` | Not persisting the held version. |
 | `A-reject-trustlist-stale`, `A-reject-timestamp-missing`, `A-reject-timestamp-expired`, `A-reject-timestamp-digest-mismatch` | Verifying without freeze protection. A verifier pinned to an old list keeps trusting a revoked key. |
@@ -716,7 +730,7 @@ normative (SPEC §2.8):
 ```bash
 pnpm install
 pnpm build          # packages/core/dist and packages/cli/dist
-pnpm test           # 45 vectors plus unit tests
+pnpm test           # 47 vectors plus unit tests
 ```
 
 Consume it as a workspace dependency, or bundle it: `tools/build-demo.ts`

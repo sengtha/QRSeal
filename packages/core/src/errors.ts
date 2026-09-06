@@ -64,7 +64,8 @@ export type RejectionReason =
   | 'URL_PAYLOAD_REJECTED'
   | 'CLAIM_MISSING'
   | 'CLAIM_TYPE_INVALID'
-  | 'ISSUER_KEY_MISMATCH';
+  | 'ISSUER_KEY_MISMATCH'
+  | 'ACQUIRER_KEY_MISMATCH';
 
 /** Base class for every normative rejection. */
 export class KhSqrError extends Error {
@@ -156,3 +157,4 @@ export const UrlPayloadRejectedError = define('UrlPayloadRejectedError', 'URL_PA
 export const ClaimMissingError = define('ClaimMissingError', 'CLAIM_MISSING', 'a mandatory claim is absent');
 export const ClaimTypeInvalidError = define('ClaimTypeInvalidError', 'CLAIM_TYPE_INVALID', 'a claim has the wrong CBOR type');
 export const IssuerKeyMismatchError = define('IssuerKeyMismatchError', 'ISSUER_KEY_MISMATCH', 'the issuer claim is not the organisation the signing key is registered to');
+export const AcquirerKeyMismatchError = define('AcquirerKeyMismatchError', 'ACQUIRER_KEY_MISMATCH', 'a merchant-account identifier in the payload is not one the signing key is registered for');

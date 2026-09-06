@@ -84,7 +84,7 @@ Two structural facts make these hard:
 
 | Problem | Status | How |
 |---|---|---|
-| **P1** Overlay forgery | **Solved at the code layer** | An attacker without a registered issuer key cannot produce a payment code that verifies, and cannot alter a genuine one by a single character. |
+| **P1** Overlay forgery | **Solved at the code layer** | An attacker without a registered issuer key cannot produce a payment code that verifies, and cannot alter a genuine one by a single character. A registered key is bound to the account identifiers it may sign for (`ACQUIRER_KEY_MISMATCH`), so a compromised issuer key cannot vouch for accounts at another institution. |
 | **P2** Forged official codes | **Solved at the code layer** | Profile B credentials are signed by a registered issuer against a Root-anchored trust list. An unsigned or altered credential fails, and so does a credential whose issuer claim is not the organisation its signing key is registered to (`ISSUER_KEY_MISMATCH`), so one enrolled issuer cannot issue in another's name. |
 | **P7** Transplanted credential | **Made detectable, and hard to skip** | Verification returns `mustMatchPrintedDocument` — subject name, document id, issuing organisation, issue date — and offers no boolean. This is an API-shape control, not an enforcement: a caller can still derive a verdict from whether the call threw, but the result they hold carries the fields to compare and nothing that summarises them, so skipping the comparison is a deliberate act rather than the default. A test asserts no boolean member exists, so a later refactor adding a convenience accessor fails the build. |
 
@@ -851,7 +851,7 @@ kinds, and how to prove a Kotlin or Swift port conforms with the vector file.
 library on the device. It generates a
 sandbox scheme — Root, trust list, issuer key — in the browser, issues signed
 Profile A and Profile B codes, scans them back with the camera, revokes the
-key, exports the scheme to a second device, and runs all 42 vectors. Built by
+key, exports the scheme to a second device, and runs all 44 vectors. Built by
 `pnpm demo:build`, checked end to end by `pnpm demo:check`, and served by the
 assets-only Worker [`workers/demo-pwa`](workers/demo-pwa/DEVELOPMENT.md).
 
@@ -1136,7 +1136,7 @@ pnpm test           # core: 97 tests including the 41-case conformance suite
 pnpm --filter @kh-sqr/risklist-api test   # workers run in workerd, not a shim
 ```
 
-The conformance suite is 45 cases, 34 of them negative, spanning both container
+The conformance suite is 47 cases, 35 of them negative, spanning both container
 encodings. Negative cases are the
 point: an implementation that accepts a well-formed payload has demonstrated very
 little; one that rejects each malformation for the right stated reason has

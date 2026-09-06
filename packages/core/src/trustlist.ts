@@ -21,6 +21,7 @@
  */
 
 import {
+  AcquirerKeyMismatchError,
   KeyExpiredError,
   KeyNotYetValidError,
   KeyProfileMismatchError,
@@ -67,6 +68,37 @@ export interface TrustedKeyRecord {
    * the only defence would be a reader noticing two names that differ.
    */
   readonly subject: { readonly name: string; readonly organisationId: string };
+  /**
+   * The merchant-account identifiers a Profile A key may sign for (SPEC.md
+   * §2.10): each is either an exact value for sub-tag 00 of a merchant-account
+   * template, or, beginning with `@`, a suffix that an account-style
+   * identifier such as `merchant@bank` must end with. A payment code whose
+   * account templates name anything else is refused, so a compromised or
+   * rogue issuer key can sign codes only for its own institution's accounts.
+   * Absent on a key that is not enrolled for Profile A; a Profile A key with
+   * none registered can sign nothing that verifies.
+   */
+  readonly acquirers?: readonly string[];
+}
+
+/** Whether a registered acquirer entry binds a merchant-account identifier. */
+export function acquirerBinds(entry: string, guid: string): boolean {
+  if (entry.startsWith('@')) return guid.length > entry.length && guid.endsWith(entry);
+  return entry === guid;
+}
+
+/**
+ * Enforce the Profile A binding: at least one merchant-account template, and
+ * every one of them naming an identifier the signing key is registered for.
+ * Called after the signature has verified, because the binding is only
+ * meaningful once the signer is known.
+ */
+export function assertAcquirerBinding(record: TrustedKeyRecord, guids: readonly (string | null)[]): void {
+  if (guids.length === 0) throw new AcquirerKeyMismatchError('payload carries no merchant-account template');
+  const registered = record.acquirers ?? [];
+  for (const guid of guids) {
+    if (guid === null || !registered.some((entry) => acquirerBinds(entry, guid))) throw new AcquirerKeyMismatchError();
+  }
 }
 
 export interface TrustListStatement {

@@ -178,6 +178,8 @@ carries both as separate cases.
   tolerance (RECOMMENDED: 60 seconds) ahead of its own clock.
 - Expiry is exclusive: a code is valid at `now == expires` and invalid at
   `now == expires + 1`.
+- Every merchant-account template in the payload MUST name an identifier the
+  signing key is registered for (§2.10).
 
 ### 2.6 CRC
 
@@ -213,10 +215,45 @@ rejection reason is the most diagnostic one available:
    payee class, static/dynamic rules.
 4. Trust: resolve the key identifier against a validated trust list (§4).
 5. Signature.
-6. Time: issuance skew, then expiry.
+6. Acquirer binding (§2.10): every merchant-account identifier in the payload
+   is one the signing key is registered for.
+7. Time: issuance skew, then expiry.
 
 Signature before expiry is deliberate: a payload that has been tampered with
-should report tampering, not staleness.
+should report tampering, not staleness. Binding after signature is likewise
+deliberate: it is only meaningful once the signer is known.
+
+### 2.10 Acquirer binding — a key signs only for its own accounts
+
+A signature proves which registered key signed. It does not by itself prove
+that the key was entitled to vouch for the account the code pays into: without
+a further rule, any key enrolled for Profile A — or any compromised one —
+could sign codes paying into any account at any institution, and the
+signature would lend them a scheme's authority.
+
+Each Profile A key record therefore carries `acquirers`, a list of
+merchant-account identifiers the key may sign for. A verifier MUST, after the
+signature verifies, examine every Merchant Account Information template
+(IDs `26`–`51`) in the payload and MUST reject the payload with
+`ACQUIRER_KEY_MISMATCH` if:
+
+- there is no such template; or
+- any such template has no sub-tag `00`, or does not parse as sub-objects; or
+- any such template's sub-tag `00` is bound to none of the key's `acquirers`.
+
+An entry binds a sub-tag `00` value either **exactly**, or, where the entry
+begins with `@`, as a **suffix** the value must end with (and be longer than).
+The suffix form exists for schemes whose sub-tag `00` is an account-style
+identifier of the form `merchant@bank`, where the bank part is what the key
+should be bound to and the merchant part varies per code. A scheme whose
+sub-tag `00` is a fixed acquirer identifier registers it exactly. A key that
+signs for several identifiers — an institution's own scheme identifier and a
+proprietary template it also emits — registers each.
+
+The rule confines a compromised or rogue issuer key to codes paying into the
+institution it was registered for. It does not make those codes honest: a
+registered institution's own key signing for its own fraudulent customer is
+registration abuse (§9), and is not reached here.
 
 ### 2.9 Encoding version 2 — EMVCo-conformant
 
@@ -465,10 +502,13 @@ canonicalisation step.
 The statement is `{ "type": "kh-sqr/trustlist/1", "version", "issuedAt",
 "expires", "keys": [ … ] }`. Each key record carries `kid`, `x`, `y`,
 `profiles`, `status` (`active` | `revoked`), `notBefore`, `notAfter` and
-`subject`. Within `subject`, `name` is for people and is never used in a trust
-decision; `organisationId` is the issuer identifier that a Profile B
-credential's issuer claim MUST equal (§3.1), so it is part of the trust
-decision and the ceremony authority MUST assign it deliberately.
+`subject`, and, for a key enrolled for Profile A, `acquirers`. Within
+`subject`, `name` is for people and is never used in a trust decision;
+`organisationId` is the issuer identifier that a Profile B credential's issuer
+claim MUST equal (§3.1). `acquirers` lists the merchant-account identifiers a
+Profile A key may sign for (§2.10). Both are part of the trust decision, and
+the ceremony authority MUST assign them deliberately: a Profile A key with no
+`acquirers` can sign nothing that verifies.
 
 The Root public key MUST be pinned in the verifier and MUST NOT be fetched.
 

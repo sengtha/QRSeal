@@ -98,7 +98,7 @@ registered account, is presented under a false pretext.
 This paper reports \textbf{QRSeal}, a project in two halves. \textbf{KH-SQR}
 is a signature specification for payment codes and document credentials, with
 an MIT-licensed reference implementation and a language-neutral conformance
-suite of forty-five cases, thirty-four of them negative. \textbf{S0--S6} are
+suite of forty-seven cases, thirty-five of them negative. \textbf{S0--S6} are
 institutional proposals, numbered rather than named because they are reference
 designs and not evaluated interventions. Neither is a standard: KH-SQR is
 proposed here, not adopted anywhere, and nothing in it is issued by or agreed
@@ -224,7 +224,7 @@ substantive section --- to make that reading difficult.
   \item KH-SQR, the specification: a normative document and a working, MIT-licensed reference
     implementation covering a payment profile bound to EMVCo payloads and a
     standalone credential profile, with a language-neutral conformance suite of
-    forty-five cases, thirty-four negative, across both container encodings
+    forty-seven cases, thirty-five negative, across both container encodings
     \citep{khsqr2026repo}. Two qualifications belong here rather than only in
     Section~\ref{sec:limits}. The payment profile is a format that becomes
     useful only after a coverage programme this paper does not design
@@ -553,6 +553,32 @@ two years. Under this specification the same code is refused as
 \code{EXPIRY\_WINDOW\_TOO\_LONG}, which is the rule working as written and the
 gap stated in one artefact.
 
+\paragraph{A key signs only for its own accounts.} A signature proves which
+registered key signed; it does not by itself prove the key was entitled to
+vouch for the account the code pays into. Left there, a compromised or rogue
+issuer key could sign codes paying into any account at any institution, and
+the scheme's authority would travel with them. Each Profile~A key is
+therefore registered with the merchant-account identifiers it may sign for,
+and a verifier, once the signature has verified, examines every
+merchant-account template in the payload and refuses the code if any names
+an identifier the key is not registered for
+(\code{A2-reject-\allowbreak acquirer-\allowbreak key-\allowbreak mismatch}).
+Two forms of registration are needed, because schemes differ in what they put
+at the template's identifier sub-tag: an exact value, for a scheme whose
+identifier there is a fixed acquirer code, and a bank suffix, for a scheme
+whose identifier is a per-merchant \emph{merchant@bank} string, where the
+bank part is what the key should be bound to
+(\code{A2-accept-\allowbreak bank-\allowbreak suffix-\allowbreak binding}).
+The production payload examined in Section~\ref{sec:layers} carries both
+kinds in one code: an account-style identifier in the standard template and
+a fixed identifier in a proprietary one, so an issuer of such codes registers
+both. The rule confines a compromised key to its own institution's accounts.
+It does not make those accounts honest; a registered institution's own key
+signing for its own fraudulent customer is the registration abuse of
+Section~\ref{sec:registration}, and is not reached here. This binding, like
+the credential one in Section~\ref{sec:transplant}, was absent from the
+first version of the specification.
+
 \paragraph{What Profile~A is, stated at its own size.} It is a format that
 becomes useful only once coverage is near-complete, because what it asks a
 verifier to act on is the absence of a signature, and that absence is
@@ -624,10 +650,10 @@ specification now requires the issuer claim to equal the signing key's
 registered organisation identifier, rejecting a mismatch as
 \code{ISSUER\_KEY\_MISMATCH} after the signature has verified, and the suite
 pins it (\code{B-reject-\allowbreak issuer-\allowbreak key-\allowbreak
-mismatch}). The same binding is available for Profile~A --- a payment key
-bound to the acquirer identifier in the merchant-account template, so that a
-compromised or rogue issuer key can sign codes only for its own institution's
-accounts --- and is not yet specified.
+mismatch}). The same binding is applied to Profile~A --- a payment key bound to the
+merchant-account identifiers it may sign for, so that a compromised or rogue
+issuer key can sign codes only for its own institution's accounts
+(Section~\ref{sec:profileA}).
 
 \subsection{Carrying the credential, or carrying a reference to it}
 \label{sec:verifygov}
@@ -839,7 +865,7 @@ integration.
 \subsection{Conformance suite}
 
 The conformance suite is the artefact we expect to outlast the TypeScript. It is
-a single JSON file of forty-five cases, thirty-four of them negative and
+a single JSON file of forty-seven cases, thirty-five of them negative and
 spanning both container encodings, each carrying an
 identifier, a profile, a case type, an input, the trust state and time at which
 it is evaluated, the expected outcome and, for a rejection, the expected
@@ -853,9 +879,10 @@ sub-tag appended after the signature, a byte mutated inside the signed region, a
 byte mutated \emph{outside} it, an expired dynamic code, a static code carrying
 an amount, an unknown key identifier, a revoked key, a rolled-back trust list, a
 trust list past its cache age, an expired timestamp statement, an
-\code{https} payload, a \code{deflate-raw} compression and a credential signed
-by a registered key in another institution's name --- each for the correct
-stated reason --- has demonstrated most of the specification.
+\code{https} payload, a \code{deflate-raw} compression, a credential signed
+by a registered key in another institution's name and a payment code paying
+into an account its signing key is not registered for --- each for the
+correct stated reason --- has demonstrated most of the specification.
 
 Two case types are distinguished. A \emph{verify} case asserts that a recorded
 payload produces a stated outcome. A \emph{roundtrip} case asserts that the
@@ -1000,9 +1027,10 @@ Version~1 is frozen and deprecated for new issuance rather than withdrawn. Its
 vectors are published and cited, and codes already printed must keep verifying;
 the specification requires a verifier to support both and to dispatch on the
 encoding rather than attempt either with the other's rules. The conformance
-suite carries four version~2 cases --- two accepting, and two rejecting the
-attacks the new structure introduces, namely data appended after the signature
-templates (\code{A2-reject-\allowbreak appended-\allowbreak after-\allowbreak
+suite carries six version~2 cases: three accepting, including one bound
+through a bank suffix (Section~\ref{sec:profileA}), and three rejecting, two
+of them the attacks the new structure introduces, namely data appended after
+the signature templates (\code{A2-reject-\allowbreak appended-\allowbreak after-\allowbreak
 signature}) and a foreign identifier in place of the scheme's
 (\code{A2-reject-\allowbreak foreign-\allowbreak guid}).
 
