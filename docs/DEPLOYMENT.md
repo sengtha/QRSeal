@@ -88,7 +88,7 @@ and verifies both reference payloads anyway. So the whole Profile A story is
 testable by anyone, offline, with no attack surface:
 
 ```sh
-kh-sqr run-vectors --file vectors/vectors.json   # 44 cases, 33 negative
+kh-sqr run-vectors --file vectors/vectors.json   # 45 cases, 34 negative
 kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
   --root-keys @root-keys.json --timestamp @timestamp-1.json
 ```
@@ -295,7 +295,7 @@ kh-sqr verify --payload @payload.txt --trustlist @trustlist-v1.json \
   --root-keys @root-keys.json --timestamp @timestamp-1.json
 
 # The whole conformance suite against this implementation
-kh-sqr run-vectors --file vectors/vectors.json      # 44 cases, 33 negative
+kh-sqr run-vectors --file vectors/vectors.json      # 45 cases, 34 negative
 
 # S3/S4 — posture only; every other route needs a client certificate
 curl -s https://<risklist-host>/health | jq

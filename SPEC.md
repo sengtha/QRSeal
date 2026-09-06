@@ -337,6 +337,17 @@ The key identifier MUST appear in the COSE **protected** header as an 8-byte
 byte string. A kid in the unprotected header can be replaced in transit to steer
 a verifier at a different trust-list entry, and MUST be rejected.
 
+**Issuer binding.** Claim `1` (Issuer) MUST equal the `subject.organisationId`
+of the trust-list record whose key verified the signature, and a verifier MUST
+reject a credential where it does not with `ISSUER_KEY_MISMATCH`. The check is
+made after the signature verifies, because a mismatch is only meaningful once
+the signer is known. Without this rule the signature proves only *which
+registered key* signed; any key enrolled for Profile B could then issue a
+credential in any institution's name, and the sole defence would be a reader
+noticing that "signed by" and "issued by" differ, which is the kind of check
+this specification exists to take away from readers. An issuer that operates
+several keys registers each under the same `organisationId`.
+
 ### 3.1a Horizon — a hard gate on what Profile B may carry
 
 A verifier resolves a key only while the trust list says it is valid (§4.2,
@@ -454,7 +465,10 @@ canonicalisation step.
 The statement is `{ "type": "kh-sqr/trustlist/1", "version", "issuedAt",
 "expires", "keys": [ … ] }`. Each key record carries `kid`, `x`, `y`,
 `profiles`, `status` (`active` | `revoked`), `notBefore`, `notAfter` and
-`subject`.
+`subject`. Within `subject`, `name` is for people and is never used in a trust
+decision; `organisationId` is the issuer identifier that a Profile B
+credential's issuer claim MUST equal (§3.1), so it is part of the trust
+decision and the ceremony authority MUST assign it deliberately.
 
 The Root public key MUST be pinned in the verifier and MUST NOT be fetched.
 

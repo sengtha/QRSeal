@@ -94,6 +94,7 @@ interface SandboxIssuer extends StoredKey {
 }
 
 interface Sandbox {
+  schema?: number;
   readonly createdAt: number;
   readonly root: StoredKey;
   readonly timestampSigner: StoredKey;
@@ -116,6 +117,14 @@ interface ImportedScheme {
 }
 
 const SANDBOX_KEY = 'qrseal.sandbox.v1';
+/**
+ * The organisation identifier every sandbox issuer key is registered under. A
+ * Profile B credential's issuer claim must equal it, or the verifier rejects
+ * the credential with ISSUER_KEY_MISMATCH; the Issue form defaults to it.
+ */
+const SANDBOX_ISSUER_ID = 'KH.EDU.SANDBOX';
+/** Bumped when the published list's shape changes; an older sandbox republishes on load. */
+const SANDBOX_SCHEMA = 2;
 const IMPORTED_KEY = 'qrseal.imported.v1';
 const VERIFY_AGAINST_KEY = 'qrseal.verifyAgainst.v1';
 const LIST_LIFE_SECONDS = 365 * 24 * 60 * 60;
@@ -174,7 +183,7 @@ async function publish(sb: Sandbox): Promise<void> {
     status: i.status,
     notBefore: i.notBefore,
     notAfter: i.notAfter,
-    subject: { name: i.name, organisationId: 'SANDBOX' },
+    subject: { name: i.name, organisationId: SANDBOX_ISSUER_ID },
   }));
   const statement = JSON.stringify({
     type: 'kh-sqr/trustlist/1',
@@ -185,6 +194,7 @@ async function publish(sb: Sandbox): Promise<void> {
   });
   sb.trustList = await signArtifact(statement, sb.root);
   sb.publishedAt = issuedAt;
+  sb.schema = SANDBOX_SCHEMA;
   await stamp(sb);
 }
 
@@ -221,7 +231,7 @@ async function loadSandbox(): Promise<Sandbox> {
   if (sb === null || sb.trustList === null || sb.timestamp === null) return createSandbox();
 
   const now = nowSec();
-  if (now - sb.publishedAt > REPUBLISH_AFTER_SECONDS) {
+  if (sb.schema !== SANDBOX_SCHEMA || now - sb.publishedAt > REPUBLISH_AFTER_SECONDS) {
     await publish(sb);
   } else {
     const ts = JSON.parse(sb.timestamp.statement) as { expires: number };
@@ -344,6 +354,9 @@ function adviceFor(reason: RejectionReason): string {
   }
   if (reason.startsWith('KEY_')) {
     return 'The signing key is known and not usable. Refuse. Everything this key ever signed is affected — revocation is per key, not per code.';
+  }
+  if (reason === 'ISSUER_KEY_MISMATCH') {
+    return 'The signature is genuine, but the key that made it is registered to a different organisation from the one the credential names. A registered issuer signed in someone else’s name. Refuse.';
   }
   if (reason === 'CODE_EXPIRED' || reason === 'ISSUED_IN_FUTURE') {
     return 'A dynamic code lives at most 300 seconds. Ask for a fresh one. If it recurs on fresh codes, a device clock is wrong.';
@@ -777,6 +790,7 @@ function renderTrust(sb: Sandbox): void {
     `<dl class="disclosure">` +
     row('Root key', sb.root.kid, { mono: true }) +
     row('Timestamp signer', sb.timestampSigner.kid, { mono: true }) +
+    row('Issuer organisation id', `${SANDBOX_ISSUER_ID} — a credential's issuer claim must equal this, or it is refused`, { mono: true }) +
     row('Trust list', `version ${sb.version}, published ${fmtTime(sb.publishedAt)}, expires ${list.expires === undefined ? '?' : fmtTime(list.expires)}`) +
     row('Timestamp statement', ts.expires === undefined ? '?' : `valid until ${fmtTime(ts.expires)} — re-signed automatically while this app runs`) +
     `</dl>` +

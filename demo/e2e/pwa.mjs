@@ -143,6 +143,17 @@ try {
   cmp = await page.textContent('#cmp-result');
   check('a differing subject name is reported', cmp.includes('1 field(s) differ'));
 
+  out('issuer binding');
+  await page.click('#nav-issue');
+  await page.fill('#b-issuer', 'KH.EDU.SOMEONE-ELSE');
+  await page.click('#b-issue');
+  await page.waitForFunction((old) => document.getElementById('i-payload').value !== old && document.getElementById('i-payload').value.startsWith('KH1:'), credential);
+  await page.click('#i-verify');
+  await page.waitForFunction(() => document.getElementById('v-reason').textContent === 'ISSUER_KEY_MISMATCH');
+  check('a registered key signing in another issuer’s name is refused with ISSUER_KEY_MISMATCH', true);
+  await page.click('#nav-issue');
+  await page.fill('#b-issuer', 'KH.EDU.SANDBOX');
+
   out('revocation and re-enrolment');
   await page.click('#nav-trust');
   await page.click('#t-revoke');
@@ -205,7 +216,7 @@ try {
   await page.click('#x-run');
   await page.waitForFunction(() => /^\d+ of \d+ vectors pass/.test(document.getElementById('x-tally').textContent), null, { timeout: 60000 });
   const tally = await page.textContent('#x-tally');
-  check('all published vectors pass in the browser', tally.startsWith('41 of 41'), tally);
+  check('all published vectors pass in the browser', tally.startsWith('42 of 42'), tally);
   await page.waitForFunction(() => document.querySelectorAll('#x-pair .pair-card').length === 2);
   const pair = await page.textContent('#x-pair');
   check('currency pair renders both verified codes', pair.includes('7200 KHR') && pair.includes('7200 USD'));
@@ -222,7 +233,7 @@ try {
   check('verification works offline', true);
   await page.click('#nav-vectors');
   await page.click('#x-run');
-  await page.waitForFunction(() => /^41 of 41/.test(document.getElementById('x-tally').textContent), null, { timeout: 60000 });
+  await page.waitForFunction(() => /^42 of 42/.test(document.getElementById('x-tally').textContent), null, { timeout: 60000 });
   check('vector data is served from the cache offline', true);
 
   check('no uncaught page errors', errors.length === 0, errors.join(' | '));

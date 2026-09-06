@@ -98,7 +98,7 @@ registered account, is presented under a false pretext.
 This paper reports \textbf{QRSeal}, a project in two halves. \textbf{KH-SQR}
 is a signature specification for payment codes and document credentials, with
 an MIT-licensed reference implementation and a language-neutral conformance
-suite of forty-four cases, thirty-three of them negative. \textbf{S0--S6} are
+suite of forty-five cases, thirty-four of them negative. \textbf{S0--S6} are
 institutional proposals, numbered rather than named because they are reference
 designs and not evaluated interventions. Neither is a standard: KH-SQR is
 proposed here, not adopted anywhere, and nothing in it is issued by or agreed
@@ -224,7 +224,7 @@ substantive section --- to make that reading difficult.
   \item KH-SQR, the specification: a normative document and a working, MIT-licensed reference
     implementation covering a payment profile bound to EMVCo payloads and a
     standalone credential profile, with a language-neutral conformance suite of
-    forty-four cases, thirty-three negative, across both container encodings
+    forty-five cases, thirty-four negative, across both container encodings
     \citep{khsqr2026repo}. Two qualifications belong here rather than only in
     Section~\ref{sec:limits}. The payment profile is a format that becomes
     useful only after a coverage programme this paper does not design
@@ -609,6 +609,26 @@ and a test asserts that no boolean member exists on the result type --- so that 
 later refactor adding a convenience accessor fails the build rather than
 silently removing the only defence.
 
+\paragraph{Issuer binding, and the defect that found it.} A signature proves
+which registered key signed. It does not, by itself, prove that the key belongs
+to the institution the credential names, and the first version of this
+specification left the two unconnected: the issuer claim inside the credential
+was never compared with the organisation the trust list registered the key to.
+Any key enrolled for Profile~B --- a licensing body's, say --- could therefore
+have signed a credential naming a university as its issuer, and the only
+defence would have been a reader noticing that ``signed by'' and ``issued
+by'' differed, which is exactly the kind of check this design exists to take
+away from readers. The defect surfaced when a reader of the sandbox asked
+whether an attacker who knew a credential's fields could produce one. The
+specification now requires the issuer claim to equal the signing key's
+registered organisation identifier, rejecting a mismatch as
+\code{ISSUER\_KEY\_MISMATCH} after the signature has verified, and the suite
+pins it (\code{B-reject-\allowbreak issuer-\allowbreak key-\allowbreak
+mismatch}). The same binding is available for Profile~A --- a payment key
+bound to the acquirer identifier in the merchant-account template, so that a
+compromised or rogue issuer key can sign codes only for its own institution's
+accounts --- and is not yet specified.
+
 \subsection{Carrying the credential, or carrying a reference to it}
 \label{sec:verifygov}
 
@@ -819,7 +839,7 @@ integration.
 \subsection{Conformance suite}
 
 The conformance suite is the artefact we expect to outlast the TypeScript. It is
-a single JSON file of forty-four cases, thirty-three of them negative and
+a single JSON file of forty-five cases, thirty-four of them negative and
 spanning both container encodings, each carrying an
 identifier, a profile, a case type, an input, the trust state and time at which
 it is evaluated, the expected outcome and, for a rejection, the expected
@@ -833,7 +853,8 @@ sub-tag appended after the signature, a byte mutated inside the signed region, a
 byte mutated \emph{outside} it, an expired dynamic code, a static code carrying
 an amount, an unknown key identifier, a revoked key, a rolled-back trust list, a
 trust list past its cache age, an expired timestamp statement, an
-\code{https} payload and a \code{deflate-raw} compression --- each for the correct
+\code{https} payload, a \code{deflate-raw} compression and a credential signed
+by a registered key in another institution's name --- each for the correct
 stated reason --- has demonstrated most of the specification.
 
 Two case types are distinguished. A \emph{verify} case asserts that a recorded

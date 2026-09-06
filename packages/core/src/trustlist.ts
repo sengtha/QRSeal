@@ -59,7 +59,13 @@ export interface TrustedKeyRecord {
   readonly status: KeyStatus;
   readonly notBefore: number;
   readonly notAfter: number;
-  /** Human-readable issuer identity. Never used in a trust decision. */
+  /**
+   * Who the key is registered to. `name` is for people and is never used in a
+   * trust decision. `organisationId` is the issuer identifier a Profile B
+   * credential's issuer claim must equal (SPEC.md §3.1): without that binding
+   * any enrolled key could sign a credential in any institution's name, and
+   * the only defence would be a reader noticing two names that differ.
+   */
   readonly subject: { readonly name: string; readonly organisationId: string };
 }
 
@@ -264,6 +270,19 @@ export class TrustAnchor {
    * needs to tell a key that was withdrawn from a key that never existed.
    */
   public async resolve(kid: string, profile: KhSqrProfile, now: number): Promise<CryptoKey[]> {
+    return (await this.resolveRecords(kid, profile, now)).map((r) => r.key);
+  }
+
+  /**
+   * As `resolve`, but each key comes with the record it was resolved from, for
+   * a verifier that must bind something in the payload to the registration —
+   * Profile B's issuer claim to `subject.organisationId`.
+   */
+  public async resolveRecords(
+    kid: string,
+    profile: KhSqrProfile,
+    now: number,
+  ): Promise<{ readonly key: CryptoKey; readonly record: TrustedKeyRecord }[]> {
     const records = this.recordsFor(kid);
     if (records.length === 0) throw new UnknownKidError();
 
@@ -289,6 +308,8 @@ export class TrustAnchor {
       throw new UnknownKidError();
     }
 
-    return Promise.all(usable.map((r) => importVerificationKeyFromCoordinates(r.x, r.y)));
+    return Promise.all(
+      usable.map(async (record) => ({ key: await importVerificationKeyFromCoordinates(record.x, record.y), record })),
+    );
   }
 }

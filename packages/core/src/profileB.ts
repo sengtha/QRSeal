@@ -35,12 +35,13 @@ import {
   InflateFailedError,
   MalformedKidError,
   PrefixInvalidError,
+  IssuerKeyMismatchError,
   SignatureInvalidError,
   UrlPayloadRejectedError,
 } from './errors.js';
 import { bytesToHex, hexToBytes, isUppercaseHex } from './hex.js';
 import { KID_BYTES, KID_HEX_LENGTH } from './kid.js';
-import type { TrustAnchor } from './trustlist.js';
+import type { TrustAnchor, TrustedKeyRecord } from './trustlist.js';
 
 /** The only prefix this profile accepts. */
 export const PREFIX = 'KH1:';
@@ -344,12 +345,22 @@ export async function verifyProfileB(options: VerifyProfileBOptions): Promise<Cr
   if (cose.kid.length !== KID_BYTES) throw new CoseInvalidError('kid is not 8 bytes');
   const kid = bytesToHex(cose.kid);
 
-  const keys = await options.trustAnchor.resolve(kid, 'B', options.now);
-  let verified = false;
-  for (const key of keys) {
-    if (await verifyCoseSign1(cose, key)) { verified = true; break; }
+  const candidates = await options.trustAnchor.resolveRecords(kid, 'B', options.now);
+  let signer: TrustedKeyRecord | null = null;
+  for (const { key, record } of candidates) {
+    if (await verifyCoseSign1(cose, key)) { signer = record; break; }
   }
-  if (!verified) throw new SignatureInvalidError();
+  if (signer === null) throw new SignatureInvalidError();
 
-  return new CredentialAssertion(kid, readClaims(cose.payload));
+  const claims = readClaims(cose.payload);
+  // The signature proves which registered key signed. It does not by itself
+  // prove the key belongs to the institution the credential names: any
+  // enrolled Profile B key could sign a credential in any issuer's name, and
+  // a reader would have to notice "signed by X" beside "issued by Y". Binding
+  // the issuer claim to the key's registration makes that a rule, not a
+  // reading. Checked after the signature, because a mismatch is only
+  // meaningful once the signer is known.
+  if (claims.issuer !== signer.subject.organisationId) throw new IssuerKeyMismatchError();
+
+  return new CredentialAssertion(kid, claims);
 }

@@ -92,7 +92,11 @@ const keyRecord = (key: TestKeyPair, o: KeyRecordOptions) => ({
   status: o.status ?? 'active',
   notBefore: o.notBefore ?? ISSUED_AT - 365 * DAY,
   notAfter: o.notAfter ?? ISSUED_AT + 365 * DAY,
-  subject: { name: o.name, organisationId: 'KH-TEST-0001' },
+  // The organisation identifier is what a Profile B issuer claim must equal.
+  // The published reference credential names this issuer, so the test keys
+  // are registered to it; a second key under the same organisation is the
+  // rotated-and-withdrawn one.
+  subject: { name: o.name, organisationId: 'kh.gov.mptc.moeys' },
 });
 
 /* ------------------------------------------------------------------ *
@@ -437,6 +441,12 @@ async function main(): Promise<void> {
   })();
 
   const strangerB = await signProfileB({ privateKey: stranger.privateKey, kid: stranger.kid, claims: CLAIMS });
+  // A registered key signing a credential in another institution's name.
+  const wrongIssuerB = await signProfileB({
+    privateKey: issuer.privateKey,
+    kid: issuer.kid,
+    claims: { ...CLAIMS, issuer: 'kh.edu.someone-else' },
+  });
   const revokedB = await signProfileB({ privateKey: revoked.privateKey, kid: revoked.kid, claims: CLAIMS });
 
   const tamperedB = (() => {
@@ -918,6 +928,19 @@ async function main(): Promise<void> {
       state: DEFAULT_STATE,
       expect: 'reject',
       reason: 'KEY_REVOKED',
+    },
+    {
+      id: 'B-reject-issuer-key-mismatch',
+      profile: 'B',
+      type: 'verify',
+      description:
+        'A valid signature by a registered key over a credential whose issuer claim names an ' +
+        'institution the key is not registered to. Without this rule any enrolled key could issue ' +
+        'in any name, and the only defence would be a reader noticing two names that differ.',
+      input: { payload: wrongIssuerB },
+      state: DEFAULT_STATE,
+      expect: 'reject',
+      reason: 'ISSUER_KEY_MISMATCH',
     },
 
     /* ---------- Roundtrip ---------- */

@@ -308,7 +308,8 @@ persists, verification is unavailable.
 may be a newly enrolled issuer, so refresh and retry once before refusing.
 
 `UNKNOWN_KID` `KEY_REVOKED` `KEY_EXPIRED` `KEY_NOT_YET_VALID`
-`KEY_PROFILE_MISMATCH` `KEY_MALFORMED`
+`KEY_PROFILE_MISMATCH` `KEY_MALFORMED` `ISSUER_KEY_MISMATCH` (a registered key
+signed a credential in another institution's name)
 
 **The code is tampered, forged, or foreign.** Refuse. Tell the payer the code
 did not verify and not to pay it. These are the reasons the negative test
@@ -570,8 +571,12 @@ const code = await signProfileB({
 // 'KH1:6BFOXN%TSMAHN-H3Q8DJO…' — base45, uppercase, alphanumeric QR mode
 ```
 
-`subjectName`, `documentId`, `issuingOrganisation` and `issueDate` are the
-four fields a verifier compares with the paper, on exact strings. Whatever
+`issuer` must equal the `organisationId` your key is registered under on the
+trust list, or every verifier rejects the credential with
+`ISSUER_KEY_MISMATCH`. That binding is what stops another enrolled key from
+issuing in your name. `subjectName`, `documentId`, `issuingOrganisation` and
+`issueDate` are the four fields a verifier compares with the paper, on exact
+strings. Whatever
 you print is what you sign. Deflate is not canonical, so signing the same
 claims twice produces different strings that both verify; do not store the
 code as if it were a digest.
@@ -614,7 +619,7 @@ Report what you find.
 | `trustLists` | signed trust-list artefacts by state name: `current`, `rolledBack`, `expired`, `forgedRootSignature` |
 | `timestamps` | signed timestamp artefacts by state name: `current`, `expired`, `rolledBack`, `expiredList`, `farFuture` |
 | `time` | the reference clock the vectors were generated against |
-| `cases` | 44 cases, 33 of them rejections |
+| `cases` | 45 cases, 34 of them rejections |
 
 Each case:
 
@@ -688,6 +693,7 @@ normative (SPEC §2.8):
 | `A-reject-trustlist-stale`, `A-reject-timestamp-missing`, `A-reject-timestamp-expired`, `A-reject-timestamp-digest-mismatch` | Verifying without freeze protection. A verifier pinned to an old list keeps trusting a revoked key. |
 | `A-reject-revoked-key` vs `A-reject-unknown-kid` | Collapsing the two. An operator needs to tell withdrawn from never-existed. |
 | `B-reject-https-payload` | Not running the URL check. |
+| `B-reject-issuer-key-mismatch` | Accepting a valid signature without checking that the issuer claim matches the signing key's registered organisation. Any enrolled key could then issue in any name. |
 | `B-reject-deflate-raw` | Using raw deflate instead of zlib-wrapped. |
 | `B-reject-base45-alphabet` | Accepting characters outside the base45 alphabet. |
 
@@ -710,7 +716,7 @@ normative (SPEC §2.8):
 ```bash
 pnpm install
 pnpm build          # packages/core/dist and packages/cli/dist
-pnpm test           # 44 vectors plus unit tests
+pnpm test           # 45 vectors plus unit tests
 ```
 
 Consume it as a workspace dependency, or bundle it: `tools/build-demo.ts`
