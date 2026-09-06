@@ -1,7 +1,12 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "qrseal-demo"
+name = "qrseal"
 compatibility_date = "2026-08-01"
-workers_dev = false
+
+# Unlike the three service Workers, this one is meant to be reachable by
+# anyone, so it takes a workers.dev hostname. Without this (or a route or a
+# custom domain) `wrangler deploy` uploads the assets and then reports
+# "No targets deployed", and every request returns not found.
+workers_dev = true
 
 # Assets only. There is no Worker script: the sandbox runs entirely in the
 # browser, and this deployment does nothing but hand out the files under

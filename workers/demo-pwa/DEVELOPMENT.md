@@ -40,6 +40,26 @@ pnpm demo:check     # python3 -m http.server + headless Chromium
 pnpm demo:build && cd workers/demo-pwa && npx wrangler deploy
 ```
 
+The Worker is named `qrseal` and takes a `workers.dev` hostname
+(`workers_dev = true`), because it is meant to be public. If `wrangler deploy`
+ends with `No targets deployed`, the Worker has no hostname: either
+`workers_dev` is off, or the account's workers.dev subdomain is disabled in
+the dashboard, or the Worker name in the dashboard differs from the one in
+`wrangler.toml`. Requests then return not found even though the upload
+succeeded.
+
+### Workers Builds (deploy from the repository)
+
+| Setting | Value |
+|---|---|
+| Root directory | `workers/demo-pwa` |
+| Build command | `pnpm -w run build && pnpm -w run demo:build` |
+| Deploy command | `npx wrangler deploy` |
+
+`demo/pwa/` is committed, so a build that skips `demo:build` still deploys
+the last committed output; including it makes the deployment follow
+`demo/src/` rather than whatever was last checked in.
+
 Each build hashes the shell into the service-worker cache name, so a deploy
 installs a fresh cache and installed apps pick it up on their next load. The
 `_headers` file exists so that an HTTP cache in front of the Worker cannot pin
